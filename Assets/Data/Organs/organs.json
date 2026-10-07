@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "organs": [
+    {
+      "id": "fist",
+      "name": "拳头",
+      "description": "初始器官。按躯干节拍挥出一拳。",
+      "part": "hand",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/fist.png",
+      "damage": 5,
+      "count": 1,
+      "radius": 0
+    },
+    {
+      "id": "rusty_knife",
+      "name": "锈刀",
+      "description": "造成伤害时有概率施加流血。",
+      "part": "hand",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 8,
+      "icon": "placeholder/organs/rusty_knife.png",
+      "damage": 4,
+      "count": 1,
+      "radius": 0,
+      "chance": 30,
+      "status": {
+        "id": "bleed",
+        "duration": 3,
+        "max_stack": 3
+      }
+    },
+    {
+      "id": "many_limb_tentacle",
+      "name": "多肢触手",
+      "description": "击杀时重新触发同部位全部槽位。",
+      "part": "hand",
+      "type": "trigger",
+      "rarity": "rare",
+      "shop_price": 15,
+      "icon": "placeholder/organs/many_limb_tentacle.png",
+      "trigger_on": "kill",
+      "trigger_target": "SELF_SLOTS",
+      "chance": 100
+    }
+  ]
+}

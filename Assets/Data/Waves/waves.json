@@ -1,0 +1,18 @@
+{
+  "waves": [
+    {
+      "wave": 1,
+      "duration_sec": 60,
+      "guaranteed_drops": ["many_limb_tentacle"],
+      "optional_drops": ["rusty_knife"],
+      "marrow_reward": 10
+    },
+    {
+      "wave": 2,
+      "duration_sec": 60,
+      "guaranteed_drops": [],
+      "optional_drops": [],
+      "marrow_reward": 10
+    }
+  ]
+}
