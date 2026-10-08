@@ -1,0 +1,8 @@
+# 本文件由 BattleGreyboxBuilder 生成，用于记录灰盒场景的结构版本。
+# 场景结构改动时请同步提高 BattleGreyboxBuilder.GreyboxSceneVersion。
+# 本场景是**生成物**：版本号一升就会被重建，会覆盖对它的手工改动。
+# 想保住手工改动，请先把场景另存为别的名字。
+# 删掉本文件可强制下次打开工程时重建场景。
+version=10
+scene=Assets/Scenes/Battle_Greybox.unity
+generated=2026-10-07 16:25:40
