@@ -12,12 +12,14 @@
 
 ## 文件夹与文件说明
 
+程序 B 的基础装配与战斗演示已接通：打开 `Assets/Scenes/LaboratoryDemo.unity`，左侧安装／替换／拆下器官，右侧使用 A 的管道和目标显示扣血、死亡与击杀追加攻击。用户已确认人工操作检查通过。使用方法见[程序B-实验室展示框架](程序B-实验室展示框架.md)，交付边界见[程序B-交付清单](程序B-交付清单.md)。真实库存及下一波流程尚未接入。
+
 ### 当前工程中存在的目录
 
 | 路径 | 功能与用途 |
 | --- | --- |
 | `Assets/` | Unity 资源总目录。需要被 Unity 导入的场景、脚本、美术、音频、预制体和数据文件都放在这里。 |
-| `Assets/Scenes/` | 包含模板 `SampleScene.unity` 和器官演示 `OrganPipelineDemo.unity`。正式实验室、战斗场景后续建立。 |
+| `Assets/Scenes/` | 包含模板 `SampleScene.unity`、A 独立演示 `OrganPipelineDemo.unity`，以及可穿戴装备并测试战斗的 `LaboratoryDemo.unity`。 |
 | `Assets/Settings/` | URP、2D Renderer、Volume 和输入动作等资源设置。 |
 | `Packages/` | Unity Package Manager 依赖配置；`manifest.json` 记录工程使用的 Unity 包。 |
 | `ProjectSettings/` | 项目级设置，如输入、图形、物理和构建平台设置；团队应通过 Git 同步。 |
