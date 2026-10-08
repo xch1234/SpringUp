@@ -147,10 +147,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0890590b0464300924819b4c75579e5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoTarget
   targetId: target_c
-  maxHealth: 5
+  maxHealth: 40
 --- !u!212 &89030862
 SpriteRenderer:
   serializedVersion: 3
@@ -254,10 +254,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0890590b0464300924819b4c75579e5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoTarget
   targetId: target_a
-  maxHealth: 20
+  maxHealth: 5
 --- !u!212 &392616843
 SpriteRenderer:
   serializedVersion: 3
@@ -370,8 +370,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
   m_RequiresOpaqueTextureOption: 2
@@ -497,8 +497,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 073797afb82c5a1438f328866b10b3f0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_ComponentVersion: 4
   m_LightType: 4
   m_BlendStyleIndex: 0
@@ -555,7 +555,11 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 1468003247449178112
+    - rid: 1468003247449178112
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
 --- !u!4 &619394802
 Transform:
   m_ObjectHideFlags: 0
@@ -583,7 +587,7 @@ GameObject:
   - component: {fileID: 1448768592}
   - component: {fileID: 1448768591}
   m_Layer: 0
-  m_Name: OrganDemo
+  m_Name: HandOrganDemo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -598,11 +602,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 1448768590}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 100658c88abcfd4448066fe16ad77943, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganPipelineDemo
-  mode: 2
-  startWithEmptySlots: 0
+  m_Script: {fileID: 11500000, guid: 428e66fe91b248c48f012dcd90b538b8, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.HandOrganDemo
+  slots:
+  - {fileID: 11400000, guid: a8e863096e4346ebb74110530d7b1cdd, type: 2}
+  - {fileID: 11400000, guid: e29dfe6c996d4d7c8d8a18b643c74ddf, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   targets:
   - {fileID: 392616842}
   - {fileID: 1822248055}
@@ -617,7 +626,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 63f356a7eb25b2a42a291424c296f642, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganPipelineController
   stepInterval: 1
 --- !u!4 &1448768593
@@ -663,7 +672,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0890590b0464300924819b4c75579e5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoTarget
   targetId: target_b
   maxHealth: 20

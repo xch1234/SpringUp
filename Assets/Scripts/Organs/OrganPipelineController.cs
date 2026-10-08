@@ -66,10 +66,11 @@ namespace SpringUp.Organs
 
         private void ExecuteAttack(OrganInstance organ, CastContext context)
         {
-            if (organ.Definition.Type != OrganType.Actuator || organ.Definition.Damage <= 0f)
+            if (organ.Definition.Type != OrganType.Actuator
+                || (organ.Definition.Damage <= 0f && organ.Definition.Shape != AttackShape.BlackHole))
                 return;
 
-            string targetId = TargetSelector?.Invoke();
+            string targetId = organ.Definition.Shape == AttackShape.SingleTarget ? TargetSelector?.Invoke() : null;
             if (ParameterisedBehaviour.TryCreateAttack(organ, targetId, out CastEvent attack, context))
                 AttackProduced?.Invoke(attack);
         }

@@ -130,6 +130,7 @@ GameObject:
   - component: {fileID: 89030863}
   - component: {fileID: 89030862}
   - component: {fileID: 89030861}
+  - component: {fileID: 900000100}
   m_Layer: 0
   m_Name: TargetC
   m_TagString: Untagged
@@ -147,10 +148,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0890590b0464300924819b4c75579e5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoTarget
   targetId: target_c
-  maxHealth: 5
+  maxHealth: 80
 --- !u!212 &89030862
 SpriteRenderer:
   serializedVersion: 3
@@ -220,7 +221,7 @@ Transform:
   m_GameObject: {fileID: 89030860}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -2, z: 0}
+  m_LocalPosition: {x: 4.5, y: -2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -237,6 +238,7 @@ GameObject:
   - component: {fileID: 392616844}
   - component: {fileID: 392616843}
   - component: {fileID: 392616842}
+  - component: {fileID: 900000101}
   m_Layer: 0
   m_Name: TargetA
   m_TagString: Untagged
@@ -254,10 +256,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0890590b0464300924819b4c75579e5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoTarget
   targetId: target_a
-  maxHealth: 20
+  maxHealth: 10
 --- !u!212 &392616843
 SpriteRenderer:
   serializedVersion: 3
@@ -327,7 +329,7 @@ Transform:
   m_GameObject: {fileID: 392616841}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2, y: 0, z: 0}
+  m_LocalPosition: {x: 1.5, y: -2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -370,8 +372,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
   m_RequiresOpaqueTextureOption: 2
@@ -497,8 +499,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 073797afb82c5a1438f328866b10b3f0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_ComponentVersion: 4
   m_LightType: 4
   m_BlendStyleIndex: 0
@@ -555,7 +557,11 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 1468003247449178112
+    - rid: 1468003247449178112
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
 --- !u!4 &619394802
 Transform:
   m_ObjectHideFlags: 0
@@ -571,6 +577,48 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &900000100
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 89030860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89833a630a2a40b49639298bdc31625b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoCombatTarget
+  moveSpeed: 0
+  travelDistance: 1.5
+--- !u!114 &900000101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 392616841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89833a630a2a40b49639298bdc31625b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoCombatTarget
+  moveSpeed: 0
+  travelDistance: 1.5
+--- !u!114 &900000102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1822248054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89833a630a2a40b49639298bdc31625b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoCombatTarget
+  moveSpeed: 0
+  travelDistance: 1.5
 --- !u!1 &1448768590
 GameObject:
   m_ObjectHideFlags: 0
@@ -582,8 +630,10 @@ GameObject:
   - component: {fileID: 1448768593}
   - component: {fileID: 1448768592}
   - component: {fileID: 1448768591}
+  - component: {fileID: 900000200}
+  - component: {fileID: 900000201}
   m_Layer: 0
-  m_Name: OrganDemo
+  m_Name: HandComboDemo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -598,15 +648,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 1448768590}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 100658c88abcfd4448066fe16ad77943, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganPipelineDemo
-  mode: 2
-  startWithEmptySlots: 0
+  m_Script: {fileID: 11500000, guid: 428e66fe91b248c48f012dcd90b538b8, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.HandOrganDemo
+  slots:
+  - {fileID: 11400000, guid: d710dd7534ea42aeba1e80e044074ec5, type: 2}
+  - {fileID: 11400000, guid: efb2c664ff614767802538eb07e2beb5, type: 2}
+  - {fileID: 11400000, guid: 7bb9bbfea9e44fbe99986fb3bc8e9bce, type: 2}
+  - {fileID: 11400000, guid: 7075df19df6949b391f375a2465099ce, type: 2}
+  - {fileID: 11400000, guid: 21dfff0a12214c49bc20fbc9dc4ff09e, type: 2}
+  - {fileID: 11400000, guid: 02eea00a983d4ef9b27507bc3a4373a9, type: 2}
   targets:
   - {fileID: 392616842}
   - {fileID: 1822248055}
-  - {fileID: 89030861}
 --- !u!114 &1448768592
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -617,7 +671,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 63f356a7eb25b2a42a291424c296f642, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganPipelineController
   stepInterval: 1
 --- !u!4 &1448768593
@@ -629,7 +683,7 @@ Transform:
   m_GameObject: {fileID: 1448768590}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -646,6 +700,7 @@ GameObject:
   - component: {fileID: 1822248057}
   - component: {fileID: 1822248056}
   - component: {fileID: 1822248055}
+  - component: {fileID: 900000102}
   m_Layer: 0
   m_Name: TargetB
   m_TagString: Untagged
@@ -663,10 +718,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0890590b0464300924819b4c75579e5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoTarget
   targetId: target_b
-  maxHealth: 20
+  maxHealth: 80
 --- !u!212 &1822248056
 SpriteRenderer:
   serializedVersion: 3
@@ -736,12 +791,36 @@ Transform:
   m_GameObject: {fileID: 1822248054}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2, y: 0, z: 0}
+  m_LocalPosition: {x: 2.5, y: -2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &900000200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1448768590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b149deca21c4b3db9fa5db549e52f48, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoBlackHoleField
+--- !u!114 &900000201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1448768590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a20e3db1018b48beaac5686b9feeafc4, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoExplosionView
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

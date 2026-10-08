@@ -11,6 +11,8 @@ namespace SpringUp.Organs
         private string targetId = "target_a";
 
         [SerializeField, Min(1f)] private float maxHealth = 20f;
+        [SerializeField, Tooltip("取消勾选后不会被黑洞吸引，例如不能被推拉的 Boss。")]
+        private bool canBeDisplaced = true;
         private float currentHealth;
         private SpriteRenderer spriteRenderer;
         private float hitFlashRemaining;
@@ -19,6 +21,15 @@ namespace SpringUp.Organs
         public float MaxHealth => maxHealth;
         public float CurrentHealth => currentHealth;
         public bool IsAlive => isActiveAndEnabled && currentHealth > 0f;
+        public bool CanBeDisplaced => canBeDisplaced;
+
+        public bool TryDisplace(Vector2 displacement)
+        {
+            if (!IsAlive || !canBeDisplaced || float.IsNaN(displacement.x) || float.IsInfinity(displacement.x)
+                || float.IsNaN(displacement.y) || float.IsInfinity(displacement.y)) return false;
+            transform.position += new Vector3(displacement.x, displacement.y, 0f);
+            return true;
+        }
 
         // 保留原攻击及链上下文，由接入方决定是否转发给触发器。
         public event Action<DemoTarget, CastEvent, float> Damaged;

@@ -4,6 +4,7 @@ namespace SpringUp.Organs
     public enum BodyPart { Head, Hand, Leg }
 
     public enum OrganType { Actuator, Trigger }
+    public enum AttackShape { SingleTarget, Explosion, BlackHole }
 
     // 第三步只实现击杀与同部位重触发，其余条件以后再加入。
     public enum TriggerOn { Kill }

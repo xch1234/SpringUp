@@ -11,12 +11,12 @@ namespace SpringUp.Organs
             if (organ == null) throw new ArgumentNullException(nameof(organ));
             attack = default;
             OrganDefinition definition = organ.Definition;
-            if (definition.Type != OrganType.Actuator || definition.Damage <= 0f
-                || string.IsNullOrWhiteSpace(targetId))
+            if (definition.Type != OrganType.Actuator || (definition.Damage <= 0f && definition.Shape != AttackShape.BlackHole)
+                || (definition.Shape == AttackShape.SingleTarget && string.IsNullOrWhiteSpace(targetId)))
                 return false;
 
             attack = new CastEvent(targetId, definition.Damage, definition.Id, organ.InstanceId,
-                context ?? new CastContext());
+                context ?? new CastContext(), definition.Status, definition.Shape, definition.Radius, definition.BlackHole);
             return true;
         }
 
