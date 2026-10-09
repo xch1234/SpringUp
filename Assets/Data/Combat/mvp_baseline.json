@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "note": "Program D MVP numbers for C alignment. Fill-table damage: enemy hit = max(1, Event.damage); player hit = max(1, attackPower). No multiplier zones in planning.",
+  "player": {
+    "max_health": 100,
+    "base_cooldown": 1.0,
+    "move_speed": 5.0,
+    "armor": 0
+  },
+  "enemy_baseline": {
+    "move_speed": 2.5,
+    "health": 20,
+    "attack_power": 5,
+    "attack_cooldown": 1.5,
+    "ranged_range": 6,
+    "ranged_projectile_speed": 4
+  },
+  "enemies": [
+    {
+      "id": "enemy_tidewalker",
+      "display_name": "潮行仆",
+      "greybox": "Normal",
+      "health": 20,
+      "attack_power": 5,
+      "move_speed": 2.5,
+      "drop_table_id": "drop_tidewalker"
+    },
+    {
+      "id": "enemy_skitter",
+      "display_name": "掠潮迅兽",
+      "greybox": "Fast",
+      "health": 14,
+      "attack_power": 5,
+      "move_speed": 3.25,
+      "drop_table_id": "drop_skitter"
+    },
+    {
+      "id": "enemy_saltgaze",
+      "display_name": "盐雾凝视者",
+      "greybox": "RangedKeeper",
+      "health": 20,
+      "attack_power": 5,
+      "move_speed": 2.0,
+      "drop_table_id": "drop_saltgaze"
+    },
+    {
+      "id": "enemy_broodnurse",
+      "display_name": "腐潮哺育者",
+      "greybox": "Medic",
+      "health": 16,
+      "attack_power": 0,
+      "move_speed": 2.75,
+      "heal_interval": 3,
+      "heal_radius": 5,
+      "heal_percent": 0.2,
+      "drop_table_id": "drop_broodnurse"
+    },
+    {
+      "id": "enemy_boss_deepone",
+      "display_name": "深渊初醒",
+      "greybox": "BossPlaceholder",
+      "health": 200,
+      "attack_power": 10,
+      "move_speed": 2.5,
+      "drop_table_id": "drop_boss"
+    }
+  ],
+  "wave_strength_mult": [1.0, 1.1, 1.2, 1.35, 1.5, 1.7, 1.7]
+}
