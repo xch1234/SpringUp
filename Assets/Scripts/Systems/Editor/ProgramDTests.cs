@@ -29,13 +29,16 @@ public class ProgramDTests
     }
 
     [Test]
-    public void LoadWaves_KeepsOrderAndDrops()
+    public void LoadWaves_HasSevenEntries()
     {
         var catalog = Catalog.LoadOrgans(File.ReadAllText(OrgansPath));
         var waves = Catalog.LoadWaves(File.ReadAllText(WavesPath), catalog);
-        Assert.AreEqual(2, waves.Count);
+        Assert.AreEqual(7, waves.Count);
+        Assert.AreEqual(45, waves[0].marrow_reward);
         Assert.AreEqual("many_limb_tentacle", waves[0].guaranteed_drops[0]);
-        Assert.AreEqual("rusty_knife", waves[0].optional_drops[0]);
+        Assert.AreEqual("rusty_knife", waves[0].guaranteed_drops[1]);
+        Assert.AreEqual(0, waves[0].optional_drops.Length);
+        Assert.AreEqual(120, waves[6].marrow_reward);
     }
 
     [Test]
@@ -106,19 +109,19 @@ public class ProgramDTests
         run.StartRun();
         run.CombatTimerFinished();
         Assert.AreEqual("lab", run.Phase);
-        Assert.AreEqual(10, run.Marrow);
+        Assert.AreEqual(45, run.Marrow);
         CollectionAssert.AreEquivalent(
             new[] { "many_limb_tentacle", "rusty_knife" },
             BagOrganIds(run));
         Assert.AreEqual("WaveEnded", rec.Events[rec.Events.Count - 2].Name);
         Assert.AreEqual("LabOpened", rec.Events[rec.Events.Count - 1].Name);
         var lab = (LabOpenedPayload)rec.Events[rec.Events.Count - 1].Payload;
-        Assert.AreEqual(10, lab.MarrowDelta);
+        Assert.AreEqual(45, lab.MarrowDelta);
         Assert.AreEqual(2, lab.Drops.Count);
     }
 
     [Test]
-    public void Wave2Timer_WinsWithoutSecondLab()
+    public void Wave2Timer_OpensLabAgain()
     {
         var rec = new Recorder();
         var run = NewRun(rec);
@@ -126,14 +129,40 @@ public class ProgramDTests
         run.CombatTimerFinished();
         run.StartNextWave();
         run.CombatTimerFinished();
+        Assert.AreEqual("lab", run.Phase);
+        Assert.AreEqual(100, run.Marrow);
+        var labCount = 0;
+        foreach (var n in rec.Names)
+            if (n == "LabOpened") labCount++;
+        Assert.AreEqual(2, labCount);
+    }
+
+    [Test]
+    public void Wave7Timer_WinsWithoutLab()
+    {
+        var rec = new Recorder();
+        var run = NewRun(rec);
+        run.StartRun();
+        for (var w = 1; w <= 7; w++)
+        {
+            run.CombatTimerFinished();
+            if (w < 7)
+            {
+                while (!run.CanStartNextWave())
+                {
+                    var bag = run.Inventory.UnequippedIds();
+                    Assert.Greater(bag.Count, 0);
+                    run.Sell(bag[0]);
+                }
+                run.StartNextWave();
+            }
+        }
         Assert.AreEqual("run_won", run.Phase);
-        Assert.AreEqual(20, run.Marrow);
         Assert.AreEqual("RunEnded", rec.Names[rec.Names.Count - 1]);
         var labCount = 0;
         foreach (var n in rec.Names)
             if (n == "LabOpened") labCount++;
-        Assert.AreEqual(1, labCount);
-        Assert.AreEqual("WaveEnded", rec.Names[rec.Names.Count - 2]);
+        Assert.AreEqual(6, labCount);
     }
 
     [Test]
