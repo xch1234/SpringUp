@@ -12,8 +12,10 @@
 
 | 路径 | 内容 |
 |---|---|
-| `Assets/Data/Organs/organs.json` | M1 图鉴：拳头、锈刀、多肢触手 |
-| `Assets/Data/Waves/waves.json` | 两波配置；第 1 波必掉触手 + 锈刀 |
+| `Assets/Data/Organs/organs.json` | MVP 图鉴：11 个器官数字位（史莱姆核心暂不入库） |
+| `Assets/Data/Waves/waves.json` | 7 波；波 1 保底触手+锈刀；髓质按 MVP 规划 |
+| `Assets/Data/Combat/mvp_baseline.json` | 玩家/敌人基准血攻（给 C 对照，D 不加载） |
+| `docs/superpowers/specs/2026-10-09-mvp-numbers-design.md` | 数值规划原文 |
 | `Assets/Scripts/Systems/Catalog.cs` | 加载与字段校验 |
 | `Assets/Scripts/Systems/Inventory.cs` | 实例、槽位、未装备上限 5、卖/丢 |
 | `Assets/Scripts/Systems/RunController.cs` | 状态机与对外 API |
@@ -213,3 +215,10 @@ C: CombatTimerFinished()
 
 接口要改字段或信号名时：先在群里公告，再改本文件和代码。  
 当前实现在本地 git（`feat(d): add M1 organ data, inventory, and wave run flow`），未推远端时以本仓库工作区为准。
+
+## MVP 数值（2026-10-09）
+
+- 填表口径：对敌 `max(1, Event.damage)`；对己 `max(1, attackPower)`；规划期不按乘区估数。
+- 波 1 髓质 45；全 7 波髓质 45/55/65/80/90/100/120。
+- 敌人与玩家开局数见 `Assets/Data/Combat/mvp_baseline.json`。
+- Demo 后再调数字；不借机改器官效果设计。
