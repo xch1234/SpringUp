@@ -15,6 +15,25 @@
       "radius": 0
     },
     {
+      "id": "steel_pipe",
+      "name": "钢管",
+      "description": "伤害 8，20% 概率眩晕。",
+      "part": "hand",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 10,
+      "icon": "placeholder/organs/steel_pipe.png",
+      "damage": 8,
+      "count": 1,
+      "radius": 0,
+      "chance": 20,
+      "status": {
+        "id": "stun",
+        "duration": 1,
+        "max_stack": 1
+      }
+    },
+    {
       "id": "rusty_knife",
       "name": "锈刀",
       "description": "造成伤害时有概率施加流血。",
@@ -34,6 +53,24 @@
       }
     },
     {
+      "id": "slime_gland",
+      "name": "粘液腺",
+      "description": "造成伤害时降低敌人 15% 移速，可叠 3 层。",
+      "part": "hand",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 10,
+      "icon": "placeholder/organs/slime_gland.png",
+      "damage": 3,
+      "count": 1,
+      "radius": 0,
+      "status": {
+        "id": "slow",
+        "duration": 3,
+        "max_stack": 3
+      }
+    },
+    {
       "id": "many_limb_tentacle",
       "name": "多肢触手",
       "description": "击杀时重新触发同部位全部槽位。",
@@ -45,6 +82,95 @@
       "trigger_on": "kill",
       "trigger_target": "SELF_SLOTS",
       "chance": 100
+    },
+    {
+      "id": "collapse_body",
+      "name": "坍缩体",
+      "description": "攻击变为生成持续 5 秒、可吸附敌人的黑洞。",
+      "part": "hand",
+      "type": "executor",
+      "rarity": "rare",
+      "shop_price": 20,
+      "icon": "placeholder/organs/collapse_body.png",
+      "damage": 0,
+      "count": 1,
+      "radius": 2,
+      "status": {
+        "id": "collapse",
+        "duration": 5,
+        "max_stack": 1
+      }
+    },
+    {
+      "id": "tnt",
+      "name": "TNT",
+      "description": "攻击变为大范围爆炸。",
+      "part": "hand",
+      "type": "executor",
+      "rarity": "rare",
+      "shop_price": 22,
+      "icon": "placeholder/organs/tnt.png",
+      "damage": 12,
+      "count": 1,
+      "radius": 3
+    },
+    {
+      "id": "spider_nest",
+      "name": "蜘蛛巢",
+      "description": "造成伤害时 5% 概率召唤友方蜘蛛。",
+      "part": "hand",
+      "type": "trigger",
+      "rarity": "rare",
+      "shop_price": 18,
+      "icon": "placeholder/organs/spider_nest.png",
+      "trigger_on": "hit",
+      "trigger_target": "NONE",
+      "chance": 5
+    },
+    {
+      "id": "compound_eye",
+      "name": "复眼",
+      "description": "暴击率 ×3，可见范围缩小约 30%。",
+      "part": "torso",
+      "type": "torso_special",
+      "rarity": "rare",
+      "shop_price": 20,
+      "icon": "placeholder/organs/compound_eye.png",
+      "modifiers": {
+        "unequipped_capacity_delta": 0,
+        "marrow_gain_mult": 1
+      },
+      "costs": ["view_radius"]
+    },
+    {
+      "id": "treads",
+      "name": "履带",
+      "description": "大幅提升直线冲锋速度、撞飞直线上敌人，但转向变慢。",
+      "part": "torso",
+      "type": "torso_special",
+      "rarity": "rare",
+      "shop_price": 20,
+      "icon": "placeholder/organs/treads.png",
+      "modifiers": {
+        "unequipped_capacity_delta": 0,
+        "marrow_gain_mult": 1
+      },
+      "costs": ["turn_speed"]
+    },
+    {
+      "id": "collection_net",
+      "name": "收集网",
+      "description": "每波结算的髓质 +10%，移速 −10%。",
+      "part": "torso",
+      "type": "torso_special",
+      "rarity": "mechanical",
+      "shop_price": 25,
+      "icon": "placeholder/organs/collection_net.png",
+      "modifiers": {
+        "unequipped_capacity_delta": 0,
+        "marrow_gain_mult": 1.1
+      },
+      "costs": ["move_speed"]
     }
   ]
 }
