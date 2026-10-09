@@ -10,11 +10,22 @@ public class ProgramDTests
     static string WavesPath => Path.Combine(Application.dataPath, "Data", "Waves", "waves.json");
 
     [Test]
-    public void LoadOrgans_IndexesM1Ids()
+    public void LoadOrgans_IndexesMvpIds()
     {
         var catalog = Catalog.LoadOrgans(File.ReadAllText(OrgansPath));
+        Assert.AreEqual(11, catalog.Count);
         Assert.AreEqual(5, catalog["fist"].damage);
+        Assert.AreEqual(8, catalog["steel_pipe"].damage);
+        Assert.AreEqual(4, catalog["rusty_knife"].damage);
+        Assert.AreEqual(3, catalog["slime_gland"].damage);
+        Assert.AreEqual(0, catalog["collapse_body"].damage);
+        Assert.AreEqual(12, catalog["tnt"].damage);
+        Assert.AreEqual(3f, catalog["tnt"].radius);
         Assert.AreEqual("kill", catalog["many_limb_tentacle"].trigger_on);
+        Assert.AreEqual("NONE", catalog["spider_nest"].trigger_target);
+        Assert.AreEqual("torso_special", catalog["collection_net"].type);
+        Assert.AreEqual(1.1f, catalog["collection_net"].MarrowGainMult, 0.001f);
+        Assert.IsFalse(catalog.ContainsKey("slime_core"));
     }
 
     [Test]
