@@ -13,14 +13,5 @@ MonoBehaviour:
   m_Name: TNT
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganConfig
   kind: 6
-  damage: 5
+  damage: 10
   explosionRadius: 2
-  statusChancePercent: 100
-  statusDuration: 2
-  bleedDamage: 1
-  bleedInterval: 1
-  slowPercentPerStack: 15
-  maxSlowStacks: 3
-  blackHoleRadius: 3
-  blackHoleDuration: 5
-  blackHolePullSpeed: 2

@@ -15,7 +15,7 @@ namespace SpringUp.EditorChecks
         private static readonly List<Object> objects = new List<Object>();
         private static Scene scene;
 
-        [MenuItem("Tools/SpringUp/Run Hand Step 5 Checks")]
+        [MenuItem("Tools/SpringUp/Checks By Stage/Run Hand Step 5 Checks")]
         public static void Run()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -58,18 +58,7 @@ namespace SpringUp.EditorChecks
             objects.Add(go); SceneManager.MoveGameObjectToScene(go, scene); return go;
         }
         private static OrganConfig Config(HandOrganKind kind)
-        {
-            var config = ScriptableObject.CreateInstance<OrganConfig>(); objects.Add(config);
-            var data = new SerializedObject(config);
-            data.FindProperty("kind").intValue = (int)kind;
-            data.FindProperty("damage").floatValue = kind == HandOrganKind.Fist || kind == HandOrganKind.Tnt ? 5f
-                : kind == HandOrganKind.SteelPipe ? 2f : 1f;
-            data.FindProperty("statusChancePercent").floatValue = 100f;
-            data.FindProperty("bleedDamage").floatValue = 1f;
-            data.FindProperty("bleedInterval").floatValue = 1f;
-            data.FindProperty("statusDuration").floatValue = kind == HandOrganKind.RustKnife ? 3f : 2f;
-            data.ApplyModifiedPropertiesWithoutUndo(); return config;
-        }
+            => OrganTestFactory.CreateCombo(kind, objects);
         private static DemoTarget Target(string id, float x = 0f, float health = 100f)
         {
             var target = Go(id).AddComponent<DemoTarget>(); target.InitializeForDemo(id, health);

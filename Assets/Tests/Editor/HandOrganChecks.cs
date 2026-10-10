@@ -12,7 +12,7 @@ namespace SpringUp.EditorChecks
     {
         private static readonly List<Object> objects = new List<Object>();
 
-        [MenuItem("Tools/SpringUp/Run Hand Step 1 Checks")]
+        [MenuItem("Tools/SpringUp/Checks By Stage/Run Hand Step 1 Checks")]
         public static void Run()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -72,7 +72,7 @@ namespace SpringUp.EditorChecks
             SetNumber(config, "kind", (int)kind);
             SetNumber(config, "damage", damage);
             // 第一步只检查直接伤害；状态效果由第二步的检查覆盖。
-            SetNumber(config, "statusChancePercent", 0f);
+            OrganTestFactory.AttachStatus(config, kind, objects, 0f);
             return config;
         }
 
@@ -114,7 +114,7 @@ namespace SpringUp.EditorChecks
             string[] names = { "Fist", "SteelPipe", "MultiTentacle", "RustKnife", "SlimeGland", "CollapseBody", "TNT" };
             for (int i = 0; i < names.Length; i++)
             {
-                var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/HandOrgans/" + names[i] + ".asset");
+                var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/" + names[i] + ".asset");
                 Require(asset != null && (int)asset.Kind == i, "七份样例配置应能加载，且种类正确。");
                 bool supported = asset.TryCreateDefinition(out _, out string error);
                 Require(supported, "七种手部器官的独立效果都应能读取配置。");

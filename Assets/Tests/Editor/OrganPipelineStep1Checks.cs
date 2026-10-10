@@ -10,7 +10,7 @@ namespace SpringUp.EditorChecks
     // 只在编辑器使用，不会进入正式游戏。
     public static class OrganPipelineStep1Checks
     {
-        [MenuItem("Tools/SpringUp/Run Step 1 Checks")]
+        [MenuItem("Tools/SpringUp/Checks By Stage/Run Step 1 Checks")]
         public static void Run()
         {
             CheckOrderAndTiming();

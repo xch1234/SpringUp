@@ -652,12 +652,12 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.HandOrganDemo
   slots:
-  - {fileID: 11400000, guid: f23774c1744c4286a75ea3ca53ad5dbb, type: 2}
-  - {fileID: 11400000, guid: 7bb9bbfea9e44fbe99986fb3bc8e9bce, type: 2}
-  - {fileID: 11400000, guid: 7075df19df6949b391f375a2465099ce, type: 2}
-  - {fileID: 11400000, guid: 21dfff0a12214c49bc20fbc9dc4ff09e, type: 2}
-  - {fileID: 11400000, guid: 02eea00a983d4ef9b27507bc3a4373a9, type: 2}
-  - {fileID: 11400000, guid: 02eea00a983d4ef9b27507bc3a4373a9, type: 2}
+  - {fileID: 11400000, guid: a8e863096e4346ebb74110530d7b1cdd, type: 2}
+  - {fileID: 11400000, guid: 323fa64dc89d480cabc6d80eba789da2, type: 2}
+  - {fileID: 11400000, guid: 96c1f371d6824039b846316d54c42938, type: 2}
+  - {fileID: 11400000, guid: e1eb40967d3e4664a8ea1f8a8b7d0ae8, type: 2}
+  - {fileID: 11400000, guid: e29dfe6c996d4d7c8d8a18b643c74ddf, type: 2}
+  - {fileID: 11400000, guid: e29dfe6c996d4d7c8d8a18b643c74ddf, type: 2}
   targets:
   - {fileID: 392616842}
   - {fileID: 1822248055}

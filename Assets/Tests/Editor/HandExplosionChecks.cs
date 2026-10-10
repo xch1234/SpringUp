@@ -14,7 +14,7 @@ namespace SpringUp.EditorChecks
     {
         private static readonly List<Object> objects = new List<Object>();
         private static Scene testScene;
-        [MenuItem("Tools/SpringUp/Run Hand Step 3 Checks")]
+        [MenuItem("Tools/SpringUp/Checks By Stage/Run Hand Step 3 Checks")]
         public static void Run()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -114,7 +114,7 @@ namespace SpringUp.EditorChecks
 
         private static void CheckConfig()
         {
-            var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/HandOrgans/TNT.asset");
+            var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/TNT.asset");
             Require(asset != null && asset.TryCreateDefinition(out _, out _), "TNT 资源应可加载。");
             OrganConfig config = Config();
             Require(config.TryCreateDefinition(out OrganDefinition original, out _), "TNT 配置应可读取。");

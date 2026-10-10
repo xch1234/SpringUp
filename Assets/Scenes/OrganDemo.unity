@@ -632,8 +632,9 @@ GameObject:
   - component: {fileID: 1448768591}
   - component: {fileID: 900000200}
   - component: {fileID: 900000201}
+  - component: {fileID: 900000202}
   m_Layer: 0
-  m_Name: HandComboDemo
+  m_Name: OrganDemo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -652,12 +653,12 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.HandOrganDemo
   slots:
-  - {fileID: 11400000, guid: d710dd7534ea42aeba1e80e044074ec5, type: 2}
-  - {fileID: 11400000, guid: efb2c664ff614767802538eb07e2beb5, type: 2}
-  - {fileID: 11400000, guid: 7bb9bbfea9e44fbe99986fb3bc8e9bce, type: 2}
-  - {fileID: 11400000, guid: 7075df19df6949b391f375a2465099ce, type: 2}
-  - {fileID: 11400000, guid: 21dfff0a12214c49bc20fbc9dc4ff09e, type: 2}
-  - {fileID: 11400000, guid: 02eea00a983d4ef9b27507bc3a4373a9, type: 2}
+  - {fileID: 11400000, guid: 36b676704c6e40ce872b824702c78071, type: 2}
+  - {fileID: 11400000, guid: 7b378fa3cd514214ac7a83456b6bdbaf, type: 2}
+  - {fileID: 11400000, guid: 323fa64dc89d480cabc6d80eba789da2, type: 2}
+  - {fileID: 11400000, guid: 96c1f371d6824039b846316d54c42938, type: 2}
+  - {fileID: 11400000, guid: e1eb40967d3e4664a8ea1f8a8b7d0ae8, type: 2}
+  - {fileID: 11400000, guid: e29dfe6c996d4d7c8d8a18b643c74ddf, type: 2}
   targets:
   - {fileID: 392616842}
   - {fileID: 1822248055}
@@ -821,6 +822,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a20e3db1018b48beaac5686b9feeafc4, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoExplosionView
+--- !u!114 &900000202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1448768590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 315b4228e7854e998d916c2469ef0652, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganDemoSetup
+  preset: 0
+  organs:
+  - {fileID: 11400000, guid: a8e863096e4346ebb74110530d7b1cdd, type: 2}
+  - {fileID: 11400000, guid: 7b378fa3cd514214ac7a83456b6bdbaf, type: 2}
+  - {fileID: 11400000, guid: e29dfe6c996d4d7c8d8a18b643c74ddf, type: 2}
+  - {fileID: 11400000, guid: 323fa64dc89d480cabc6d80eba789da2, type: 2}
+  - {fileID: 11400000, guid: 96c1f371d6824039b846316d54c42938, type: 2}
+  - {fileID: 11400000, guid: 36b676704c6e40ce872b824702c78071, type: 2}
+  - {fileID: 11400000, guid: e1eb40967d3e4664a8ea1f8a8b7d0ae8, type: 2}
+  enemies:
+  - {fileID: 392616842}
+  - {fileID: 1822248055}
+  - {fileID: 89030861}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

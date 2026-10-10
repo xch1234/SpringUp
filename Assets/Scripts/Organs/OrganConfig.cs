@@ -36,24 +36,12 @@ namespace SpringUp.Organs
         [SerializeField, Min(0f), Tooltip("吸引速度，世界单位/秒。0 表示只显示黑洞，不移动敌人。")]
         private float blackHolePullSpeed = 2f;
 
-        [Header("状态：钢管 / 锈刀 / 粘液腺使用")]
-        [SerializeField, Range(0f, 100f), Tooltip("每次直接命中的施加概率。0 表示关闭附带状态，100 表示必定施加。")]
-        private float statusChancePercent = 20f;
-        [SerializeField, Min(0.05f), Tooltip("持续秒数；粘液腺表示每减少一层的间隔。重复施加会刷新倒计时。")]
-        private float statusDuration = 2f;
-        [Header("流血：仅锈刀使用")]
-        [SerializeField, Min(0f), Tooltip("每次流血扣血量；不是每秒伤害。")]
-        private float bleedDamage = 2f;
-        [SerializeField, Min(0.05f), Tooltip("两次流血扣血之间的秒数。刷新状态不会推迟已经排好的下一次扣血。")]
-        private float bleedInterval = 1f;
-        [Header("减速：仅粘液腺使用")]
-        [SerializeField, Range(0f, 100f), Tooltip("每层减少基础移速的百分比。三层 15 表示共减速 45%。")]
-        private float slowPercentPerStack = 15f;
-        [SerializeField, Range(1, 5), Tooltip("最大层数。每过一个 Status Duration 减少一层，直到归零。")]
-        private int maxSlowStacks = 3;
+        [SerializeField, Tooltip("状态资料卡在 Data/Statuses 中：钢管选择 Stun，锈刀选择 Bleed，粘液腺选择 Slow。")]
+        private StatusEffectConfig statusEffect;
 
         public HandOrganKind Kind => kind;
         public float Damage => damage;
+        public StatusEffectConfig StatusEffect => statusEffect;
         public string DisplayName
         {
             get
@@ -94,18 +82,21 @@ namespace SpringUp.Organs
                 : kind == HandOrganKind.Tnt ? "tnt" : kind == HandOrganKind.CollapseBody ? "collapse_body" : "slime_gland";
             StatusEffectData status = null;
             BlackHoleData blackHole = null;
+            if (kind == HandOrganKind.SteelPipe || kind == HandOrganKind.RustKnife || kind == HandOrganKind.SlimeGland)
+            {
+                StatusEffectKind expected = kind == HandOrganKind.SteelPipe ? StatusEffectKind.Stun
+                    : kind == HandOrganKind.RustKnife ? StatusEffectKind.Bleed : StatusEffectKind.Slow;
+                if (statusEffect == null || statusEffect.Kind != expected)
+                {
+                    error = DisplayName + "需要关联 " + expected + " 状态配置，请在 Data/Statuses 中选择。";
+                    return false;
+                }
+                if (!statusEffect.TryCreateData(out status, out error)) return false;
+            }
             try
             {
                 if (kind == HandOrganKind.CollapseBody)
                     blackHole = new BlackHoleData(blackHoleDuration, blackHolePullSpeed);
-                else if (kind == HandOrganKind.SteelPipe)
-                    status = new StatusEffectData(StatusEffectKind.Stun, statusChancePercent / 100f, statusDuration);
-                else if (kind == HandOrganKind.RustKnife)
-                    status = new StatusEffectData(StatusEffectKind.Bleed, statusChancePercent / 100f,
-                        statusDuration, bleedDamage, bleedInterval);
-                else if (kind == HandOrganKind.SlimeGland)
-                    status = new StatusEffectData(StatusEffectKind.Slow, statusChancePercent / 100f,
-                        statusDuration, slowPerStack: slowPercentPerStack / 100f, maxStacks: maxSlowStacks);
             }
             catch (ArgumentOutOfRangeException exception)
             {

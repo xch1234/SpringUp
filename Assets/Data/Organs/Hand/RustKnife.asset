@@ -14,13 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganConfig
   kind: 3
   damage: 1
-  statusChancePercent: 100
-  statusDuration: 3
-  bleedDamage: 1
-  bleedInterval: 1
-  slowPercentPerStack: 15
-  maxSlowStacks: 3
-  explosionRadius: 2
-  blackHoleRadius: 3
-  blackHoleDuration: 5
-  blackHolePullSpeed: 2
+  statusEffect: {fileID: 11400000, guid: b800b84d031e4e6a81e0ea4ccbf9f31b, type: 2}

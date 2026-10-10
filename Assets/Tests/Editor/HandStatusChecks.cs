@@ -12,7 +12,7 @@ namespace SpringUp.EditorChecks
     {
         private static readonly List<Object> objects = new List<Object>();
 
-        [MenuItem("Tools/SpringUp/Run Hand Step 2 Checks")]
+        [MenuItem("Tools/SpringUp/Checks By Stage/Run Hand Step 2 Checks")]
         public static void Run()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -66,9 +66,8 @@ namespace SpringUp.EditorChecks
             var data = new SerializedObject(config);
             data.FindProperty("kind").intValue = (int)kind;
             data.FindProperty("damage").floatValue = 1f;
-            data.FindProperty("statusChancePercent").floatValue = chance;
-            data.FindProperty("statusDuration").floatValue = 3f;
             data.ApplyModifiedPropertiesWithoutUndo();
+            OrganTestFactory.AttachStatus(config, kind, objects, chance, 3f);
             return config;
         }
 
@@ -87,14 +86,14 @@ namespace SpringUp.EditorChecks
         {
             OrganConfig config = Config(HandOrganKind.RustKnife, 30f);
             Require(config.TryCreateDefinition(out OrganDefinition old, out _), "锈刀配置应可读取。");
-            var edit = new SerializedObject(config);
-            edit.FindProperty("bleedDamage").floatValue = 7f;
+            var edit = new SerializedObject(config.StatusEffect);
+            edit.FindProperty("tickDamage").floatValue = 7f;
             edit.ApplyModifiedPropertiesWithoutUndo();
             Require(config.TryCreateDefinition(out OrganDefinition changed, out _), "修改后可读取。");
             Require(old.Status.TickDamage == 2f && changed.Status.TickDamage == 7f, "状态参数必须形成独立快照。");
             ParameterisedBehaviour.TryCreateAttack(new OrganInstance(changed), "a", out CastEvent attack);
             Require(attack.Status.TickDamage == 7f && attack.Status.Chance == 0.3f, "配置必须传到攻击。");
-            edit.Update(); edit.FindProperty("statusDuration").floatValue = 0f; edit.ApplyModifiedPropertiesWithoutUndo();
+            edit.Update(); edit.FindProperty("duration").floatValue = 0f; edit.ApplyModifiedPropertiesWithoutUndo();
             Require(!config.TryCreateDefinition(out _, out _), "零持续时间应提示无效，可用概率 0 关闭状态。");
         }
 

@@ -14,6 +14,16 @@ namespace SpringUp.Organs
         private BodyRuntime[] bodies;
         private readonly Queue<TriggerSignal> pendingSignals = new Queue<TriggerSignal>();
         private bool processingSignals;
+        public float StepInterval
+        {
+            get => stepInterval;
+            set
+            {
+                stepInterval = value;
+                SanitizeInterval();
+                if (bodies != null) foreach (BodyRuntime body in bodies) body.StepInterval = stepInterval;
+            }
+        }
         public event Action<BodyRuntime, int, OrganInstance> SlotExecuted;
         public event Action<CastEvent> AttackProduced;
         public event Action<BodyRuntime, int, OrganInstance, CastContext> TriggerActivated;

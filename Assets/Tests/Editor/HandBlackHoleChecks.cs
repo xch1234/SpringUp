@@ -14,7 +14,7 @@ namespace SpringUp.EditorChecks
     {
         private static readonly List<Object> objects = new List<Object>();
         private static Scene scene;
-        [MenuItem("Tools/SpringUp/Run Hand Step 4 Checks")]
+        [MenuItem("Tools/SpringUp/Checks By Stage/Run Hand Step 4 Checks")]
         public static void Run()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -91,7 +91,7 @@ namespace SpringUp.EditorChecks
 
         private static void CheckConfig()
         {
-            var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/HandOrgans/CollapseBody.asset");
+            var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/CollapseBody.asset");
             Require(asset != null && asset.TryCreateDefinition(out _, out _), "坍缩体资源应可读取。");
             var config = Config();
             Require(config.TryCreateDefinition(out OrganDefinition first, out _) && first.Damage == 0f

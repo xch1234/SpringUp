@@ -12,7 +12,7 @@ namespace SpringUp.EditorChecks
     {
         private static readonly List<GameObject> objects = new List<GameObject>();
 
-        [MenuItem("Tools/SpringUp/Run Step 2 Checks")]
+        [MenuItem("Tools/SpringUp/Checks By Stage/Run Step 2 Checks")]
         public static void Run()
         {
             try

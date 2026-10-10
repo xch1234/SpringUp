@@ -13,6 +13,7 @@ namespace SpringUp.EditorChecks
     {
         private const string RunningKey = "SpringUp.HandStartup.Running";
         private const string SceneKey = "SpringUp.HandStartup.Scene";
+        private const string DataKey = "SpringUp.HandStartup.CheckData";
         private static double deadline;
         private static bool entered;
         private static string failure;
@@ -34,12 +35,16 @@ namespace SpringUp.EditorChecks
         {
             if (!Application.isBatchMode)
                 throw new InvalidOperationException("请只在独立检查工程中使用 batchmode 运行，不要在工作场景调用。");
-            HandCombinationChecks.Run();
+            OrganConsolidationChecks.Run();
+            string folderName = "HandCheckData-" + Guid.NewGuid().ToString("N");
+            AssetDatabase.CreateFolder("Assets", folderName);
+            SessionState.SetString(DataKey, "Assets/" + folderName);
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             BuildFixture("DemoFirst", true);
             BuildFixture("ControllerFirst", false);
             BuildExplosionFixture();
             BuildBlackHoleFixture();
+            BuildUnifiedFixture();
             BuildCombinationFixture(false);
             BuildCombinationFixture(true);
             string scenePath = "Assets/HandStartupCheck-" + Guid.NewGuid().ToString("N") + ".unity";
@@ -63,7 +68,7 @@ namespace SpringUp.EditorChecks
             if (demoFirst) UnityEditorInternal.ComponentUtility.MoveComponentUp(demo);
             var settings = new SerializedObject(demo);
             settings.FindProperty("slots").GetArrayElementAtIndex(0).objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/HandOrgans/Fist.asset");
+                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/Fist.asset");
             SerializedProperty targets = settings.FindProperty("targets");
             targets.arraySize = 1;
             targets.GetArrayElementAtIndex(0).objectReferenceValue = target;
@@ -77,7 +82,7 @@ namespace SpringUp.EditorChecks
             demo.gameObject.AddComponent<DemoExplosionView>();
             var data = new SerializedObject(demo);
             data.FindProperty("slots").GetArrayElementAtIndex(0).objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/HandOrgans/TNT.asset");
+                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/TNT.asset");
             SerializedProperty targets = data.FindProperty("targets"); targets.arraySize = 1;
             for (int i = 0; i < 3; i++)
             {
@@ -95,7 +100,7 @@ namespace SpringUp.EditorChecks
             demo.transform.position = new Vector3(-20f, 0f, 0f);
             var data = new SerializedObject(demo);
             data.FindProperty("slots").GetArrayElementAtIndex(0).objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/HandOrgans/CollapseBody.asset");
+                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/CollapseBody.asset");
             data.ApplyModifiedPropertiesWithoutUndo();
             var target = new GameObject("BlackHoleTarget").AddComponent<DemoTarget>();
             target.InitializeForDemo("black_hole_target", 100f);
@@ -116,8 +121,15 @@ namespace SpringUp.EditorChecks
                 : new[] { "CollapseBody", "SteelPipe", "RustKnife", "SlimeGland", "TNT", "MultiTentacle" };
             var data = new SerializedObject(demo);
             for (int i = 0; i < configs.Length; i++)
-                data.FindProperty("slots").GetArrayElementAtIndex(i).objectReferenceValue =
-                    AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/HandCombo/" + configs[i] + ".asset");
+            {
+                var template = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/" + configs[i] + ".asset");
+                var owned = new System.Collections.Generic.List<UnityEngine.Object>();
+                OrganConfig config = OrganTestFactory.CreateCombo(template.Kind, owned);
+                string prefix = SessionState.GetString(DataKey, "") + "/" + name + i;
+                if (config.StatusEffect != null) AssetDatabase.CreateAsset(config.StatusEffect, prefix + "Status.asset");
+                AssetDatabase.CreateAsset(config, prefix + ".asset");
+                data.FindProperty("slots").GetArrayElementAtIndex(i).objectReferenceValue = config;
+            }
             var targets = data.FindProperty("targets"); targets.arraySize = 2;
             for (int i = 0; i < 3; i++)
             {
@@ -129,6 +141,22 @@ namespace SpringUp.EditorChecks
                 movement.ApplyModifiedPropertiesWithoutUndo();
                 if (i < 2) targets.GetArrayElementAtIndex(i).objectReferenceValue = target;
             }
+            data.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void BuildUnifiedFixture()
+        {
+            var setup = new GameObject("UnifiedFixture").AddComponent<OrganDemoSetup>();
+            setup.transform.position = new Vector3(40f, 0f, 0f);
+            var data = new SerializedObject(setup);
+            data.FindProperty("preset").intValue = (int)OrganDemoPreset.Explosion;
+            string[] names = { "Fist", "SteelPipe", "MultiTentacle", "RustKnife", "SlimeGland", "CollapseBody", "TNT" };
+            for (int i = 0; i < names.Length; i++)
+                data.FindProperty("organs").GetArrayElementAtIndex(i).objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/" + names[i] + ".asset");
+            for (int i = 0; i < 3; i++)
+                data.FindProperty("enemies").GetArrayElementAtIndex(i).objectReferenceValue =
+                    new GameObject("UnifiedTarget" + i).AddComponent<DemoTarget>();
             data.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -286,7 +314,12 @@ namespace SpringUp.EditorChecks
                     && GameObject.Find("ComboChainFixtureTarget1").GetComponent<DemoTarget>().IsAlive
                     && GameObject.Find("ComboChainFixtureTarget2").GetComponent<DemoTarget>().CurrentHealth == 80f,
                     "真实 Play 两个触手应分别追加一次，之后正常节拍继续。");
-                Finish(true, "startup, re-enable, status expiry, explosion, black hole pull/expiry and both six-slot combinations passed.");
+                var unified = GameObject.Find("UnifiedFixture").GetComponent<HandOrganDemo>();
+                Require(unified.ExplosionCount > 0 && GameObject.Find("UnifiedTarget0").GetComponent<DemoTarget>().CurrentHealth < 100f
+                    && GameObject.Find("UnifiedTarget1").GetComponent<DemoTarget>().CurrentHealth < 100f
+                    && GameObject.Find("UnifiedTarget2").GetComponent<DemoTarget>().CurrentHealth == 100f,
+                    "统一入口必须在真实 Awake/Start 中安装预设并执行范围攻击。");
+                Finish(true, "unified preset startup, re-enable, status expiry, explosion, black hole and both combinations passed.");
             }
             catch (Exception ex) { Finish(false, ex.Message); }
         }
@@ -301,6 +334,9 @@ namespace SpringUp.EditorChecks
             Application.logMessageReceived -= OnLog;
             string scenePath = SessionState.GetString(SceneKey, "");
             if (scenePath.StartsWith("Assets/HandStartupCheck-")) AssetDatabase.DeleteAsset(scenePath);
+            string dataPath = SessionState.GetString(DataKey, "");
+            if (dataPath.StartsWith("Assets/HandCheckData-") && AssetDatabase.IsValidFolder(dataPath)) AssetDatabase.DeleteAsset(dataPath);
+            SessionState.EraseString(DataKey);
             Debug.Log("[Hand Startup Play Checks] " + (passed ? "PASS: " : "FAIL: ") + message);
             if (editorSearchErrors > 0)
                 Debug.LogWarning("[Hand Startup Play Checks] Editor environment: " + editorSearchErrors

@@ -143,6 +143,17 @@ namespace SpringUp.Organs
 
         private void OnDisable() => StopDemo();
 
+        public void SetLoadout(OrganConfig[] newSlots, DemoTarget[] newTargets)
+        {
+            if (newSlots == null || newSlots.Length != BodyRuntime.SlotCount)
+                throw new System.ArgumentException("Slots 必须为六槽。", nameof(newSlots));
+            StopDemo();
+            slots = (OrganConfig[])newSlots.Clone();
+            targets = newTargets == null ? new DemoTarget[0] : (DemoTarget[])newTargets.Clone();
+            // Awake 设置装备后，仍交给原有的 Start/Update 安全初始化。
+            initializationPending = true;
+        }
+
         // 普通清理入口，运行时和编辑器检查共用；不要用 SendMessage 模拟生命周期。
         public void StopDemo()
         {
