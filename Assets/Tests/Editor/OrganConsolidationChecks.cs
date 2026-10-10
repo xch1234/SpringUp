@@ -69,8 +69,8 @@ namespace SpringUp.EditorChecks
                 if (config.StatusEffect != null) Require(AssetDatabase.GetAssetPath(config.StatusEffect).StartsWith("Assets/Data/Statuses/"), "状态必须引用独立目录。");
             }
             Require(!AssetDatabase.IsValidFolder("Assets/Data/HandCombo") && !AssetDatabase.IsValidFolder("Assets/Data/HandOrgans"), "旧重复目录应已移除。");
-            Require(Directory.GetFiles(Path.Combine(Application.dataPath, "Scenes"), "*.unity").Length == 1
-                && AssetDatabase.LoadAssetAtPath<SceneAsset>("Assets/Scenes/OrganDemo.unity") != null, "Scenes 根目录应只留统一场景。");
+            Require(Directory.GetFiles(Path.Combine(Application.dataPath, "Scenes"), "OrganDemo.unity").Length == 1
+                && AssetDatabase.LoadAssetAtPath<SceneAsset>("Assets/Scenes/OrganDemo.unity") != null, "A 的统一场景 OrganDemo 必须存在；B/C 场景不在此断言范围。");
             Require(AssetDatabase.LoadAssetAtPath<SceneAsset>("Assets/Scenes/Tests/HandStatusDemo.unity") != null, "旧场景应归档保留。");
         }
         private static void CheckStatusReferences()

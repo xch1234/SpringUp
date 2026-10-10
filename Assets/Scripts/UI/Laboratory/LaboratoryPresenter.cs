@@ -70,7 +70,7 @@ namespace SpringUp.Laboratory
             {
                 var item = equipment.Inventory[i];
                 cards[i].caption.font = font;
-                cards[i].Bind($"{(candidateId == item.InstanceId ? "> " : "")}{item.Name}\n{PartNames[(int)item.Part]}", () => SelectInventory(item.InstanceId));
+                cards[i].Bind($"{(candidateId == item.InstanceId ? "> " : "")}{item.Name}\n{PartNames[(int)item.Part]} #{item.InstanceId.Substring(0, System.Math.Min(4, item.InstanceId.Length))}", () => SelectInventory(item.InstanceId));
             }
             var candidate = Candidate;
             var target = equipment.GetSlot((LaboratoryPart)part, slot);
@@ -78,7 +78,7 @@ namespace SpringUp.Laboratory
             installButton.interactable = candidate != null && slot >= 0 && candidate.Part == (LaboratoryPart)part;
             removeButton.interactable = candidate == null && target != null;
             installButton.GetComponentInChildren<Text>().text = target == null ? "安装" : "替换";
-            selectionText.text = $"物品：{candidate?.Name ?? "未选择"}    槽位：{(slot < 0 ? "未选择" : PartNames[part] + " " + (slot + 1))}\n" +
+            selectionText.text = $"物品：{candidate?.Name ?? "未选择"} {((candidate ?? target)?.InstanceId.Substring(0, System.Math.Min(6, (candidate ?? target).InstanceId.Length)) ?? "")}    {(candidate ?? target)?.Kind}    槽位：{(slot < 0 ? "未选择" : PartNames[part] + " " + (slot + 1))}\n" +
                 (candidate?.Description ?? target?.Description ?? "选择物品和对应槽位安装；只选择已装备槽位可拆下。");
         }
         private void Install()

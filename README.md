@@ -11,7 +11,7 @@
 | 模块 | 场景 | 操作与当前范围 |
 | --- | --- | --- |
 | A：器官演示 | `Assets/Scenes/OrganDemo.unity` | 选择 OrganDemo 物体，在 Organ Demo Setup 的 Preset 中选模式后 Play；演示七种手部器官、状态、TNT、黑洞与击杀触发 |
-| B：实验室 | `Assets/Scenes/LaboratoryDemo.unity` | 左侧安装、替换、拆下；右侧真实扣血和击杀追加演示，目前只支持拳头与多肢触手 |
+| B：实验室 | `Assets/Scenes/LaboratoryDemo.unity` | 左侧安装、替换、拆下；右侧读取七种真实手部配置，对两个固定目标预览伤害、状态、黑洞寿命和击杀追加；死亡延迟补充 |
 | C：战场灰盒 | `Assets/Scenes/Battle_Greybox.unity` | WASD / 方向键移动，Shift 疾跑；编辑器中可用 F 对周围敌人造成开发测试伤害 |
 
 当前 Build Settings 仍以 OrganDemo 为入口，不代表正式游戏流程。A 的测试敌人、B 的实验室演示与 C 的正式战场接口尚未完整接通。
@@ -36,7 +36,7 @@
 | 负责人 | 职责与当前状态 | 代码位置 |
 | --- | --- | --- |
 | 程序 A | 三条六槽管道、七种手部独立效果、状态、范围攻击、黑洞、击杀链与防环；完整 Event → Event 尚未实现 | `Assets/Scripts/Core/`、`Organs/`、`Debug/` |
-| 程序 B | 实验室装卸替换、实例与物品守恒、拳头/触手战斗演示；正式库存、出售、链路查询及下一波待接 | `Assets/Scripts/UI/Laboratory/` |
+| 程序 B | 实验室装卸替换、实例与物品守恒、七种真实配置的固定目标结算预览；正式库存、出售、链路查询及下一波待接 | `Assets/Scripts/UI/Laboratory/` |
 | 程序 C | 玩家属性/移动、镜头、敌人 AI、弹体、对象池、刷怪、波次与灰盒 | `Assets/Scripts/Battle/`；工具在 `Assets/Scripts/Editor/` |
 | 程序 D | 正式数据读取、掉落、库存、经济、流程与打包，待接入 | 预留 `Assets/Scripts/Systems/`、`Assets/Data/` |
 | 美术 A | 角色、器官图标与附着表现、敌人/Boss | 按角色与敌人资源分类协作 |
@@ -68,13 +68,13 @@
 
 合并前已在相同源码的隔离快照中使用 Unity 6000.5.11f1、本地 uGUI/Input System 与所需内建模块检查：脚本编译成功，A 前 47 组检查通过，B 的 LaboratoryViewChecks（含装备事务检查）通过。这不等于完整包环境、URP 画面、真实 Play 闭环或正式打包通过。
 
-A 完整检查入口为 `Tools > SpringUp > Run All Organ Checks`，单模块原有 51 组。**合并后 `OrganConsolidationChecks.CheckAssets` 仍要求 Scenes 根目录只有一个场景，会因 B/C 场景存在而失败**；应缩小该断言的模块范围，不能删掉 B/C 场景来通过检查。其余新增整合组尚未在此次合并快照中验证。
+本轮 B 接入后，在 Unity 6000.5.11f1 隔离快照中，A 完整 51 组已通过。OrganConsolidationChecks.CheckAssets 的场景断言已缩小为 A 的 OrganDemo 主场景，保留 B/C 场景。B 的新结算、UI 与 Play 验证及边界见[交付清单](程序B-交付清单.md)。隔离依赖验证不等同于完整项目打包。
 
 后续联调优先级：
 
 1. A+C 打通器官攻击、真实敌人、原攻击上下文与击杀通知；范围命中和延迟流血保持同链防重复。
 2. 接状态、黑洞外力与池化清理，统一属性/部位节拍；C 的 partRate 目前默认 0，接线前需明确初始化及含义。
-3. A+B+D 统一配置查询和库存实例映射，扩展 B 当前仅两种器官的单目标演示接法。
+3. A+B 已接共享配置目录和预览实例映射；后续由 D 接正式库存与持久化身份。
 4. D 串起战斗结束 → 奖励/库存 → 实验室 → 出战校验 → 下一波；B 补出售、链路预览及携带限制。
 5. 补 Event → Event 修改机制、正式构建入口与联合回归，完成首波闭环验收。
 

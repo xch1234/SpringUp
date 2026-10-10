@@ -17,7 +17,7 @@ namespace SpringUp.Organs
         public float BleedRemaining => (float)Math.Max(0, bleedUntil - time);
         public int SlowStacks => slowStacks;
         public float SpeedMultiplier => time < stunUntil ? 0f : SlowMultiplier;
-        private float SlowMultiplier => slow == null ? 1f : Math.Max(0f, 1f - SlowStacks * slow.SlowPerStack);
+        public float SlowMultiplier => slow == null ? 1f : Math.Max(0f, 1f - SlowStacks * slow.SlowPerStack);
 
         // 概率只在成功的直接命中后判定。roll 由接入方提供，便于检查 0% 和 100%。
         public bool TryApply(CastEvent attack, float roll)

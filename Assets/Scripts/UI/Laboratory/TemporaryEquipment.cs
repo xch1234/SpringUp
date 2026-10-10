@@ -1,4 +1,5 @@
 using System;
+using SpringUp.Organs;
 using System.Collections.Generic;
 
 namespace SpringUp.Laboratory
@@ -16,6 +17,25 @@ namespace SpringUp.Laboratory
     public sealed class LaboratoryItem
     {
         // 正式接入时保留库存实例编号和配置编号，刷新界面不能重建身份。
+        public OrganDefinition Definition { get; }
+        public LaboratoryItem(string instanceId, OrganDefinition definition)
+            : this(instanceId, definition.Id, definition.DisplayName, LaboratoryPart.Hand,
+                definition.Type == OrganType.Trigger ? LaboratoryOrganKind.Trigger : LaboratoryOrganKind.Actuator,
+                Describe(definition), definition.Type == OrganType.Trigger ? LaboratoryTriggerCondition.Kill : LaboratoryTriggerCondition.None,
+                definition.Type == OrganType.Trigger ? LaboratoryTriggerTarget.SelfSlots : LaboratoryTriggerTarget.None)
+        { Definition = definition; }
+        private static string Describe(OrganDefinition d)
+        {
+            if (d.Type == OrganType.Trigger) return "击杀追加执行本部位；同链每实例最多一次，深度上限 4。";
+            if (d.BlackHole != null) return $"黑洞半径 {d.Radius:g}，持续 {d.BlackHole.Duration:g}s，吸引速度 {d.BlackHole.PullSpeed:g}；预览不展示位移。";
+            string text = d.Shape == AttackShape.Explosion ? $"范围伤害 {d.Damage:g}，半径 {d.Radius:g}。" : $"单目标伤害 {d.Damage:g}。";
+            var s = d.Status;
+            if (s == null) return text;
+            text += $"{s.Chance * 100:g}% ";
+            if (s.Kind == StatusEffectKind.Stun) return text + $"眩晕 {s.Duration:g}s。";
+            if (s.Kind == StatusEffectKind.Bleed) return text + $"流血 {s.Duration:g}s，每 {s.TickInterval:g}s 扣 {s.TickDamage:g}。";
+            return text + $"减速每层 {s.SlowPerStack * 100:g}%，上限 {s.MaxStacks} 层，每 {s.Duration:g}s 减层。";
+        }
         public string InstanceId { get; }
         public string DefinitionId { get; }
         public string Name { get; }

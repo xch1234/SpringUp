@@ -295,7 +295,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u62F3\u5934\u6BCF\u6B21 5 \u70B9\u4F24\u5BB3\uFF1B\u7A7A\u69FD\u8DF3\u8FC7\u3002\n\u89E6\u624B\u6B63\u5E38\u5360\u62CD\uFF0C\u51FB\u6740\u65F6\u8FFD\u52A0\u626B\u63CF\u624B\u90E8\u3002"
+  m_Text: "真实配置结算预览；爆炸中心 (0, 0)。\n固定目标，不展示移动；非完整战场模拟。"
 --- !u!222 &23693148
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -500,7 +500,6 @@ GameObject:
   - component: {fileID: 66013799}
   - component: {fileID: 66013802}
   - component: {fileID: 66013801}
-  - component: {fileID: 66013800}
   m_Layer: 0
   m_Name: Target1
   m_TagString: Untagged
@@ -528,20 +527,6 @@ RectTransform:
   m_AnchoredPosition: {x: 310, y: -145}
   m_SizeDelta: {x: 240, y: 150}
   m_Pivot: {x: 0, y: 1}
---- !u!114 &66013800
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 66013798}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0890590b0464300924819b4c75579e5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoTarget
-  targetId: B
-  maxHealth: 20
 --- !u!114 &66013801
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1064,7 +1049,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 20, y: -713}
+  m_AnchoredPosition: {x: 400, y: -18}
   m_SizeDelta: {x: 180, y: 44}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &231408552
@@ -2060,8 +2045,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 20, y: -403}
-  m_SizeDelta: {x: 560, y: 278}
+  m_AnchoredPosition: {x: 20, y: -608}
+  m_SizeDelta: {x: 560, y: 154}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &545839483
 MonoBehaviour:
@@ -2085,7 +2070,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 18
+    m_FontSize: 17
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -2510,7 +2495,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 20, y: -318}
-  m_SizeDelta: {x: 560, y: 65}
+  m_SizeDelta: {x: 560, y: 280}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &683669422
 MonoBehaviour:
@@ -2534,7 +2519,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 18
+    m_FontSize: 17
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -2716,7 +2701,6 @@ GameObject:
   - component: {fileID: 849314290}
   - component: {fileID: 849314293}
   - component: {fileID: 849314292}
-  - component: {fileID: 849314291}
   m_Layer: 0
   m_Name: Target0
   m_TagString: Untagged
@@ -2744,20 +2728,6 @@ RectTransform:
   m_AnchoredPosition: {x: 30, y: -145}
   m_SizeDelta: {x: 240, y: 150}
   m_Pivot: {x: 0, y: 1}
---- !u!114 &849314291
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 849314289}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0890590b0464300924819b4c75579e5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.DemoTarget
-  targetId: A
-  maxHealth: 5
 --- !u!114 &849314292
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3963,18 +3933,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Laboratory.LaboratoryCombatDemo
   source: {fileID: 776316537}
-  targets:
-  - {fileID: 849314291}
-  - {fileID: 66013800}
   targetImages:
   - {fileID: 849314292}
   - {fileID: 66013801}
   targetLabels:
   - {fileID: 1707739253}
   - {fileID: 1458349360}
+  rulesText: {fileID: 23693147}
   statusText: {fileID: 683669422}
   eventText: {fileID: 545839483}
   restartButton: {fileID: 231408552}
+  targetHealth: 30
+  replenishDelay: 1.5
+  firstPosition: {x: 0.75, y: 0}
+  secondPosition: {x: 1.75, y: 0}
+  explosionCenter: {x: 0, y: 0}
 --- !u!114 &1292912529
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6592,7 +6565,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u51FB\u6740 \u2192 \u89E6\u624B \u2192 \u8FFD\u52A0\u653B\u51FB"
+  m_Text: "装备效果与结算预览"
 --- !u!222 &2016170347
 CanvasRenderer:
   m_ObjectHideFlags: 0

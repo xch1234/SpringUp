@@ -46,32 +46,33 @@ namespace SpringUp.LaboratoryEditor
                 var equipment = p.source.Equipment;
                 if (phase == 0)
                 {
-                    Require(demo.targets[0].CurrentHealth == 0 && demo.targets[1].CurrentHealth == 15 && demo.TriggerCount == 1, "真实节拍产生击杀连锁");
+                    Require(demo.targets[0].CurrentHealth == demo.targetHealth - equipment.GetSlot(LaboratoryPart.Hand, 0).Definition.Damage && demo.TriggerCount == 0, "真实节拍读取配置扣血");
+                    Require(demo.targets.All(t => t.gameObject.scene != demo.gameObject.scene), "目标场景隔离");
                     var pipeline = demo.Pipeline;
                     p.SelectSlot(1, 3);
                     Require(demo.Pipeline == pipeline && pipeline.enabled, "选择不影响演示运行");
                     p.removeButton.onClick.Invoke();
-                    Require(demo.targets[0].CurrentHealth == 5 && demo.targets[1].CurrentHealth == 20, "拆下按钮重置目标血量");
+                    Require(demo.targets.All(t => t.CurrentHealth == demo.targetHealth), "拆下按钮重置目标血量");
                 }
                 else if (phase == 1)
                 {
-                    Require(demo.targets[1].CurrentHealth == 20 && demo.TriggerCount == 0, "仅拳头按正常节拍攻击");
+                    Require(demo.targets[0].CurrentHealth < demo.targetHealth && demo.TriggerCount == 0, "仅拳头按正常节拍攻击");
                     var trigger = equipment.Inventory.First(x => x.DefinitionId == "multi_tentacle");
                     p.SelectInventory(trigger.InstanceId); p.SelectSlot(1, 3); p.installButton.onClick.Invoke();
                 }
                 else if (phase == 2)
                 {
-                    Require(demo.targets[1].CurrentHealth == 15 && demo.TriggerCount == 1, "安装按钮恢复触发链");
+                    Require(demo.targets[0].CurrentHealth == demo.targetHealth - equipment.GetSlot(LaboratoryPart.Hand, 0).Definition.Damage && demo.TriggerCount == 0, "安装按钮恢复当前装备");
                     demo.restartButton.onClick.Invoke();
-                    Require(demo.targets[0].CurrentHealth == 5 && demo.targets[1].CurrentHealth == 20, "重新开始按钮重置血量");
+                    Require(demo.targets.All(t => t.CurrentHealth == demo.targetHealth), "重新开始按钮重置血量");
                     p.gameObject.SetActive(false); p.gameObject.SetActive(true);
-                    Require(demo.Pipeline != null && demo.targets[0].CurrentHealth == 5, "重新打开恢复依赖");
+                    Require(demo.Pipeline != null && demo.targets[0].CurrentHealth == demo.targetHealth, "重新打开恢复依赖");
                 }
                 else
                 {
-                    Require(demo.targets[1].CurrentHealth == 15 && demo.TriggerCount == 1, "重新打开不会重复扣血");
+                    Require(demo.targets[0].CurrentHealth == demo.targetHealth - equipment.GetSlot(LaboratoryPart.Hand, 0).Definition.Damage && demo.TriggerCount == 0, "重新打开不会重复扣血");
                     Directory.CreateDirectory("Logs/LaboratoryRebuild");
-                    File.WriteAllText("Logs/LaboratoryRebuild/play-result.txt", "通过：真实节拍、击杀链、选择独立、按钮装卸、重新开始和关闭重开。自动检查不模拟物理鼠标。");
+                    File.WriteAllText("Logs/LaboratoryRebuild/play-result.txt", "通过：真实节拍、场景隔离、选择独立、按钮装卸、重新开始和关闭重开。自动检查不模拟物理鼠标。");
                     Finish(0); return;
                 }
                 phase++; phaseStart = EditorApplication.timeSinceStartup;
