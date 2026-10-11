@@ -1,5 +1,7 @@
 # MVP Numbers Implementation Plan
 
+> 2026-10-11：图鉴 id 已改成程序 A 用的 `rust_knife` 和 `multi_tentacle`。下文里的旧 id 不要写回去。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 把已锁定的 MVP 数值规划落到程序 D 的 JSON / 测试 / 对接说明里，供 Demo 联调；不改器官效果设计文案，不改 A/C 战斗结算代码。

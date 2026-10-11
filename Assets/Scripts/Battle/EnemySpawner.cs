@@ -21,10 +21,10 @@ namespace TideBorne.Battle
     [AddComponentMenu("潮涌之躯/战场/刷怪器（EnemySpawner）")]
     public class EnemySpawner : MonoBehaviour
     {
-        /// <summary>池键。灰盒敌人共用一份原型与一个池。</summary>
-        private const string PoolKey = "Enemy_Greybox";
+        /// <summary>找不到 Resources/Enemies 时，灰盒兜底共用的池键。</summary>
+        private const string FallbackPoolKey = "Enemy_Greybox";
 
-        [Tooltip("敌人 prefab。留空则用 EnemyFactory 现场造灰盒敌人（能跑，无需美术资源）。")]
+        [Tooltip("兜底 prefab。Resources/Enemies 里有设计好的怪物时不会用到它。")]
         [SerializeField] private GameObject enemyPrefab;
 
         [Tooltip("灰盒敌人用到的精灵。留空则用 1×1 白图。")]
@@ -68,6 +68,7 @@ namespace TideBorne.Battle
         private float _accumulatedSpawnDelay;
         private bool _warnedMissingSprite;
         private bool _reportedPoolUsage;
+        private int _designedCursor;
 
         /// <summary>本波预期生成的敌人总数，由 <see cref="WaveDirector"/> 设定。</summary>
         public int PlannedSpawnCount { get; private set; }
@@ -84,6 +85,7 @@ namespace TideBorne.Battle
             PlannedSpawnCount = Mathf.Max(0, plannedCount);
             SpawnedCount = 0;
             _accumulatedSpawnDelay = 0f;
+            _designedCursor = 0;
         }
 
         /// <summary>结束本波：丢弃未使用的生成计划。</summary>
@@ -118,7 +120,7 @@ namespace TideBorne.Battle
         {
             var position = PickSpawnPosition();
 
-            var enemy = RentEnemy();
+            var enemy = RentEnemy(out var poolKey);
             if (enemy == null)
                 return false;
 
@@ -129,30 +131,63 @@ namespace TideBorne.Battle
             if (verboseLogging && !_reportedPoolUsage)
             {
                 _reportedPoolUsage = true;
-                Debug.Log("[EnemySpawner] 首次刷怪完成。池中现有 " + SimplePool.CountInPool(PoolKey) +
+                Debug.Log("[EnemySpawner] 首次刷怪完成。池中现有 " + SimplePool.CountInPool(poolKey) +
                           " 个待复用实例——数字大于 0 说明复用生效，不再是每次新建。", this);
             }
 
             return true;
         }
 
-        /// <summary>取一个敌人实例：优先用 prefab，否则用灰盒原型；都经池分发。</summary>
-        private GameObject RentEnemy()
+        /// <summary>
+        /// 取一个敌人实例。优先用 Assets/Resources/Enemies 里的设计 prefab，
+        /// 按六种原型轮流取；目录是空的才退回场景上的兜底 prefab。
+        /// </summary>
+        private GameObject RentEnemy(out string poolKey)
         {
-            var prototype = enemyPrefab != null ? enemyPrefab : GetOrCreateGreyboxTemplate();
+            poolKey = FallbackPoolKey;
+            var prototype = NextDesignedPrefab(out poolKey);
+            if (prototype == null)
+            {
+                poolKey = FallbackPoolKey;
+                prototype = enemyPrefab != null ? enemyPrefab : GetOrCreateGreyboxTemplate();
+            }
+
             if (prototype == null)
                 return null;
 
-            var instance = SimplePool.Rent(prototype, PoolKey);
+            var instance = SimplePool.Rent(prototype, poolKey);
             if (instance == null)
                 return null;
 
-            // 标记为池化对象，退场时才会归还池而不是销毁。
             var runtime = instance.GetComponent<EnemyRuntime>();
             if (runtime != null)
-                runtime.MarkPooled(PoolKey);
+                runtime.MarkPooled(poolKey);
 
             return instance;
+        }
+
+        /// <summary>按声明顺序轮流取一种 Resources/Enemies 里的怪物。都没有时返回 null。</summary>
+        private GameObject NextDesignedPrefab(out string poolKey)
+        {
+            poolKey = FallbackPoolKey;
+            var archetypes = EnemyArchetypeConfig.AllArchetypes();
+            if (archetypes == null || archetypes.Length == 0)
+                return null;
+
+            for (var i = 0; i < archetypes.Length; i++)
+            {
+                var index = (_designedCursor + i) % archetypes.Length;
+                var archetype = archetypes[index];
+                var prefab = EnemyPrefabLibrary.Get(archetype);
+                if (prefab == null)
+                    continue;
+
+                _designedCursor = (index + 1) % archetypes.Length;
+                poolKey = "Enemy_" + archetype;
+                return prefab;
+            }
+
+            return null;
         }
 
         /// <summary>

@@ -3,7 +3,7 @@
     {
       "wave": 1,
       "duration_sec": 60,
-      "guaranteed_drops": ["many_limb_tentacle", "rusty_knife"],
+      "guaranteed_drops": ["multi_tentacle", "rust_knife"],
       "optional_drops": [],
       "marrow_reward": 45
     },

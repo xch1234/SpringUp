@@ -16,16 +16,18 @@ public class ProgramDTests
         Assert.AreEqual(11, catalog.Count);
         Assert.AreEqual(5, catalog["fist"].damage);
         Assert.AreEqual(8, catalog["steel_pipe"].damage);
-        Assert.AreEqual(4, catalog["rusty_knife"].damage);
+        Assert.AreEqual(4, catalog["rust_knife"].damage);
         Assert.AreEqual(3, catalog["slime_gland"].damage);
         Assert.AreEqual(0, catalog["collapse_body"].damage);
         Assert.AreEqual(12, catalog["tnt"].damage);
         Assert.AreEqual(3f, catalog["tnt"].radius);
-        Assert.AreEqual("kill", catalog["many_limb_tentacle"].trigger_on);
+        Assert.AreEqual("kill", catalog["multi_tentacle"].trigger_on);
         Assert.AreEqual("NONE", catalog["spider_nest"].trigger_target);
         Assert.AreEqual("torso_special", catalog["collection_net"].type);
         Assert.AreEqual(1.1f, catalog["collection_net"].MarrowGainMult, 0.001f);
         Assert.IsFalse(catalog.ContainsKey("slime_core"));
+        Assert.IsFalse(catalog.ContainsKey("rusty_knife"));
+        Assert.IsFalse(catalog.ContainsKey("many_limb_tentacle"));
     }
 
     [Test]
@@ -35,8 +37,8 @@ public class ProgramDTests
         var waves = Catalog.LoadWaves(File.ReadAllText(WavesPath), catalog);
         Assert.AreEqual(7, waves.Count);
         Assert.AreEqual(45, waves[0].marrow_reward);
-        Assert.AreEqual("many_limb_tentacle", waves[0].guaranteed_drops[0]);
-        Assert.AreEqual("rusty_knife", waves[0].guaranteed_drops[1]);
+        Assert.AreEqual("multi_tentacle", waves[0].guaranteed_drops[0]);
+        Assert.AreEqual("rust_knife", waves[0].guaranteed_drops[1]);
         Assert.AreEqual(0, waves[0].optional_drops.Length);
         Assert.AreEqual(120, waves[6].marrow_reward);
     }
@@ -64,7 +66,7 @@ public class ProgramDTests
     {
         var inv = NewInventory();
         var a = inv.Spawn("fist");
-        var b = inv.Spawn("rusty_knife");
+        var b = inv.Spawn("rust_knife");
         Assert.AreEqual("inst_1", a);
         Assert.AreEqual("inst_2", b);
         inv.Equip(a, "hand", 1);
@@ -81,10 +83,10 @@ public class ProgramDTests
     }
 
     [Test]
-    public void SellRustyKnife_GivesFour()
+    public void SellRustKnife_GivesFour()
     {
         var inv = NewInventory();
-        var iid = inv.Spawn("rusty_knife");
+        var iid = inv.Spawn("rust_knife");
         Assert.AreEqual(4, inv.Sell(iid));
     }
 
@@ -111,7 +113,7 @@ public class ProgramDTests
         Assert.AreEqual("lab", run.Phase);
         Assert.AreEqual(45, run.Marrow);
         CollectionAssert.AreEquivalent(
-            new[] { "many_limb_tentacle", "rusty_knife" },
+            new[] { "multi_tentacle", "rust_knife" },
             BagOrganIds(run));
         Assert.AreEqual("WaveEnded", rec.Events[rec.Events.Count - 2].Name);
         Assert.AreEqual("LabOpened", rec.Events[rec.Events.Count - 1].Name);
@@ -182,7 +184,7 @@ public class ProgramDTests
     {
         var run = NewRun(new Recorder());
         run.StartRun();
-        var buy = run.TryBuy("rusty_knife");
+        var buy = run.TryBuy("rust_knife");
         Assert.IsFalse(buy.Ok);
         Assert.AreEqual("not_open", buy.Reason);
     }

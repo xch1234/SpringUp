@@ -187,8 +187,8 @@ MonoBehaviour:
   id: RangedKeeper
   rank: 0
   moveSpeed: 2
-  maxHealth: 20
-  attackPower: 5
+  maxHealth: 15
+  attackPower: 4
   attackCooldown: 1.5
   attackRange: 6
   projectileCount: 1

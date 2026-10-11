@@ -56,6 +56,9 @@ namespace TideBorne.Battle
         [Tooltip("是否开局自动开第一波。")]
         [SerializeField] private bool autoStart = true;
 
+        /// <summary>开局是否会自动进入第一波。外部流程用它避免和 Start 各开一次。</summary>
+        public bool AutoStartEnabled => autoStart;
+
         [Tooltip("是否在每波到点时清除场上残余敌人。按已定规则应为开。")]
         [SerializeField] private bool clearEnemiesOnWaveEnd = true;
 

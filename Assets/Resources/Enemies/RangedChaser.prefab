@@ -188,8 +188,8 @@ MonoBehaviour:
   id: RangedChaser
   rank: 0
   moveSpeed: 2.5
-  maxHealth: 24
-  attackPower: 5
+  maxHealth: 20
+  attackPower: 3
   attackCooldown: 1.5
   attackRange: 6
   projectileCount: 1

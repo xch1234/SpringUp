@@ -150,11 +150,13 @@ M1 约定：时间到就结算，场上敌人清掉，**不**因此广播击杀�
 M1 样例：
 
 - 开局已装备：`fist` → 手部槽 1（不占 5 格背包）
-- 第 1 波掉落：`many_limb_tentacle`（击杀 → `SELF_SLOTS`）+ `rusty_knife`（30% 流血）
+- 第 1 波掉落：`multi_tentacle`（击杀 → `SELF_SLOTS`）+ `rust_knife`（30% 流血）。这两个 id 与程序 A 的手部配置一致。
 
 ---
 
 ## 6. M1 流程时序
+
+当前 `waves.json` 有 7 波，髓质按每波 `marrow_reward` 发放。只有最后一波到点后直接 `run_won`，前面每一波都进实验室。下面仍是最早的两波形状，用来看信号顺序。
 
 ```text
 StartRun
@@ -164,7 +166,7 @@ StartRun
 
 C: CombatTimerFinished()
   → WaveEnded { Wave=1, Reason="timer" }
-  → 掉落进背包，髓质 +10（可乘躯干倍率）
+  → 掉落进背包，髓质按该波 marrow_reward（可乘躯干倍率）
   → LabOpened { Drops, MarrowDelta }
   → phase=lab
 
@@ -177,9 +179,10 @@ B: StartNextWave()   // 要求未装备 ≤ 5
 
 C: CombatTimerFinished()
   → WaveEnded { Wave=2, Reason="timer" }
-  → RunEnded { Result="won" }
+  → 再次 LabOpened，直到最后一波
+  → 最后一波到点：RunEnded { Result="won" }
   → phase=run_won
-  （不再进实验室）
+  （最后一波不再进实验室）
 ```
 
 非法调用会抛：
@@ -192,8 +195,8 @@ C: CombatTimerFinished()
 
 ## 7. M1 明确不做（不要按已完成对接）
 
-- 完整 7 波、Boss、商店营业、躯干升级树数值
-- 暂停 / 存档 / 主菜单 / HUD
+- Boss 战斗、商店营业、躯干升级树
+- 存档、主菜单、程序 B 的正式实验室界面
 - 掉落与当前 build 加权、43 器官填满
 - `expire` 触发语义（枚举可出现，样例不用）
 
@@ -203,10 +206,10 @@ C: CombatTimerFinished()
 
 - [ ] Unity 打开工程，两个 JSON 能在 Project 窗口看到，并生成 `.meta`
 - [ ] `GameFlowBootstrap` 或等价代码能 `StartRun`，Console 出现 `LoadoutChanged` → `RunStarted`
-- [ ] C 模拟到点调用 `CombatTimerFinished`，出现 `WaveEnded` → `LabOpened`，背包有触手和锈刀，髓质为 10
+- [ ] 第一波到点后出现 `WaveEnded` → `LabOpened`，背包有 `multi_tentacle` 和 `rust_knife`，髓质为 45
 - [ ] B 能装触手到手部槽 2；超 5 格时下一波按钮禁用
 - [ ] A 在 `LoadoutChanged` 后能用 `OrganOf` 读到拳头与触手定义
-- [ ] 第二波到点后只有一次 `LabOpened`（第一波的），最后是 `RunEnded won`
+- [ ] 前 6 波各开一次实验室，第 7 波到点后是 `RunEnded won`，不再进实验室
 - [ ] Edit Mode：Test Runner 跑 `ProgramDTests`
 
 ---
@@ -222,3 +225,13 @@ C: CombatTimerFinished()
 - 波 1 髓质 45；全 7 波髓质 45/55/65/80/90/100/120。
 - 敌人与玩家开局数见 `Assets/Data/Combat/mvp_baseline.json`。
 - Demo 后再调数字；不借机改器官效果设计。
+
+## 战场接线
+
+打开 `Assets/Scenes/Battle_Greybox.unity` 后 Play。场景里有 `WaveDirector` 时会自动挂上 `BattleRunDriver`（不用改场景文件）：
+
+- 开局装备拳头，战斗中左下角有波次和髓质。
+- 60 秒到点，或点「调试：立刻结算本波」，进入实验室并暂停。
+- 装备、卸下、出售、丢弃走 `RunController`。未装备超过上限时不能开下一波。
+- 「开始下一波」成功后才让 `WaveDirector` 开波。
+- 没有 `OrganPipelineController` 时会自己挂一个，手部槽按 id 同步。`spider_nest` 没有对应管道配置，只留在库存里。管道在这里只记装配，不负责打中战场上的敌人。

@@ -15,13 +15,13 @@ namespace TideBorne.Battle
     /// </summary>
     public static class EnemyArchetypeConfig
     {
-        /// <summary>基准移速，米/秒。对应 EnemyData 的默认值。</summary>
+        /// <summary>基准移速，米/秒。玩家开局 5，近战追不上。</summary>
         public const float BaseMoveSpeed = 2.5f;
 
-        /// <summary>基准血量，点。对应 EnemyData 的默认值。</summary>
+        /// <summary>基准血量，点。拳头伤害 5，普通怪 4 下打死。</summary>
         public const float BaseHealth = 20f;
 
-        /// <summary>基准攻击力。对应 EnemyData 的默认值。</summary>
+        /// <summary>基准攻击力。一次接触或一发子弹，不要两种叠在同一个数上。</summary>
         public const float BaseAttackPower = 5f;
 
         /// <summary>基准攻击冷却，秒。对应 EnemyData 的默认值。</summary>
@@ -133,28 +133,29 @@ namespace TideBorne.Battle
             };
         }
 
-        /// <summary>2 快速敌人：移速 1.3 倍、血量 0.7 倍 + 接触伤害。</summary>
+        /// <summary>2 快速敌人：血 15（3 拳）、攻击 4、移速 3.25，只接触。</summary>
         public static Config Fast()
         {
             var config = Normal();
             config.archetype = EnemyArchetype.Fast;
             config.displayName = "Fast";
-            config.moveSpeed = BaseMoveSpeed * 1.3f;
-            config.health = BaseHealth * 0.7f;
+            config.moveSpeed = 3.25f;
+            config.health = 15f;
+            config.attackPower = 4f;
             config.color = new Color(0.95f, 0.55f, 0.20f, 1f);
             return config;
         }
 
-        /// <summary>3 静止射击敌人：保持约 1/4 屏距离，朝玩家射击，**不**接触伤害。</summary>
+        /// <summary>3 静止射击：血 15、单发 4、移速 2，只射击。</summary>
         public static Config RangedKeeper()
         {
             return new Config
             {
                 archetype = EnemyArchetype.RangedKeeper,
                 displayName = "RangedKeeper",
-                moveSpeed = BaseMoveSpeed * 0.8f,
-                health = BaseHealth,
-                attackPower = BaseAttackPower,
+                moveSpeed = 2f,
+                health = 15f,
+                attackPower = 4f,
                 attackCooldown = BaseAttackCooldown,
                 moveMode = EnemyMoveMode.KeepDistance,
                 hasContactDamage = false,
@@ -165,7 +166,7 @@ namespace TideBorne.Battle
             };
         }
 
-        /// <summary>4 移动射击敌人：追击 + 接触伤害 + 朝玩家射击。</summary>
+        /// <summary>4 移动射击：血 20，接触和子弹各 3。</summary>
         public static Config RangedChaser()
         {
             return new Config
@@ -173,8 +174,8 @@ namespace TideBorne.Battle
                 archetype = EnemyArchetype.RangedChaser,
                 displayName = "RangedChaser",
                 moveSpeed = BaseMoveSpeed,
-                health = BaseHealth * 1.2f,
-                attackPower = BaseAttackPower,
+                health = 20f,
+                attackPower = 3f,
                 attackCooldown = BaseAttackCooldown,
                 moveMode = EnemyMoveMode.Chase,
                 hasContactDamage = true,
@@ -183,7 +184,7 @@ namespace TideBorne.Battle
             };
         }
 
-        /// <summary>5 兵工厂：原地不动，持续产生普通敌人。</summary>
+        /// <summary>5 兵工厂：血 30、不攻击，只产兵。</summary>
         public static Config Arsenal()
         {
             return new Config
@@ -191,8 +192,8 @@ namespace TideBorne.Battle
                 archetype = EnemyArchetype.Arsenal,
                 displayName = "Arsenal",
                 moveSpeed = 0f,
-                health = BaseHealth * 2f,
-                attackPower = BaseAttackPower,
+                health = 30f,
+                attackPower = 0f,
                 attackCooldown = BaseAttackCooldown,
                 moveMode = EnemyMoveMode.Stationary,
                 hasContactDamage = false,
@@ -201,16 +202,16 @@ namespace TideBorne.Battle
             };
         }
 
-        /// <summary>6 医疗兵：保持距离，间歇治疗周围敌人。</summary>
+        /// <summary>6 医疗兵：血 15、攻击 0，只治疗。</summary>
         public static Config Medic()
         {
             return new Config
             {
                 archetype = EnemyArchetype.Medic,
                 displayName = "Medic",
-                moveSpeed = BaseMoveSpeed * 1.1f,
-                health = BaseHealth * 0.8f,
-                attackPower = BaseAttackPower,
+                moveSpeed = 2.75f,
+                health = 15f,
+                attackPower = 0f,
                 attackCooldown = BaseAttackCooldown,
                 // 用「保持距离」而不是「远离」：地图有边界，纯远离会一路走到墙角贴着。
                 // 保持距离天然有稳定解——太远靠近、太近后退、容差内不动。

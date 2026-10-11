@@ -188,8 +188,8 @@ MonoBehaviour:
   id: Fast
   rank: 0
   moveSpeed: 3.25
-  maxHealth: 14
-  attackPower: 5
+  maxHealth: 15
+  attackPower: 4
   attackCooldown: 1.5
   attackRange: 6
   projectileCount: 1
@@ -241,7 +241,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8790823066988949877}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8747f9ba53cd40f0bf5be498309cdd5d, type: 3}
   m_Name: 

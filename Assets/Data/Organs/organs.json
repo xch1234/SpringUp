@@ -34,14 +34,14 @@
       }
     },
     {
-      "id": "rusty_knife",
+      "id": "rust_knife",
       "name": "锈刀",
       "description": "造成伤害时有概率施加流血。",
       "part": "hand",
       "type": "executor",
       "rarity": "common",
       "shop_price": 8,
-      "icon": "placeholder/organs/rusty_knife.png",
+      "icon": "placeholder/organs/rust_knife.png",
       "damage": 4,
       "count": 1,
       "radius": 0,
@@ -71,14 +71,14 @@
       }
     },
     {
-      "id": "many_limb_tentacle",
+      "id": "multi_tentacle",
       "name": "多肢触手",
       "description": "击杀时重新触发同部位全部槽位。",
       "part": "hand",
       "type": "trigger",
       "rarity": "rare",
       "shop_price": 15,
-      "icon": "placeholder/organs/many_limb_tentacle.png",
+      "icon": "placeholder/organs/multi_tentacle.png",
       "trigger_on": "kill",
       "trigger_target": "SELF_SLOTS",
       "chance": 100
