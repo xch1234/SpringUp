@@ -13,7 +13,7 @@ namespace Tideflesh.Systems
         public static int Apply(
             BodyRuntime hand,
             Inventory inventory,
-            IReadOnlyDictionary<string, OrganDefinition> pipelineOrgans)
+            IReadOnlyDictionary<string, SpringUp.Organs.OrganDefinition> pipelineOrgans)
         {
             if (hand == null) throw new ArgumentNullException(nameof(hand));
             if (inventory == null) throw new ArgumentNullException(nameof(inventory));

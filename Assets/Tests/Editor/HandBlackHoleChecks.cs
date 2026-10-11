@@ -100,8 +100,10 @@ namespace SpringUp.EditorChecks
             config.TryCreateDefinition(out OrganDefinition changed, out _);
             Require(first.BlackHole.Duration == 5f && first.Radius == 3f && changed.BlackHole.Duration == 2f
                 && changed.BlackHole.PullSpeed == 4f && changed.Radius == 6f, "参数快照必须独立。");
-            Require(ParameterisedBehaviour.TryCreateAttack(new OrganInstance(changed), null, out CastEvent request)
-                && request.BlackHole == changed.BlackHole && request.Damage == 0f, "零伤害无目标的黑洞请求必须通过管道。");
+            Require(!ParameterisedBehaviour.TryCreateAttack(new OrganInstance(changed), null, out _),
+                "黑洞也必须有索敌目标。");
+            Require(ParameterisedBehaviour.TryCreateAttack(new OrganInstance(changed), "a", out CastEvent request)
+                && request.BlackHole == changed.BlackHole && request.Damage == 0f, "有目标的零伤害黑洞请求应通过管道。");
             Require(AttackResolver.Resolve(request, new[] { new AttackTarget("a", Vector2.zero, true) }, Vector2.zero, out _).Count == 0,
                 "黑洞不能被当成爆炸扣血。");
             Set(config, "blackHoleDuration", 0f); Require(!config.TryCreateDefinition(out _, out _), "零持续时间应拒绝。");
@@ -154,6 +156,7 @@ namespace SpringUp.EditorChecks
             Hand(demo).Tick(1f); var field = demo.GetComponent<DemoBlackHoleField>();
             demo.transform.position = new Vector3(20f, 0f, 0f); field.Advance(0.5f);
             Require(near.transform.position.x == 6f, "生成后黑洞留在原地，不跟随角色移动。");
+            Target("new_target", 21f); // 新位置必须有范围内目标，才能重放黑洞。
             Hand(demo).Tick(1f); Require(field.ActiveCount == 1 && field.LongestRemaining == 5f, "同一实例重放必须替换并重置计时。");
             field.Advance(0.5f); Require(near.transform.position.x == 6f, "替换后旧位置不再吸引。");
             Transform origin = Go("Character").transform; origin.position = new Vector3(5f, 0f, 0f);
@@ -183,7 +186,7 @@ namespace SpringUp.EditorChecks
             demo.StopDemo(); Require(field.ActiveCount == 0, "停止演示必须清除黑洞。");
             field.Advance(10f); Require(field.ActiveCount == 0, "清理后不能重新出现。");
             Require(demo.TryStartDemo(out _), "重新连接应安全。"); Hand(demo).Tick(2f);
-            Require(field.ActiveCount == 1, "主目标死亡后黑洞仍可发动。");
+            Require(field.ActiveCount == 0, "主目标死亡且没有其他有效目标时，不能重新发动普通黑洞。");
             // 编辑模式不能假定切换 enabled 会触发运行时 OnDisable；此处检查普通清理入口。
             // 真实停用组件的检查放在 HandStartupPlayChecks 的 Play 阶段。
             field.Clear(); Require(field.ActiveCount == 0, "清理场组件应清除黑洞。");

@@ -30,8 +30,9 @@ namespace SpringUp.Organs
         public event Action<BodyRuntime, int, OrganInstance, CastContext, TriggerBlockReason> TriggerBlocked;
         public event Action<BodyRuntime, int, OrganInstance, CastContext> TriggeredSlotExecuted;
 
-        // 由场景接入方提供目标编号。管道本身不认识测试敌人。
+        // 所有形状的普通攻击都需要目标。接入方负责范围内索敌和出手前的实时校验。
         public Func<string> TargetSelector { get; set; }
+        public Func<string, bool> TargetValidator { get; set; }
 
         private void Awake() => EnsureInitialized();
 
@@ -74,13 +75,18 @@ namespace SpringUp.Organs
             ExecuteAttack(organ, null);
         }
 
-        private void ExecuteAttack(OrganInstance organ, CastContext context)
+        private void ExecuteAttack(OrganInstance organ, CastContext context, string causeTargetId = null)
         {
             if (organ.Definition.Type != OrganType.Actuator
                 || (organ.Definition.Damage <= 0f && organ.Definition.Shape != AttackShape.BlackHole))
                 return;
 
-            string targetId = organ.Definition.Shape == AttackShape.SingleTarget ? TargetSelector?.Invoke() : null;
+            // 已成立的击杀链允许范围效果沿用触发敌人的身份（它可能已死亡）。
+            // 普通攻击，以及追加的单体攻击，必须重新索敌并校验，不能打已回池的目标。
+            bool inheritedArea = context != null && organ.Definition.Shape != AttackShape.SingleTarget;
+            string targetId = inheritedArea ? causeTargetId : TargetSelector?.Invoke();
+            if (string.IsNullOrWhiteSpace(targetId)) return;
+            if (!inheritedArea && TargetValidator != null && !TargetValidator(targetId)) return;
             if (ParameterisedBehaviour.TryCreateAttack(organ, targetId, out CastEvent attack, context))
                 AttackProduced?.Invoke(attack);
         }
@@ -127,7 +133,7 @@ namespace SpringUp.Organs
                     {
                         TriggeredSlotExecuted?.Invoke(body, slotIndex, organ, child);
                         // 扫到触发器不等于条件满足。这里只会让执行器产出攻击。
-                        ExecuteAttack(organ, child);
+                        ExecuteAttack(organ, child, signal.Cause.TargetId);
                     });
                 }
             }

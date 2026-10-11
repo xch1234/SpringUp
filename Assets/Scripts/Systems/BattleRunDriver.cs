@@ -245,6 +245,8 @@ namespace Tideflesh.Systems
             _pipeline = FindFirstObjectByType<OrganPipelineController>();
             if (_pipeline == null)
                 _pipeline = gameObject.AddComponent<OrganPipelineController>();
+            if (_pipeline.GetComponent<BattleOrganTargeting>() == null)
+                _pipeline.gameObject.AddComponent<BattleOrganTargeting>();
             return _pipeline;
         }
 

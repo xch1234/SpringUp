@@ -12,7 +12,7 @@ namespace SpringUp.Organs
             attack = default;
             OrganDefinition definition = organ.Definition;
             if (definition.Type != OrganType.Actuator || (definition.Damage <= 0f && definition.Shape != AttackShape.BlackHole)
-                || (definition.Shape == AttackShape.SingleTarget && string.IsNullOrWhiteSpace(targetId)))
+                || string.IsNullOrWhiteSpace(targetId))
                 return false;
 
             attack = new CastEvent(targetId, definition.Damage, definition.Id, organ.InstanceId,

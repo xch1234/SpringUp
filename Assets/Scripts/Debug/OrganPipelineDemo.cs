@@ -15,8 +15,9 @@ namespace SpringUp.Organs
         [SerializeField, Tooltip("勾选后，下次启动测试时三个部位都为空。")]
         private bool startWithEmptySlots;
 
-        [SerializeField, Tooltip("按数组顺序攻击第一个存活目标。每个目标的编号必须不同。")]
+        [SerializeField, Tooltip("从列表中选择索敌范围内最近的存活目标。每个目标的编号必须不同。")]
         private DemoTarget[] targets = new DemoTarget[0];
+        [SerializeField, Min(0f)] private float attackRange = AttackTargeting.DefaultRange;
 
         private readonly List<DemoTarget> connectedTargets = new List<DemoTarget>();
         private OrganPipelineController controller;
@@ -41,6 +42,7 @@ namespace SpringUp.Organs
             {
                 ConnectTargets();
                 controller.TargetSelector = SelectTarget;
+                controller.TargetValidator = ValidateTarget;
                 controller.AttackProduced += ApplyAttack;
             }
 
@@ -69,7 +71,7 @@ namespace SpringUp.Organs
                 : mode == DemoMode.KillChain
                 ? "[触发链] 手部第 1 槽拳头，第 4 槽多肢触手。击杀后立即额外扫描手部；同一触发器每条链最多发动一次。"
                 : mode == DemoMode.PunchDamage
-                ? "[拳头测试] 手部第 1 槽安装拳头，每次伤害 5。按列表顺序攻击存活目标。第二步没有击杀追加攻击。"
+                ? "[拳头测试] 手部第 1 槽安装拳头，每次伤害 5。选择范围内最近的存活目标。第二步没有击杀追加攻击。"
                 : "[管道测试] 手部第 1、4 槽已安装测试器官。预期顺序：1 → 4 → 1 → 4。头部和腿部为空。", this);
         }
 
@@ -83,6 +85,7 @@ namespace SpringUp.Organs
                 controller.TriggerBlocked -= OnTriggerBlocked;
                 controller.TriggeredSlotExecuted -= OnTriggeredSlotExecuted;
                 if (controller.TargetSelector == SelectTarget) controller.TargetSelector = null;
+                if (controller.TargetValidator == ValidateTarget) controller.TargetValidator = null;
             }
             foreach (DemoTarget target in connectedTargets)
             {
@@ -129,10 +132,19 @@ namespace SpringUp.Organs
 
         private string SelectTarget()
         {
+            var snapshot = new List<AttackTarget>();
             foreach (DemoTarget target in connectedTargets)
-                if (target != null && target.IsAlive) return target.TargetId;
-            if (connectedTargets.Count > 0) lastAttack = "没有可攻击的存活目标";
-            return null;
+                if (target != null) snapshot.Add(new AttackTarget(target.TargetId, target.transform.position, target.IsAlive));
+            return AttackTargeting.SelectNearest(snapshot, transform.position, attackRange);
+        }
+
+        private bool ValidateTarget(string id)
+        {
+            foreach (var target in connectedTargets)
+                if (target != null && target.TargetId == id)
+                    return AttackTargeting.IsInRange(new AttackTarget(id, target.transform.position, target.IsAlive),
+                        transform.position, attackRange);
+            return false;
         }
 
         private void ApplyAttack(CastEvent attack)

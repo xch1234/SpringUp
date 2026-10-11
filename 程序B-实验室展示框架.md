@@ -1,5 +1,7 @@
 # 程序 B：真实配置装配与结算预览
 
+> 2026-10-11 整合第一步更新：预览改为选择 `Attack Range`（默认 3）内最近的存活目标，单体、TNT、黑洞均受发动距离限制；模拟玩家位置沿用 `explosionCenter`。范围中心的改动尚待第二步。详见 [ABCD整合记录](ABCD整合记录.md)。
+
 更新：2026-10-10；当前集成分支 `main_temp`。入口为 `Assets/Scenes/LaboratoryDemo.unity`，或 `Tools > SpringUp > Open Laboratory Scene`，然后 Play。
 
 ## 操作

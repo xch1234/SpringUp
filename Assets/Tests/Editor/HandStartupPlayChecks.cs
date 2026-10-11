@@ -65,6 +65,7 @@ namespace SpringUp.EditorChecks
             target.transform.position = new Vector3(100f, 0f, 0f);
             target.gameObject.AddComponent<DemoCombatTarget>();
             var demo = new GameObject(name).AddComponent<HandOrganDemo>();
+            demo.transform.position = new Vector3(99f, 0f, 0f); // 玩家必须在目标索敌范围内。
             if (demoFirst) UnityEditorInternal.ComponentUtility.MoveComponentUp(demo);
             var settings = new SerializedObject(demo);
             settings.FindProperty("slots").GetArrayElementAtIndex(0).objectReferenceValue =

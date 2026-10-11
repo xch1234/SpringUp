@@ -26,6 +26,9 @@ namespace TideBorne.Battle
 
         private bool _isDead;
 
+        // Id 是敌人种类配置编号；TargetId 标识本次出生，池化再次启用后必须失效。
+        public string TargetId { get; private set; }
+
         /// <summary>战场上的敌人数量。</summary>
         public static int ActiveCount { get { return s_ActiveEnemies.Count; } }
 
@@ -106,6 +109,7 @@ namespace TideBorne.Battle
 
         private void OnEnable()
         {
+            TargetId = System.Guid.NewGuid().ToString("N");
             // 池化复用：重新激活时恢复满血，否则第二个"敌人"会带着上次的残血出现。
             _isDead = false;
 

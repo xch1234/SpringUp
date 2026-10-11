@@ -9,8 +9,10 @@ namespace SpringUp.Organs
     {
         [SerializeField, Tooltip("Element 0 到 5 对应第 1 到 6 槽。拖入配置资源；None 是空槽。停止 Play 后修改。")]
         private OrganConfig[] slots = new OrganConfig[BodyRuntime.SlotCount];
-        [SerializeField, Tooltip("只用于拳头等单目标攻击。TNT 不依赖此列表，会检查当前场景的全部启用敌人。敌人编号必须唯一。")]
+        [SerializeField, Tooltip("单体攻击的候选目标。范围器官还可从本场景启用的敌人中索敌。敌人编号必须唯一。")]
         private DemoTarget[] targets = new DemoTarget[0];
+        [SerializeField, Min(0f), Tooltip("自动攻击索敌距离，独立于爆炸/黑洞效果半径。")]
+        private float attackRange = AttackTargeting.DefaultRange;
         [SerializeField, Tooltip("TNT 的爆炸中心。拖入角色物体；留空时使用本物体的位置，例如 HandStatusDemo。每次爆炸读取当前位置。")]
         private Transform explosionOrigin;
         [SerializeField, Tooltip("黑洞生成位置。拖入角色；留空使用本物体。生成后黑洞留在原地，不跟随角色。")]
@@ -62,7 +64,7 @@ namespace SpringUp.Organs
                 error = "请先移除同物体上的 OrganPipelineDemo，只保留一个测试入口。";
             else if (controller == null || !controller.isActiveAndEnabled)
                 error = "请启用 OrganPipelineController。";
-            else if (controller.TargetSelector != null)
+            else if (controller.TargetSelector != null || controller.TargetValidator != null)
                 error = "管道已有其他目标选择器，请使用独立的测试物体。";
             else if (slots == null || slots.Length != BodyRuntime.SlotCount)
                 error = "Slots 的 Size 必须为 6。";
@@ -127,8 +129,11 @@ namespace SpringUp.Organs
                 hand.SetSlot(i, installed[i]);
             }
             connectedTargets.AddRange(selectedTargets);
+            // 范围演示允许 Targets 留空，但仍须从当前场景找到范围内存活目标才能出手。
+            searchSceneTargets = hasArea;
             foreach (DemoTarget target in connectedTargets) ObserveTarget(target);
             controller.TargetSelector = SelectTarget;
+            controller.TargetValidator = ValidateTarget;
             controller.AttackProduced += ApplyAttack;
             controller.TriggerActivated += OnTrigger;
             controller.TriggerBlocked += OnBlocked;
@@ -169,6 +174,7 @@ namespace SpringUp.Organs
                 controller.TriggerActivated -= OnTrigger;
                 controller.TriggerBlocked -= OnBlocked;
                 if (controller.TargetSelector == SelectTarget) controller.TargetSelector = null;
+                if (controller.TargetValidator == ValidateTarget) controller.TargetValidator = null;
                 BodyRuntime hand = controller.GetBody(BodyPart.Hand);
                 for (int i = 0; i < installed.Length; i++)
                 {
@@ -192,12 +198,29 @@ namespace SpringUp.Organs
             connected = false;
         }
 
+        private bool searchSceneTargets;
+        private readonly List<AttackTarget> targetingSnapshot = new List<AttackTarget>();
+
+        private List<DemoTarget> TargetCandidates() => searchSceneTargets ? CollectBattleTargets() : connectedTargets;
+
         private string SelectTarget()
         {
-            foreach (DemoTarget target in connectedTargets)
-                if (target != null && target.IsAlive) return target.TargetId;
-            message = "没有存活目标；停止后重新 Play 可重新测试。";
-            return null;
+            targetingSnapshot.Clear();
+            foreach (var target in TargetCandidates())
+                if (target != null)
+                    targetingSnapshot.Add(new AttackTarget(target.TargetId, target.transform.position, target.IsAlive));
+            var selected = AttackTargeting.SelectNearest(targetingSnapshot, transform.position, attackRange);
+            if (selected == null) message = "索敌范围内没有存活目标，等待目标靠近。";
+            return selected;
+        }
+
+        private bool ValidateTarget(string id)
+        {
+            foreach (var target in TargetCandidates())
+                if (target != null && target.TargetId == id)
+                    return AttackTargeting.IsInRange(new AttackTarget(id, target.transform.position, target.IsAlive),
+                        transform.position, attackRange);
+            return false;
         }
 
         private void ApplyAttack(CastEvent attack)
@@ -211,7 +234,7 @@ namespace SpringUp.Organs
                 return;
             }
             bool explosion = attack.Shape == AttackShape.Explosion;
-            List<DemoTarget> candidates = explosion ? CollectBattleTargets() : new List<DemoTarget>(connectedTargets);
+            List<DemoTarget> candidates = explosion ? CollectBattleTargets() : new List<DemoTarget>(TargetCandidates());
             var snapshot = new List<AttackTarget>();
             var targetsById = new Dictionary<string, DemoTarget>();
             foreach (DemoTarget target in candidates)

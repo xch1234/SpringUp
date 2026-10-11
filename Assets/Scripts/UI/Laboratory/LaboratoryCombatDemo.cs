@@ -21,6 +21,7 @@ namespace SpringUp.Laboratory
         [Min(.1f)] public float replenishDelay = 1.5f;
         public Vector2 firstPosition = new Vector2(.75f, 0), secondPosition = new Vector2(1.75f, 0);
         public Vector2 explosionCenter = Vector2.zero;
+        [Min(0f)] public float attackRange = AttackTargeting.DefaultRange;
         public OrganPipelineController Pipeline { get; private set; }
         public int UnsupportedCount { get; private set; }
         public int TriggerCount { get; private set; }
@@ -91,11 +92,28 @@ namespace SpringUp.Laboratory
                     inventoryOrigins.Add(instance.InstanceId, item.InstanceId);
                     supported++;
                 }
-            Pipeline.TargetSelector = () => targets.FirstOrDefault(t => t.IsAlive)?.TargetId;
+            Pipeline.TargetSelector = SelectTarget;
+            Pipeline.TargetValidator = ValidateTarget;
             Pipeline.AttackProduced += Attack; Pipeline.SlotExecuted += Step;
             Pipeline.TriggerActivated += Trigger; Pipeline.TriggeredSlotExecuted += ExtraStep; Pipeline.TriggerBlocked += Blocked;
-            Record("等待节拍；单目标按 A → B 选择存活目标。");
+            Record("等待节拍；仅攻击索敌范围内最近的存活目标。");
             Render();
+        }
+        private string SelectTarget()
+        {
+            var snapshot = new List<AttackTarget>();
+            foreach (var target in targets)
+                if (target != null)
+                    snapshot.Add(new AttackTarget(target.TargetId, target.transform.position, target.IsAlive));
+            return AttackTargeting.SelectNearest(snapshot, explosionCenter, attackRange);
+        }
+        private bool ValidateTarget(string id)
+        {
+            foreach (var target in targets)
+                if (target != null && target.TargetId == id)
+                    return AttackTargeting.IsInRange(new AttackTarget(id, target.transform.position, target.IsAlive),
+                        explosionCenter, attackRange);
+            return false;
         }
         private void Replenish(int i)
         {

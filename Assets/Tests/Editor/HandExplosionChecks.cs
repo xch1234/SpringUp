@@ -196,8 +196,8 @@ namespace SpringUp.EditorChecks
             Require(hitsC.Count == 2 && hitsC[0].ChainId == hitsC[1].ChainId
                 && hitsC[0].ChainDepth == 0 && hitsC[1].ChainDepth == 1, "追加爆炸必须继承触发链。");
             Hand(demo).Tick(2f);
-            Require(demo.ExplosionCount == 3 && demo.LastExplosionHitCount == 0,
-                "全灭后仍能在角色处爆炸，但不应再命中死亡敌人。");
+            Require(demo.ExplosionCount == 2,
+                "全灭后没有有效索敌目标，不能继续发动普通爆炸。");
         }
 
         private static void CheckEmptyAndCleanup()
@@ -284,8 +284,8 @@ namespace SpringUp.EditorChecks
                 "空 Targets 也必须能在自身位置爆炸。");
             empty.transform.position = new Vector3(50f, 0f, 0f);
             Hand(empty).Tick(1f);
-            Require(empty.ExplosionCount == 2 && empty.LastExplosionHitCount == 0,
-                "范围内无敌人时仍执行爆炸，但不扣任何敌人的血。");
+            Require(empty.ExplosionCount == 1,
+                "索敌范围内无敌人时不再发动新的爆炸。");
         }
 
         private static void Throws(Action action)

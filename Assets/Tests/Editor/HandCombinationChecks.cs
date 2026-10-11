@@ -139,8 +139,12 @@ namespace SpringUp.EditorChecks
             Require(!b.IsAlive && demo.TriggerCount == 2 && c.CurrentHealth == 100f,
                 "同一旧链的延迟击杀不能让已经发动过的两个触手再发动。");
             Hand(demo).Tick(1f);
-            Require(c.CurrentHealth == 99f && Hand(demo).LastExecutedSlot == 1,
-                "新节拍仍应从正常游标继续，并选择下一个存活目标。");
+            Require(c.CurrentHealth == 100f && Hand(demo).LastExecutedSlot == 1,
+                "新节拍继续走槽，但剩余敌人在索敌范围外，不能攻击。");
+            c.transform.position = new Vector3(2f, 0f, 0f);
+            Hand(demo).Tick(1f);
+            Require(c.CurrentHealth == 99f && Hand(demo).LastExecutedSlot == 2,
+                "敌人进入范围后，下一节拍从当前槽继续攻击，不补发错过的攻击。");
         }
 
         private static void CheckOrderedPairs()
@@ -170,16 +174,16 @@ namespace SpringUp.EditorChecks
             var demo = Demo(new[] { HandOrganKind.CollapseBody, HandOrganKind.SteelPipe, HandOrganKind.RustKnife,
                 HandOrganKind.SlimeGland, HandOrganKind.Tnt, HandOrganKind.MultiTentacle });
             Hand(demo).Tick(6f);
-            Require(enemy.CurrentHealth == 95f && demo.ExplosionCount == 1 && demo.TriggerCount == 0,
-                "Targets 为空时单目标攻击应跳过，范围效果继续。");
+            Require(enemy.CurrentHealth == 91f && demo.ExplosionCount == 1 && demo.TriggerCount == 0,
+                "范围演示从当前场景找到目标后，所有执行器共用该索敌入口。");
             var field = demo.GetComponent<DemoBlackHoleField>();
             field.Advance(0f); Hand(demo).Tick(0f); Combat(enemy).Advance(0f);
-            Require(enemy.transform.position.x == 1f && enemy.CurrentHealth == 95f && field.LongestRemaining == 5f,
+            Require(enemy.transform.position.x == 1f && enemy.CurrentHealth == 91f && field.LongestRemaining == 5f,
                 "零时间不能推进攻击、状态或黑洞。");
             demo.StopDemo(); Require(field.ActiveCount == 0, "清理后不能留有黑洞。");
             Require(demo.TryStartDemo(out _) && demo.TryStartDemo(out _), "重复启动应安全。");
             Hand(demo).Tick(6f);
-            Require(enemy.CurrentHealth == 90f && demo.ExplosionCount == 1 && field.ActiveCount == 1,
+            Require(enemy.CurrentHealth == 82f && demo.ExplosionCount == 1 && field.ActiveCount == 1,
                 "重新连接不能双倍扣血或重复订阅。");
         }
 
