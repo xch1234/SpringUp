@@ -191,7 +191,7 @@ MonoBehaviour:
   maxHealth: 15
   attackPower: 4
   attackCooldown: 1.5
-  attackRange: 6
+  attackRange: 0.7
   projectileCount: 1
   projectileSpeed: 4
   attackRadius: 1

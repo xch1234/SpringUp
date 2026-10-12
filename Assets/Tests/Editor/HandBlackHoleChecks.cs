@@ -87,7 +87,7 @@ namespace SpringUp.EditorChecks
         private static BodyRuntime Hand(HandOrganDemo demo) => demo.GetComponent<OrganPipelineController>().GetBody(BodyPart.Hand);
         private static CastEvent Request(float radius = 3f, float duration = 5f, float speed = 2f, string id = "hole")
             => new CastEvent(null, 0f, "collapse_body", id, shape: AttackShape.BlackHole, radius: radius,
-                blackHole: new BlackHoleData(duration, speed));
+                blackHole: new BlackHoleData(duration, speed), effectCenter: Vector2.zero);
 
         private static void CheckConfig()
         {
@@ -102,9 +102,9 @@ namespace SpringUp.EditorChecks
                 && changed.BlackHole.PullSpeed == 4f && changed.Radius == 6f, "参数快照必须独立。");
             Require(!ParameterisedBehaviour.TryCreateAttack(new OrganInstance(changed), null, out _),
                 "黑洞也必须有索敌目标。");
-            Require(ParameterisedBehaviour.TryCreateAttack(new OrganInstance(changed), "a", out CastEvent request)
+            Require(ParameterisedBehaviour.TryCreateAttack(new OrganInstance(changed), "a", out CastEvent request, effectCenter: Vector2.zero)
                 && request.BlackHole == changed.BlackHole && request.Damage == 0f, "有目标的零伤害黑洞请求应通过管道。");
-            Require(AttackResolver.Resolve(request, new[] { new AttackTarget("a", Vector2.zero, true) }, Vector2.zero, out _).Count == 0,
+            Require(AttackResolver.Resolve(request, new[] { new AttackTarget("a", Vector2.zero, true) }, out _).Count == 0,
                 "黑洞不能被当成爆炸扣血。");
             Set(config, "blackHoleDuration", 0f); Require(!config.TryCreateDefinition(out _, out _), "零持续时间应拒绝。");
             Set(config, "blackHoleDuration", 5f); Set(config, "blackHolePullSpeed", -1f);
@@ -114,20 +114,20 @@ namespace SpringUp.EditorChecks
         }
         private static void CheckGeometryAndTime()
         {
-            var hole = new BlackHoleBehaviour(Request(duration: 0.5f), Vector2.zero);
+            var hole = new BlackHoleBehaviour(Request(duration: 0.5f));
             Require(hole.PullPosition(new Vector2(3f, 0f), 10f) == new Vector2(2f, 0f), "边界应被拉动，长帧只使用剩余半秒。");
             Require(hole.PullPosition(new Vector2(3.01f, 0f), 1f).x == 3.01f, "范围外不吸引。");
             Require(hole.PullPosition(new Vector2(0.1f, 0f), 1f) == Vector2.zero, "不能越过中心。");
             Require(hole.PullPosition(Vector2.zero, 1f) == Vector2.zero, "中心点不能除零或抖动。");
             hole.Tick(0.5f); Require(!hole.IsActive && hole.PullPosition(Vector2.one, 1f) == Vector2.one, "到期立即停止。");
-            Require(new BlackHoleBehaviour(Request(speed: 0f), Vector2.zero).PullPosition(Vector2.one, 1f) == Vector2.one,
+            Require(new BlackHoleBehaviour(Request(speed: 0f)).PullPosition(Vector2.one, 1f) == Vector2.one,
                 "零速度不移动。");
-            Require(new BlackHoleBehaviour(Request(radius: 0f), Vector2.zero).PullPosition(Vector2.one, 1f) == Vector2.one,
+            Require(new BlackHoleBehaviour(Request(radius: 0f)).PullPosition(Vector2.one, 1f) == Vector2.one,
                 "零半径不能拉远处敌人。");
         }
         private static void CheckScenePull()
         {
-            DemoTarget near = Target("near", 2f), outside = Target("outside", 4f), immune = Target("immune", 1f);
+            DemoTarget near = Target("near", 2f), outside = Target("outside", 4.01f), immune = Target("immune", 1f);
             DemoTarget disabled = Target("disabled", 1f), dead = Target("dead", 1f, 1f);
             disabled.enabled = false;
             dead.TryApplyAttack(new CastEvent(dead.TargetId, 1f, "test", "test"));
@@ -138,7 +138,7 @@ namespace SpringUp.EditorChecks
             Require(near.transform.position == new Vector3(1f, 0f, 2f) && near.CurrentHealth == 100f,
                 "范围内名单外敌人应被吸引、不扣血且保留 Z。");
             combat.Advance(0.5f); Require(near.transform.position.x == 1f, "主动移动不能把吸附位置重置。");
-            Require(outside.transform.position.x == 4f && immune.transform.position.x == 1f
+            Require(outside.transform.position.x == 4.01f && immune.transform.position.x == 1f
                 && disabled.transform.position.x == 1f && dead.transform.position.x == 1f,
                 "范围外、免疫、停用和死亡敌人不能被吸引。");
             DemoTarget later = Target("spawned_later", 2f); field.Advance(0.5f);
@@ -154,15 +154,16 @@ namespace SpringUp.EditorChecks
             DemoTarget near = Target("near_origin", 7f);
             var demo = Demo(Config()); demo.transform.position = new Vector3(5f, 0f, 0f);
             Hand(demo).Tick(1f); var field = demo.GetComponent<DemoBlackHoleField>();
-            demo.transform.position = new Vector3(20f, 0f, 0f); field.Advance(0.5f);
-            Require(near.transform.position.x == 6f, "生成后黑洞留在原地，不跟随角色移动。");
+            demo.transform.position = new Vector3(20f, 0f, 0f);
+            near.transform.position = new Vector3(8f, 0f, 2f); field.Advance(0.5f);
+            Require(near.transform.position.x == 7f, "生成后黑洞留在目标原位置，不跟随角色或目标移动。");
             Target("new_target", 21f); // 新位置必须有范围内目标，才能重放黑洞。
             Hand(demo).Tick(1f); Require(field.ActiveCount == 1 && field.LongestRemaining == 5f, "同一实例重放必须替换并重置计时。");
-            field.Advance(0.5f); Require(near.transform.position.x == 6f, "替换后旧位置不再吸引。");
+            field.Advance(0.5f); Require(near.transform.position.x == 7f, "替换后旧位置不再吸引。");
             Transform origin = Go("Character").transform; origin.position = new Vector3(5f, 0f, 0f);
             var edit = new SerializedObject(demo); edit.FindProperty("blackHoleOrigin").objectReferenceValue = origin; edit.ApplyModifiedPropertiesWithoutUndo();
-            Hand(demo).Tick(1f); field.Advance(0.5f); Require(near.transform.position.x == 5f, "应支持独立角色作为生成位置。");
-            field.Spawn(Request(id: "second_instance"), Vector2.zero);
+            Hand(demo).Tick(1f); field.Advance(0.5f); Require(near.transform.position.x == 7f, "旧角色引用不能覆盖目标中心。");
+            field.Spawn(Request(id: "second_instance"));
             Require(field.ActiveCount == 2, "不同器官实例可各自保留一个黑洞。");
         }
         private static void CheckChainAndCleanup()

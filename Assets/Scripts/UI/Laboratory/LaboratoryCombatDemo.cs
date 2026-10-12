@@ -5,6 +5,7 @@ using SpringUp.Organs;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.Serialization;
 
 namespace SpringUp.Laboratory
 {
@@ -20,9 +21,10 @@ namespace SpringUp.Laboratory
         [Min(1)] public float targetHealth = 30;
         [Min(.1f)] public float replenishDelay = 1.5f;
         public Vector2 firstPosition = new Vector2(.75f, 0), secondPosition = new Vector2(1.75f, 0);
-        public Vector2 explosionCenter = Vector2.zero;
+        [FormerlySerializedAs("explosionCenter")] public Vector2 playerPosition = Vector2.zero;
         [Min(0f)] public float attackRange = AttackTargeting.DefaultRange;
         public OrganPipelineController Pipeline { get; private set; }
+        public Action<OrganPipelineController> ConfigureTiming { get; set; }
         public int UnsupportedCount { get; private set; }
         public int TriggerCount { get; private set; }
         public int DeathCount { get; private set; }
@@ -31,7 +33,7 @@ namespace SpringUp.Laboratory
         public StatusEffectRuntime StatusAt(int index) => statuses[index];
         private ILaboratoryEquipment equipment;
         private readonly Queue<string> events = new Queue<string>();
-        private readonly Queue<CastEvent> deaths = new Queue<CastEvent>();
+        private readonly Queue<TriggerSignal> deaths = new Queue<TriggerSignal>();
         private readonly Dictionary<string, string> origins = new Dictionary<string, string>();
         private readonly Dictionary<string, string> inventoryOrigins = new Dictionary<string, string>();
         private readonly List<BlackHoleBehaviour> holes = new List<BlackHoleBehaviour>();
@@ -67,7 +69,7 @@ namespace SpringUp.Laboratory
         {
             if (equipment == null) return;
             DisposePipeline();
-            if (rulesText != null) rulesText.text = $"真实配置结算预览；爆炸中心 ({explosionCenter.x:g}, {explosionCenter.y:g})。\n固定目标，不展示移动；非完整战场模拟。";
+            if (rulesText != null) rulesText.text = "范围效果中心：触发目标位置。";
             events.Clear(); deaths.Clear(); holes.Clear(); origins.Clear(); inventoryOrigins.Clear();
             TriggerCount = DeathCount = UnsupportedCount = supported = 0;
             for (int i = 0; i < 2; i++) Replenish(i);
@@ -79,6 +81,8 @@ namespace SpringUp.Laboratory
             var runner = new GameObject("Equipment preview pipeline");
             runner.transform.SetParent(transform, false);
             Pipeline = runner.AddComponent<OrganPipelineController>();
+            Pipeline.UseUnscaledTime = true;
+            ConfigureTiming?.Invoke(Pipeline);
             for (int p = 0; p < 4; p++)
                 for (int s = 0; s < equipment.SlotCount((LaboratoryPart)p); s++)
                 {
@@ -86,7 +90,7 @@ namespace SpringUp.Laboratory
                     if (item == null) continue;
                     var definition = Resolve(item);
                     if (definition == null || s >= BodyRuntime.SlotCount) { UnsupportedCount++; continue; }
-                    var instance = new OrganInstance(definition);
+                    var instance = new OrganInstance(definition, item.InstanceId);
                     Pipeline.GetBody(definition.Part).SetSlot(s, instance);
                     origins.Add(instance.InstanceId, $"{LaboratoryPresenter.PartNames[p]}{s + 1} {item.Name}");
                     inventoryOrigins.Add(instance.InstanceId, item.InstanceId);
@@ -94,6 +98,7 @@ namespace SpringUp.Laboratory
                 }
             Pipeline.TargetSelector = SelectTarget;
             Pipeline.TargetValidator = ValidateTarget;
+            Pipeline.TargetSnapshotProvider = Snapshot;
             Pipeline.AttackProduced += Attack; Pipeline.SlotExecuted += Step;
             Pipeline.TriggerActivated += Trigger; Pipeline.TriggeredSlotExecuted += ExtraStep; Pipeline.TriggerBlocked += Blocked;
             Record("等待节拍；仅攻击索敌范围内最近的存活目标。");
@@ -105,15 +110,20 @@ namespace SpringUp.Laboratory
             foreach (var target in targets)
                 if (target != null)
                     snapshot.Add(new AttackTarget(target.TargetId, target.transform.position, target.IsAlive));
-            return AttackTargeting.SelectNearest(snapshot, explosionCenter, attackRange);
+            return AttackTargeting.SelectNearest(snapshot, playerPosition, attackRange);
         }
         private bool ValidateTarget(string id)
+            => Snapshot(id).HasValue;
+
+        private AttackTarget? Snapshot(string id)
         {
             foreach (var target in targets)
                 if (target != null && target.TargetId == id)
-                    return AttackTargeting.IsInRange(new AttackTarget(id, target.transform.position, target.IsAlive),
-                        explosionCenter, attackRange);
-            return false;
+                {
+                    var snapshot = new AttackTarget(id, target.transform.position, target.IsAlive);
+                    if (AttackTargeting.IsInRange(snapshot, playerPosition, attackRange)) return snapshot;
+                }
+            return null;
         }
         private void Replenish(int i)
         {
@@ -126,12 +136,13 @@ namespace SpringUp.Laboratory
         {
             if (attack.Shape == AttackShape.BlackHole)
             {
+                if (!attack.EffectCenter.HasValue) return;
                 holes.RemoveAll(h => h.Cause.OriginInstanceId == attack.OriginInstanceId);
-                holes.Add(new BlackHoleBehaviour(attack, explosionCenter));
+                holes.Add(new BlackHoleBehaviour(attack));
                 Record($"{Origin(attack)}：生成黑洞 {attack.BlackHole.Duration:g}s"); return;
             }
             var snapshot = targets.Select(t => new AttackTarget(t.TargetId, t.transform.position, t.IsAlive)).ToArray();
-            var hits = AttackResolver.Resolve(attack, snapshot, explosionCenter, out _);
+            var hits = AttackResolver.Resolve(attack, snapshot, out _);
             resolving = true;
             try
             {
@@ -166,14 +177,14 @@ namespace SpringUp.Laboratory
             int i = Array.IndexOf(targets, target);
             statuses[i].Clear(); remaining[i] = replenishDelay; DeathCount++;
             Record($"{target.TargetId} 死亡，{replenishDelay:g}s 后补充");
-            deaths.Enqueue(attack);
+            deaths.Enqueue(new TriggerSignal(TriggerOn.Kill, attack, target.DeathPosition));
             if (!resolving) DrainDeaths();
         }
         private void DrainDeaths()
         {
             if (draining) return;
             draining = true;
-            try { while (deaths.Count > 0) Pipeline.PublishSignal(new TriggerSignal(TriggerOn.Kill, deaths.Dequeue())); }
+            try { while (deaths.Count > 0) Pipeline.PublishSignal(deaths.Dequeue()); }
             finally { draining = false; }
         }
         // 独立推进状态和补充，不改变管道游标；检查也调用此入口。
@@ -214,7 +225,7 @@ namespace SpringUp.Laboratory
             while (events.Count > 6) events.Dequeue();
             eventText.text = "最近事件（最多 6 条）\n" + string.Join("\n", events);
         }
-        private void Update() => Advance(Time.deltaTime);
+        private void Update() => Advance(Time.unscaledDeltaTime);
         private void Render()
         {
             var lines = new List<string> { $"当前目标状态 · 有效装备 {supported} / 占位 {UnsupportedCount}" };

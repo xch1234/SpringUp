@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace SpringUp.Organs
 {
@@ -7,8 +8,9 @@ namespace SpringUp.Organs
     {
         public TriggerOn Kind { get; }
         public CastEvent Cause { get; }
+        public Vector2? Position { get; }
 
-        public TriggerSignal(TriggerOn kind, CastEvent cause)
+        public TriggerSignal(TriggerOn kind, CastEvent cause, Vector2? position = null)
         {
             if (!Enum.IsDefined(typeof(TriggerOn), kind))
                 throw new ArgumentOutOfRangeException(nameof(kind));
@@ -16,6 +18,9 @@ namespace SpringUp.Organs
                 throw new ArgumentException("触发通知必须带上原攻击。", nameof(cause));
             Kind = kind;
             Cause = cause;
+            if (position.HasValue && !CastEvent.IsFinite(position.Value))
+                throw new ArgumentOutOfRangeException(nameof(position));
+            Position = position;
         }
     }
 }

@@ -110,7 +110,7 @@ namespace SpringUp.EditorChecks
         }
         private static BodyRuntime Hand(HandOrganDemo demo) => demo.GetComponent<OrganPipelineController>().GetBody(BodyPart.Hand);
         private static CastEvent Explosion(float radius = 2f, string targetId = "a")
-            => new CastEvent(targetId, 10f, "tnt", "tnt_instance", shape: AttackShape.Explosion, radius: radius);
+            => new CastEvent(targetId, 10f, "tnt", "tnt_instance", shape: AttackShape.Explosion, radius: radius, effectCenter: Vector2.zero);
 
         private static void CheckConfig()
         {
@@ -123,7 +123,7 @@ namespace SpringUp.EditorChecks
             edit.ApplyModifiedPropertiesWithoutUndo();
             config.TryCreateDefinition(out OrganDefinition changed, out _);
             Require(original.Radius == 2f && changed.Radius == 4f, "范围应读取快照，不能改动上次的攻击配置。");
-            ParameterisedBehaviour.TryCreateAttack(new OrganInstance(changed), "a", out CastEvent attack);
+            ParameterisedBehaviour.TryCreateAttack(new OrganInstance(changed), "a", out CastEvent attack, effectCenter: Vector2.zero);
             Require(attack.Shape == AttackShape.Explosion && attack.Radius == 4f && attack.Damage == 10f,
                 "爆炸形状、伤害和半径必须从配置传到攻击。");
             edit.Update(); edit.FindProperty("explosionRadius").floatValue = -1f; edit.ApplyModifiedPropertiesWithoutUndo();
@@ -143,17 +143,17 @@ namespace SpringUp.EditorChecks
                 new AttackTarget("dead", Vector2.zero, false),
                 new AttackTarget("bad", new Vector2(float.NaN,0f), true) };
             CastEvent request = Explosion();
-            List<CastEvent> hits = AttackResolver.Resolve(request, targets, Vector2.zero, out Vector2 center);
+            List<CastEvent> hits = AttackResolver.Resolve(request, targets, out Vector2 center);
             Require(center == Vector2.zero && hits.Count == 2 && hits[1].TargetId == "edge",
                 "圆形范围应包含边界，排除范围外、死亡和无效目标，并按编号去重。");
             foreach (CastEvent hit in hits)
                 Require(hit.Shape == AttackShape.SingleTarget && hit.Context == request.Context
                     && hit.OriginInstanceId == request.OriginInstanceId, "展开后的命中保持来源和链，不能再次变成爆炸。");
-            Require(AttackResolver.Resolve(Explosion(0f), targets, Vector2.zero, out _).Count == 1, "零半径只命中中心点上的存活目标。");
+            Require(AttackResolver.Resolve(Explosion(0f), targets, out _).Count == 1, "零半径只命中中心点上的存活目标。");
             var single = new CastEvent("a", 5f, "fist", "fist");
-            Require(AttackResolver.Resolve(single, targets, Vector2.zero, out _).Count == 1, "普通攻击仍只命中主目标。");
-            Require(AttackResolver.Resolve(Explosion(targetId: "dead"), targets, Vector2.zero, out _).Count == 2,
-                "敌人死亡不能影响以角色为中心的爆炸。");
+            Require(AttackResolver.Resolve(single, targets, out _).Count == 1, "普通攻击仍只命中主目标。");
+            Require(AttackResolver.Resolve(Explosion(targetId: "dead"), targets, out _).Count == 2,
+                "敌人死亡不能改变已保存的爆炸中心。");
         }
 
         private static void CheckActualDamage()
@@ -202,7 +202,7 @@ namespace SpringUp.EditorChecks
 
         private static void CheckEmptyAndCleanup()
         {
-            Require(AttackResolver.Resolve(default, new AttackTarget[0], Vector2.zero, out _).Count == 0, "空请求不产生命中。");
+            Require(AttackResolver.Resolve(default, new AttackTarget[0], out _).Count == 0, "空请求不产生命中。");
             DemoTarget a = Target("a", 0f), b = Target("b", 1f);
             b.enabled = false;
             var demo = Demo(Config(), false, a, b);
@@ -253,7 +253,7 @@ namespace SpringUp.EditorChecks
             demo.transform.position = new Vector3(7f, 0f, 0f);
             Hand(demo).Tick(1f);
             Require(listed.CurrentHealth == 100f && near.CurrentHealth == 90f && edge.CurrentHealth == 90f,
-                "中心必须是演示物体位置，不能是列表首位敌人；角色半径边界也应命中。");
+                "中心必须是最近目标位置，不能是列表首位敌人；效果半径边界也应命中。");
             // 改列表顺序也不能改变中心。
             demo.StopDemo();
             var data = new SerializedObject(demo);
@@ -264,24 +264,24 @@ namespace SpringUp.EditorChecks
             Hand(demo).Tick(1f);
             Require(listed.CurrentHealth == 100f && near.CurrentHealth == 80f && edge.CurrentHealth == 80f,
                 "Targets 顺序不能改变爆炸中心。");
-            // 单独的角色 Transform 覆盖演示物体位置，移动后下一次爆炸读取新位置。
+            // 旧场景的中心字段不再覆盖目标位置。
             Transform character = Go("Character").transform;
             character.position = new Vector3(20f, 0f, 0f);
             data.Update(); data.FindProperty("explosionOrigin").objectReferenceValue = character;
             data.ApplyModifiedPropertiesWithoutUndo();
             Hand(demo).Tick(1f);
-            Require(listed.CurrentHealth == 90f && near.CurrentHealth == 80f,
-                "指定角色后应使用角色位置。");
+            Require(listed.CurrentHealth == 100f && near.CurrentHealth == 70f,
+                "旧角色字段不能覆盖目标中心。");
             character.position = new Vector3(7f, 0f, 0f);
             Hand(demo).Tick(1f);
-            Require(listed.CurrentHealth == 90f && near.CurrentHealth == 70f && edge.CurrentHealth == 70f,
-                "角色移动后爆炸中心应跟随移动。");
+            Require(listed.CurrentHealth == 100f && near.CurrentHealth == 60f && edge.CurrentHealth == 60f,
+                "外部角色移动不改变选中目标的中心。");
             demo.StopDemo();
             var empty = Demo(Config(), false); // TNT 不需要任何主目标。
             empty.transform.position = new Vector3(7f, 0f, 0f);
             Hand(empty).Tick(1f);
-            Require(near.CurrentHealth == 60f && edge.CurrentHealth == 60f,
-                "空 Targets 也必须能在自身位置爆炸。");
+            Require(near.CurrentHealth == 50f && edge.CurrentHealth == 50f,
+                "空 Targets 仍可从本场景找到有效目标并在目标位置爆炸。");
             empty.transform.position = new Vector3(50f, 0f, 0f);
             Hand(empty).Tick(1f);
             Require(empty.ExplosionCount == 1,

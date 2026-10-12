@@ -28,6 +28,7 @@ namespace TideBorne.Battle
         private EnemyData _data;
         private EnemyRuntime _runtime;
         private float _cooldownRemaining;
+        private Collider2D _collider;
 
         /// <summary>接触判定半径。</summary>
         public float ContactRadius
@@ -40,6 +41,7 @@ namespace TideBorne.Battle
         {
             _data = GetComponent<EnemyData>();
             _runtime = GetComponent<EnemyRuntime>();
+            _collider = GetComponent<Collider2D>();
 
             if (_data == null)
             {
@@ -68,7 +70,14 @@ namespace TideBorne.Battle
 
             var distance = Vector2.Distance(transform.position, PlayerLocator.PlayerPosition);
             if (distance > contactRadius)
-                return;
+            {
+                // Solid colliders may prevent centers from reaching contactRadius.
+                var player = PlayerLocator.Player;
+                var other = player != null ? player.GetComponent<Collider2D>() : null;
+                if (_collider == null || other == null) return;
+                var gap = _collider.Distance(other);
+                if (!gap.isValid || gap.distance > 0.03f) return;
+            }
 
             ApplyContactDamage();
         }

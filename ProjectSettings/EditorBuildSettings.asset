@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/SpringUpDemo.unity
+    guid: 6ddf8492910d8fb4cb369ff719301d0c
+  - enabled: 0
     path: Assets/Scenes/OrganDemo.unity
     guid: 93bd75467dc64eecbb4a8728ed47635b
   m_configObjects:

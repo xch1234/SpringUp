@@ -1,5 +1,7 @@
 # 程序 D · M1 对接说明
 
+> 2026-10-12 整合更新：正式联调入口为 `Assets/Scenes/SpringUpDemo.unity`。D 库存已通过 RunLaboratoryEquipment 接 B，SpringUpRunDriver 控制真实战斗、结算、装配、下一波、失败和重开。A 共享器官资源是战斗数值来源，D JSON 保留经济/波次职责；不要依靠修改 JSON 中重复的伤害字段调整统一入口的战斗。第六波蜘蛛巢临时替换为 TNT，第七波为计时通关。下文 M1 清单为历史交付说明，当前验收与边界见 [ABCD整合记录](ABCD整合记录.md)。
+
 版本：2026-10-07  
 状态：本地已实现，供程序 A / B / C 联调  
 命名空间：`Tideflesh.Systems`
@@ -234,4 +236,4 @@ C: CombatTimerFinished()
 - 60 秒到点，或点「调试：立刻结算本波」，进入实验室并暂停。
 - 装备、卸下、出售、丢弃走 `RunController`。未装备超过上限时不能开下一波。
 - 「开始下一波」成功后才让 `WaveDirector` 开波。
-- 没有 `OrganPipelineController` 时会自己挂一个，手部槽按 id 同步。`spider_nest` 没有对应管道配置，只留在库存里。管道在这里只记装配，不负责打中战场上的敌人。
+- 没有 `OrganPipelineController` 时会自己挂一个，手部槽按 id 同步。现在也自动挂载 BattleOrganCombat 处理真实敌人伤害；旧灰盒入口的 `spider_nest` 仍只留在库存里。正式实验室和奖励替代请使用 SpringUpDemo 统一入口。

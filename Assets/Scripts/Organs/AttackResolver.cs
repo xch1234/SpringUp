@@ -22,7 +22,7 @@ namespace SpringUp.Organs
     {
         // 只决定本次命中名单，不扣血。名单在任何击杀回调之前固定下来。
         public static List<CastEvent> Resolve(CastEvent attack, IReadOnlyList<AttackTarget> targets,
-            Vector2 explosionCenter, out Vector2 center)
+            out Vector2 center)
         {
             if (targets == null) throw new ArgumentNullException(nameof(targets));
             center = default;
@@ -41,8 +41,8 @@ namespace SpringUp.Organs
                 return hits;
             }
 
-            // TNT 的中心由角色提供，与目标编号、列表顺序和敌人是否死亡无关。
-            center = explosionCenter;
+            if (!attack.EffectCenter.HasValue) return hits;
+            center = attack.EffectCenter.Value;
             if (float.IsNaN(center.x) || float.IsInfinity(center.x)
                 || float.IsNaN(center.y) || float.IsInfinity(center.y)) return hits;
             var ids = new HashSet<string>();
@@ -56,7 +56,7 @@ namespace SpringUp.Organs
                 if (dx * dx + dy * dy > radiusSquared || !ids.Add(target.Id)) continue;
                 // 展开成单目标命中，防止接入方把每次扣血又当成一次爆炸。
                 hits.Add(new CastEvent(target.Id, attack.Damage, attack.OriginDefinitionId,
-                    attack.OriginInstanceId, attack.Context, attack.Status));
+                    attack.OriginInstanceId, attack.Context, attack.Status, effectCenter: attack.EffectCenter));
             }
             return hits;
         }

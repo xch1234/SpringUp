@@ -29,6 +29,7 @@ namespace Tideflesh.Systems
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Install()
         {
+            if (UnityEngine.Object.FindFirstObjectByType<SpringUpRunDriver>() != null) return;
             if (UnityEngine.Object.FindFirstObjectByType<WaveDirector>() == null) return;
             if (UnityEngine.Object.FindFirstObjectByType<BattleRunDriver>() != null) return;
             var go = new GameObject("BattleRunDriver");
@@ -247,6 +248,8 @@ namespace Tideflesh.Systems
                 _pipeline = gameObject.AddComponent<OrganPipelineController>();
             if (_pipeline.GetComponent<BattleOrganTargeting>() == null)
                 _pipeline.gameObject.AddComponent<BattleOrganTargeting>();
+            if (_pipeline.GetComponent<BattleOrganCombat>() == null)
+                _pipeline.gameObject.AddComponent<BattleOrganCombat>();
             return _pipeline;
         }
 

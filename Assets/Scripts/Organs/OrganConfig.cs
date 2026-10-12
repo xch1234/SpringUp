@@ -25,7 +25,7 @@ namespace SpringUp.Organs
         private float damage = 5f;
 
         [Header("范围爆炸：仅 TNT 使用")]
-        [SerializeField, Min(0f), Tooltip("爆炸半径，单位为 Unity 世界单位。以角色为中心，包含边界，每个敌人只扣一次血。")]
+        [SerializeField, Min(0f), Tooltip("爆炸半径，单位为 Unity 世界单位。以触发目标的位置快照为中心，包含边界，每个敌人只扣一次血。")]
         private float explosionRadius = 2f;
 
         [Header("黑洞：仅坍缩体使用")]

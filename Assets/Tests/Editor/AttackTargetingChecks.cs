@@ -53,6 +53,8 @@ namespace SpringUp.EditorChecks
             try
             {
                 CheckBattle(SceneManager.GetActiveScene());
+                CheckDelayedPosition(SceneManager.GetActiveScene());
+                BattleCombatChecks.RunPlay();
                 Debug.Log("[Attack Targeting Checks] PLAY PASS: real enemy activation, pooling, scene isolation and binding lifecycle.");
                 EditorApplication.Exit(0);
             }
@@ -65,10 +67,12 @@ namespace SpringUp.EditorChecks
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 throw new InvalidOperationException("请先停止 Play。");
             CheckGeometry();
+            CheckEffectCenters();
             var scene = EditorSceneManager.NewPreviewScene();
             try
             {
                 CheckPipeline(scene);
+                CheckDelayedPosition(scene);
             }
             finally { EditorSceneManager.ClosePreviewScene(scene); }
             Debug.Log("[Attack Targeting Checks] EDIT PASS: geometry, all shapes, revalidation and chain.");
@@ -88,6 +92,28 @@ namespace SpringUp.EditorChecks
             Require(AttackTargeting.SelectNearest(targets, Vector2.zero, 0) == null, "无合格目标返回空。");
             Require(AttackTargeting.SelectNearest(targets, Vector2.zero, float.NaN) == null, "非法范围不能攻击。");
             Require(AttackTargeting.SelectNearest(targets, new Vector2(float.PositiveInfinity, 0), 3) == null, "非法原点不能攻击。");
+        }
+
+        private static void CheckEffectCenters()
+        {
+            var attack = new CastEvent("target", 10, "tnt", "tnt", shape: AttackShape.Explosion,
+                radius: 1, effectCenter: new Vector2(2, 0));
+            var targets = new[] { new AttackTarget("target", new Vector2(2, 0), true),
+                new AttackTarget("splash", new Vector2(2.5f, 0), true),
+                new AttackTarget("player_side", new Vector2(-.5f, 0), true),
+                new AttackTarget("edge", new Vector2(3, 0), true) };
+            var hits = AttackResolver.Resolve(attack, targets, out var center);
+            Require(center == new Vector2(2, 0) && hits.Count == 3 && hits.All(x => x.TargetId != "player_side"),
+                "爆炸以目标为中心，包含边界且排除玩家身边目标。");
+            targets[0] = new AttackTarget("new_generation", new Vector2(100, 0), true);
+            hits = AttackResolver.Resolve(attack, targets, out center);
+            Require(center == new Vector2(2, 0) && hits.Count == 2, "目标移动或换代不改变快照。");
+            var missing = new CastEvent("target", 10, "tnt", "tnt", shape: AttackShape.Explosion, radius: 10);
+            Require(AttackResolver.Resolve(missing, targets, out _).Count == 0, "缺位置不能回退玩家或原点。");
+            var atOrigin = new CastEvent("origin", 10, "tnt", "tnt", shape: AttackShape.Explosion,
+                radius: 0, effectCenter: Vector2.zero);
+            Require(AttackResolver.Resolve(atOrigin, new[] { new AttackTarget("origin", Vector2.zero, true) }, out _).Count == 1,
+                "世界原点是合法中心。");
         }
 
         private static void CheckLaboratory()
@@ -137,6 +163,7 @@ namespace SpringUp.EditorChecks
             CastEvent last = default;
             pipeline.TargetSelector = () => targetId;
             pipeline.TargetValidator = _ => valid;
+            pipeline.TargetSnapshotProvider = id => valid ? new AttackTarget(id, Vector2.one, true) : (AttackTarget?)null;
             pipeline.AttackProduced += attack => { count++; last = attack; };
             foreach (var shape in new[] { AttackShape.SingleTarget, AttackShape.Explosion, AttackShape.BlackHole })
             {
@@ -168,10 +195,10 @@ namespace SpringUp.EditorChecks
             targetId = null;
             int beforeChain = count;
             var cause = new CastEvent("killed_enemy", 5, "fist", "fist_instance");
-            pipeline.PublishSignal(new TriggerSignal(TriggerOn.Kill, cause));
+            pipeline.PublishSignal(new TriggerSignal(TriggerOn.Kill, cause, Vector2.zero));
             Require(count == beforeChain + 1 && last.TargetId == "killed_enemy" && last.ChainId == cause.ChainId,
                 "已经成立的击杀链可沿用死亡目标身份发动范围效果。");
-            pipeline.PublishSignal(new TriggerSignal(TriggerOn.Kill, cause));
+            pipeline.PublishSignal(new TriggerSignal(TriggerOn.Kill, cause, Vector2.zero));
             Require(count == beforeChain + 1, "同链触发器不能重复发动。");
         }
 
@@ -184,6 +211,32 @@ namespace SpringUp.EditorChecks
             var runtime = go.AddComponent<EnemyRuntime>();
             go.SetActive(true);
             return runtime;
+        }
+
+        private static void CheckDelayedPosition(Scene scene)
+        {
+            var pipeline = Go(scene, "delayed position").AddComponent<OrganPipelineController>();
+            var hand = pipeline.GetBody(BodyPart.Hand);
+            hand.SetSlot(0, new OrganInstance(new OrganDefinition("tnt", "TNT", BodyPart.Hand,
+                OrganType.Actuator, 10, shape: AttackShape.Explosion, radius: 1)));
+            hand.SetSlot(1, new OrganInstance(new OrganDefinition("tentacle", "触手", BodyPart.Hand,
+                OrganType.Trigger, triggerOn: TriggerOn.Kill)));
+            var target = Go(scene, "bleeding target").AddComponent<DemoTarget>();
+            target.InitializeForDemo("bleeding", 2);
+            var statuses = new StatusEffectRuntime();
+            var cause = new CastEvent(target.TargetId, 1, "knife", "knife_instance", status:
+                new StatusEffectData(StatusEffectKind.Bleed, 1, 3, tickDamage: 1), effectCenter: Vector2.one);
+            target.TryApplyAttack(cause);
+            statuses.TryApply(cause, 0);
+            target.transform.position = new Vector3(8, 4, 0);
+            CastEvent produced = default;
+            pipeline.AttackProduced += hit => produced = hit;
+            target.Killed += (dead, hit) => pipeline.PublishSignal(new TriggerSignal(TriggerOn.Kill, hit, dead.DeathPosition));
+            // 模拟受伤观察者移动对象；死亡快照必须先于外部回调保存。
+            target.Damaged += (dead, hit, amount) => dead.transform.position = Vector3.zero;
+            statuses.Tick(1, hit => target.TryApplyAttack(hit), () => target.IsAlive);
+            Require(produced.EffectCenter == new Vector2(8, 4) && produced.ChainId == cause.ChainId,
+                "流血致死使用实际死亡位置，并保留原链。");
         }
 
         private static void CheckBattle(Scene scene)

@@ -46,7 +46,8 @@ namespace TideBorne.Battle
         InventorySlots = 12,
 
         /// <summary>髓质收益，倍率。</summary>
-        MedullaGain = 13
+        MedullaGain = 13,
+        BaseCycleDuration = 14
     }
 
     /// <summary>

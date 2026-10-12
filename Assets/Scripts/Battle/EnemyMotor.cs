@@ -73,6 +73,9 @@ namespace TideBorne.Battle
             get
             {
                 var attackRange = Data != null ? Data.AttackRange : 0f;
+                var contact = GetComponent<EnemyContactDamage>();
+                if (contact != null && contact.enabled)
+                    return Mathf.Min(minStopDistance, contact.ContactRadius * 0.9f);
                 if (attackRange <= 0.01f)
                     return minStopDistance;
 
@@ -138,7 +141,7 @@ namespace TideBorne.Battle
             }
 
             var direction = toPlayer / distance * sign;
-            _body.linearVelocity = direction * Data.MoveSpeed;
+            _body.linearVelocity = direction * Data.MoveSpeed * (_runtime != null ? _runtime.OrganSpeedMultiplier : 1f);
 
             if (faceMoveDirection && _body.linearVelocity.sqrMagnitude > 0.0001f)
             {

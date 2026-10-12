@@ -22,6 +22,7 @@ namespace SpringUp.Organs
         public float CurrentHealth => currentHealth;
         public bool IsAlive => isActiveAndEnabled && currentHealth > 0f;
         public bool CanBeDisplaced => canBeDisplaced;
+        public Vector2 DeathPosition { get; private set; }
 
         public bool TryDisplace(Vector2 displacement)
         {
@@ -68,6 +69,7 @@ namespace SpringUp.Organs
             float appliedDamage = Mathf.Min(currentHealth, attack.Damage);
             currentHealth = Mathf.Max(0f, currentHealth - attack.Damage);
             bool killedByThisAttack = currentHealth == 0f;
+            if (killedByThisAttack) DeathPosition = transform.position;
             hitFlashRemaining = killedByThisAttack ? 0f : 0.2f;
             SetColor(killedByThisAttack ? Color.gray : Color.red);
 

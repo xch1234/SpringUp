@@ -132,6 +132,17 @@ namespace Tideflesh.Systems
             return iid;
         }
 
+        public void Replace(string instanceId, string part, int slot)
+        {
+            int index = SlotIndex(part, slot);
+            if (!_unequipped.Contains(instanceId)) throw new InventoryException("equip only from unequipped");
+            if (OrganOf(instanceId).part != part) throw new InventoryException("part mismatch");
+            string previous = _equipped[part][index];
+            _unequipped.Remove(instanceId);
+            _equipped[part][index] = instanceId;
+            if (previous != null) _unequipped.Add(previous);
+        }
+
         public int Sell(string instanceId)
         {
             var organ = OrganOf(instanceId);

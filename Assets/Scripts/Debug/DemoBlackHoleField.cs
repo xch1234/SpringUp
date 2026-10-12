@@ -16,10 +16,10 @@ namespace SpringUp.Organs
             get { float remaining = 0f; foreach (var field in fields) remaining = Mathf.Max(remaining, field.Remaining); return remaining; }
         }
 
-        public void Spawn(CastEvent attack, Vector2 center)
+        public void Spawn(CastEvent attack)
         {
             if (!isActiveAndEnabled) return;
-            var field = new BlackHoleBehaviour(attack, center);
+            var field = new BlackHoleBehaviour(attack);
             // 同一器官实例只保留一个黑洞；不同槽位的实例可以各有一个。
             fields.RemoveAll(old => old.Cause.OriginInstanceId == attack.OriginInstanceId);
             fields.Add(field);

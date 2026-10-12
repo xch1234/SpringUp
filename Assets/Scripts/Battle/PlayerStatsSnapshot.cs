@@ -10,6 +10,7 @@ namespace TideBorne.Battle
     public struct PlayerStatsSnapshot
     {
         public float baseCooldown;
+        public float baseCycleDuration;
         public float baseMaxHealth;
         public float moveSpeed;
         public float turnSpeed;
@@ -27,6 +28,7 @@ namespace TideBorne.Battle
         public override string ToString()
         {
             return "baseCooldown=" + baseCooldown
+                   + " baseCycleDuration=" + baseCycleDuration
                    + " baseMaxHealth=" + baseMaxHealth
                    + " moveSpeed=" + moveSpeed
                    + " turnSpeed=" + turnSpeed

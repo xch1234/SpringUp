@@ -39,7 +39,9 @@ namespace Tideflesh.Systems
                     continue;
                 }
 
-                hand.SetSlot(slot - 1, new SpringUp.Organs.OrganInstance(definition));
+                var previous = hand.GetSlot(slot - 1);
+                if (previous == null || previous.InstanceId != instanceId || previous.Definition != definition)
+                    hand.SetSlot(slot - 1, new SpringUp.Organs.OrganInstance(definition, instanceId));
             }
 
             return skipped;

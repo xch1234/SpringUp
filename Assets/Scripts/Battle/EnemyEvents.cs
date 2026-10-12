@@ -30,6 +30,8 @@ namespace TideBorne.Battle
         /// <summary>`OnKilled` 载荷：敌人 id、死亡点、击杀者器官 id。</summary>
         public struct KilledInfo
         {
+            public SpringUp.Organs.CastEvent? organAttack;
+            public string targetId;
             public string enemyId;
             public Vector2 deathPoint;
             public string killerOrganId;

@@ -23,7 +23,7 @@ namespace Tideflesh.Systems
         private void OnEnable()
         {
             pipeline = GetComponent<OrganPipelineController>();
-            if (pipeline.TargetSelector != null || pipeline.TargetValidator != null)
+            if (pipeline.TargetSelector != null || pipeline.TargetValidator != null || pipeline.TargetSnapshotProvider != null)
             {
                 Debug.LogError("BattleOrganTargeting: 管道已有索敌接入，请使用独立战斗管道。", this);
                 enabled = false;
@@ -31,6 +31,7 @@ namespace Tideflesh.Systems
             }
             pipeline.TargetSelector = SelectTarget;
             pipeline.TargetValidator = ValidateTarget;
+            pipeline.TargetSnapshotProvider = Snapshot;
         }
 
         private void OnDisable()
@@ -38,6 +39,7 @@ namespace Tideflesh.Systems
             if (pipeline == null) return;
             if (pipeline.TargetSelector == SelectTarget) pipeline.TargetSelector = null;
             if (pipeline.TargetValidator == ValidateTarget) pipeline.TargetValidator = null;
+            if (pipeline.TargetSnapshotProvider == Snapshot) pipeline.TargetSnapshotProvider = null;
         }
 
         public string SelectTarget()
@@ -52,14 +54,19 @@ namespace Tideflesh.Systems
         }
 
         public bool ValidateTarget(string targetId)
+            => Snapshot(targetId).HasValue;
+
+        public AttackTarget? Snapshot(string targetId)
         {
             var origin = Origin();
-            if (origin == null || string.IsNullOrWhiteSpace(targetId)) return false;
+            if (origin == null || string.IsNullOrWhiteSpace(targetId)) return null;
             foreach (var enemy in EnemyRuntime.ActiveEnemies)
                 if (Eligible(enemy, origin) && enemy.TargetId == targetId)
-                    return AttackTargeting.IsInRange(new AttackTarget(enemy.TargetId, enemy.Position, true),
-                        origin.position, attackRange);
-            return false;
+                {
+                    var target = new AttackTarget(enemy.TargetId, enemy.Position, true);
+                    return AttackTargeting.IsInRange(target, origin.position, attackRange) ? target : (AttackTarget?)null;
+                }
+            return null;
         }
 
         private Transform Origin() => attackOrigin != null ? attackOrigin : PlayerLocator.Player;

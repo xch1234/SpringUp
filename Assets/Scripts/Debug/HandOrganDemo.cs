@@ -13,9 +13,9 @@ namespace SpringUp.Organs
         private DemoTarget[] targets = new DemoTarget[0];
         [SerializeField, Min(0f), Tooltip("自动攻击索敌距离，独立于爆炸/黑洞效果半径。")]
         private float attackRange = AttackTargeting.DefaultRange;
-        [SerializeField, Tooltip("TNT 的爆炸中心。拖入角色物体；留空时使用本物体的位置，例如 HandStatusDemo。每次爆炸读取当前位置。")]
+        [SerializeField, Tooltip("旧版场景保留字段；效果中心由攻击目标快照决定。")]
         private Transform explosionOrigin;
-        [SerializeField, Tooltip("黑洞生成位置。拖入角色；留空使用本物体。生成后黑洞留在原地，不跟随角色。")]
+        [SerializeField, Tooltip("旧版场景保留字段；黑洞中心由攻击目标快照决定。")]
         private Transform blackHoleOrigin;
 
         private readonly List<DemoTarget> connectedTargets = new List<DemoTarget>();
@@ -64,7 +64,7 @@ namespace SpringUp.Organs
                 error = "请先移除同物体上的 OrganPipelineDemo，只保留一个测试入口。";
             else if (controller == null || !controller.isActiveAndEnabled)
                 error = "请启用 OrganPipelineController。";
-            else if (controller.TargetSelector != null || controller.TargetValidator != null)
+            else if (controller.TargetSelector != null || controller.TargetValidator != null || controller.TargetSnapshotProvider != null)
                 error = "管道已有其他目标选择器，请使用独立的测试物体。";
             else if (slots == null || slots.Length != BodyRuntime.SlotCount)
                 error = "Slots 的 Size 必须为 6。";
@@ -134,6 +134,7 @@ namespace SpringUp.Organs
             foreach (DemoTarget target in connectedTargets) ObserveTarget(target);
             controller.TargetSelector = SelectTarget;
             controller.TargetValidator = ValidateTarget;
+            controller.TargetSnapshotProvider = Snapshot;
             controller.AttackProduced += ApplyAttack;
             controller.TriggerActivated += OnTrigger;
             controller.TriggerBlocked += OnBlocked;
@@ -175,6 +176,7 @@ namespace SpringUp.Organs
                 controller.TriggerBlocked -= OnBlocked;
                 if (controller.TargetSelector == SelectTarget) controller.TargetSelector = null;
                 if (controller.TargetValidator == ValidateTarget) controller.TargetValidator = null;
+                if (controller.TargetSnapshotProvider == Snapshot) controller.TargetSnapshotProvider = null;
                 BodyRuntime hand = controller.GetBody(BodyPart.Hand);
                 for (int i = 0; i < installed.Length; i++)
                 {
@@ -207,7 +209,7 @@ namespace SpringUp.Organs
         {
             targetingSnapshot.Clear();
             foreach (var target in TargetCandidates())
-                if (target != null)
+                if (target != null && target.gameObject.scene == gameObject.scene)
                     targetingSnapshot.Add(new AttackTarget(target.TargetId, target.transform.position, target.IsAlive));
             var selected = AttackTargeting.SelectNearest(targetingSnapshot, transform.position, attackRange);
             if (selected == null) message = "索敌范围内没有存活目标，等待目标靠近。";
@@ -215,20 +217,26 @@ namespace SpringUp.Organs
         }
 
         private bool ValidateTarget(string id)
+            => Snapshot(id).HasValue;
+
+        private AttackTarget? Snapshot(string id)
         {
             foreach (var target in TargetCandidates())
-                if (target != null && target.TargetId == id)
-                    return AttackTargeting.IsInRange(new AttackTarget(id, target.transform.position, target.IsAlive),
-                        transform.position, attackRange);
-            return false;
+                if (target != null && target.TargetId == id && target.gameObject.scene == gameObject.scene)
+                {
+                    var snapshot = new AttackTarget(id, target.transform.position, target.IsAlive);
+                    if (AttackTargeting.IsInRange(snapshot, transform.position, attackRange)) return snapshot;
+                }
+            return null;
         }
 
         private void ApplyAttack(CastEvent attack)
         {
             if (attack.Shape == AttackShape.BlackHole)
             {
-                Vector2 holeCenter = blackHoleOrigin != null ? blackHoleOrigin.position : transform.position;
-                GetComponent<DemoBlackHoleField>()?.Spawn(attack, holeCenter);
+                if (!attack.EffectCenter.HasValue) return;
+                Vector2 holeCenter = attack.EffectCenter.Value;
+                GetComponent<DemoBlackHoleField>()?.Spawn(attack);
                 CollectBattleTargets();
                 message = $"坍缩体：生成位置 {holeCenter}，半径 {attack.Radius}，持续 {attack.BlackHole.Duration} 秒，只吸引不扣血";
                 return;
@@ -249,8 +257,7 @@ namespace SpringUp.Organs
                 targetsById.Add(target.TargetId, target);
                 snapshot.Add(new AttackTarget(target.TargetId, target.transform.position, true));
             }
-            Vector2 origin = explosionOrigin != null ? explosionOrigin.position : transform.position;
-            List<CastEvent> hits = AttackResolver.Resolve(attack, snapshot, origin, out Vector2 center);
+            List<CastEvent> hits = AttackResolver.Resolve(attack, snapshot, out Vector2 center);
             if (!explosion && hits.Count == 0) return;
             if (explosion)
             {
@@ -303,7 +310,7 @@ namespace SpringUp.Organs
 
         private void OnKilled(DemoTarget target, CastEvent attack)
         {
-            pendingKills.Enqueue(new TriggerSignal(TriggerOn.Kill, attack));
+            pendingKills.Enqueue(new TriggerSignal(TriggerOn.Kill, attack, target.DeathPosition));
             if (damageBatchDepth == 0) FlushKills();
         }
 

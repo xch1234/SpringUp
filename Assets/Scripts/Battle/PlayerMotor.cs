@@ -81,6 +81,8 @@ namespace TideBorne.Battle
 
         private void OnEnable()
         {
+            if (moveAction == null || moveAction.action == null)
+                Debug.LogError("[PlayerMotor] Missing Player/Move input action reference.", this);
             EnableAction(moveAction);
             EnableAction(sprintAction);
         }

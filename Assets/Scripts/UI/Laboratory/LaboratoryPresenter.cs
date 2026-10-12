@@ -22,6 +22,7 @@ namespace SpringUp.Laboratory
         private bool ownsFont;
         public static readonly string[] PartNames = { "头部", "手部", "腿部", "躯干" };
         private LaboratoryItem Candidate => equipment.Inventory.FirstOrDefault(x => x.InstanceId == candidateId);
+        public string SelectedInstanceId => candidateId ?? equipment?.GetSlot((LaboratoryPart)part, slot)?.InstanceId;
         private void OnEnable() { if (source != null) InitializeView(); }
         private void Start() { if (equipment == null) InitializeView(); }
         public void InitializeView()

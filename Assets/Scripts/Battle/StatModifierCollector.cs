@@ -18,7 +18,7 @@ namespace TideBorne.Battle
         private readonly float[] _multiplicative = new float[StatFieldCount];
 
         /// <summary><see cref="StatField"/> 的字段总数，新增枚举值时必须同步。</summary>
-        public const int StatFieldCount = 14;
+        public const int StatFieldCount = 15;
 
         public StatModifierCollector()
         {

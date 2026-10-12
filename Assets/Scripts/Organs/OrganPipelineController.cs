@@ -14,6 +14,9 @@ namespace SpringUp.Organs
         private BodyRuntime[] bodies;
         private readonly Queue<TriggerSignal> pendingSignals = new Queue<TriggerSignal>();
         private bool processingSignals;
+        public bool UseUnscaledTime { get; set; }
+        public Func<BodyPart, float> StepIntervalProvider { get; set; }
+        public Func<BodyPart, float> CycleDurationProvider { get; set; }
         public float StepInterval
         {
             get => stepInterval;
@@ -33,6 +36,7 @@ namespace SpringUp.Organs
         // 所有形状的普通攻击都需要目标。接入方负责范围内索敌和出手前的实时校验。
         public Func<string> TargetSelector { get; set; }
         public Func<string, bool> TargetValidator { get; set; }
+        public Func<string, AttackTarget?> TargetSnapshotProvider { get; set; }
 
         private void Awake() => EnsureInitialized();
 
@@ -64,8 +68,9 @@ namespace SpringUp.Organs
             SanitizeInterval();
             foreach (BodyRuntime body in bodies)
             {
-                body.StepInterval = stepInterval;
-                body.Tick(Time.deltaTime);
+                body.StepInterval = Mathf.Max(BodyRuntime.MinimumStepInterval, StepIntervalProvider?.Invoke(body.Part) ?? stepInterval);
+                body.CycleDuration = CycleDurationProvider?.Invoke(body.Part) ?? 0f;
+                body.Tick(UseUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime);
             }
         }
 
@@ -75,7 +80,7 @@ namespace SpringUp.Organs
             ExecuteAttack(organ, null);
         }
 
-        private void ExecuteAttack(OrganInstance organ, CastContext context, string causeTargetId = null)
+        private void ExecuteAttack(OrganInstance organ, CastContext context, string causeTargetId = null, Vector2? causePosition = null)
         {
             if (organ.Definition.Type != OrganType.Actuator
                 || (organ.Definition.Damage <= 0f && organ.Definition.Shape != AttackShape.BlackHole))
@@ -87,7 +92,15 @@ namespace SpringUp.Organs
             string targetId = inheritedArea ? causeTargetId : TargetSelector?.Invoke();
             if (string.IsNullOrWhiteSpace(targetId)) return;
             if (!inheritedArea && TargetValidator != null && !TargetValidator(targetId)) return;
-            if (ParameterisedBehaviour.TryCreateAttack(organ, targetId, out CastEvent attack, context))
+            Vector2? center = causePosition;
+            if (!inheritedArea)
+            {
+                var target = TargetSnapshotProvider?.Invoke(targetId);
+                if (TargetSnapshotProvider != null && (!target.HasValue || !target.Value.IsAlive
+                    || target.Value.Id != targetId || !CastEvent.IsFinite(target.Value.Position))) return;
+                center = target?.Position;
+            }
+            if (ParameterisedBehaviour.TryCreateAttack(organ, targetId, out CastEvent attack, context, center))
                 AttackProduced?.Invoke(attack);
         }
 
@@ -133,7 +146,7 @@ namespace SpringUp.Organs
                     {
                         TriggeredSlotExecuted?.Invoke(body, slotIndex, organ, child);
                         // 扫到触发器不等于条件满足。这里只会让执行器产出攻击。
-                        ExecuteAttack(organ, child, signal.Cause.TargetId);
+                        ExecuteAttack(organ, child, signal.Cause.TargetId, signal.Position);
                     });
                 }
             }

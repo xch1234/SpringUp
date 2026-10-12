@@ -13,6 +13,32 @@ namespace SpringUp.Organs
         private int occupiedCount;
         private double elapsed;
         private float stepInterval;
+        private float cycleDuration;
+        private double cycleClock, nextSlotTime;
+        private float roundStep, roundPeriod;
+        private int roundCursor, roundCount;
+        private bool cycleInitialized;
+
+        // Zero retains the legacy continuous-step mode used by standalone A demos.
+        public float CycleDuration
+        {
+            get => cycleDuration;
+            set
+            {
+                if (float.IsNaN(value) || float.IsInfinity(value) || value < 0)
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                if ((value > 0) != (cycleDuration > 0)) ResetTiming();
+                cycleDuration = value;
+            }
+        }
+
+        public void ResetTiming()
+        {
+            elapsed = 0;
+            cursor = 0;
+            cycleInitialized = false;
+            LastExecutedSlot = -1;
+        }
 
         public BodyPart Part { get; }
         public int LastExecutedSlot { get; private set; } = -1;
@@ -61,7 +87,7 @@ namespace SpringUp.Organs
             if (slots[index] != null) occupiedCount--;
             slots[index] = organ;
             if (organ != null) occupiedCount++;
-            if (occupiedCount == 0) elapsed = 0;
+            if (occupiedCount == 0) { elapsed = 0; cycleInitialized = false; }
             // 装卸器官时保留游标位置。
         }
 
@@ -73,6 +99,13 @@ namespace SpringUp.Organs
             if (occupiedCount == 0)
             {
                 elapsed = 0;
+                cycleInitialized = false;
+                return;
+            }
+
+            if (cycleDuration > 0)
+            {
+                TickCycle(deltaTime);
                 return;
             }
 
@@ -82,6 +115,49 @@ namespace SpringUp.Organs
                 elapsed -= stepInterval;
                 StepOnce();
             }
+        }
+
+        private void TickCycle(float deltaTime)
+        {
+            if (!cycleInitialized)
+            {
+                cycleInitialized = true;
+                cycleClock = -stepInterval;
+                BeginRound();
+            }
+            cycleClock += deltaTime;
+            while (occupiedCount > 0 && cycleClock + 0.0000001 >= nextSlotTime)
+            {
+                if (roundCursor == 0 && roundCount == 0)
+                {
+                    roundStep = stepInterval;
+                    roundPeriod = cycleDuration;
+                }
+                while (roundCursor < SlotCount && slots[roundCursor] == null) roundCursor++;
+                if (roundCursor == SlotCount)
+                {
+                    // A round cannot overlap itself, even after extreme speed modifiers.
+                    cycleClock -= Math.Max(roundPeriod, Math.Max(1, roundCount) * roundStep);
+                    BeginRound();
+                    continue;
+                }
+                int index = roundCursor++;
+                var organ = slots[index];
+                roundCount++;
+                nextSlotTime += roundStep;
+                LastExecutedSlot = index;
+                ExecutedStepCount++;
+                SlotExecuted?.Invoke(this, index, organ);
+            }
+        }
+
+        private void BeginRound()
+        {
+            roundCursor = roundCount = 0;
+            nextSlotTime = 0;
+            // Attribute changes take effect at the next round boundary.
+            roundStep = stepInterval;
+            roundPeriod = cycleDuration;
         }
 
         // 触发链额外扫描一遍，既不移动正常游标，也不消耗正常计时。

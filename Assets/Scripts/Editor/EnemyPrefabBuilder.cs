@@ -251,7 +251,7 @@ namespace TideBorne.EditorTools
             SetFloat(serialized, "maxHealth", config.health);
             SetFloat(serialized, "attackPower", config.attackPower);
             SetFloat(serialized, "attackCooldown", config.attackCooldown);
-            SetFloat(serialized, "attackRange", EnemyArchetypeConfig.RangedAttackRange);
+            SetFloat(serialized, "attackRange", config.hasRangedAttack ? EnemyArchetypeConfig.RangedAttackRange : 0.7f);
             SetFloat(serialized, "projectileSpeed", EnemyArchetypeConfig.RangedProjectileSpeed);
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }

@@ -58,6 +58,13 @@ namespace TideBorne.Battle
 
         /// <summary>开局是否会自动进入第一波。外部流程用它避免和 Start 各开一次。</summary>
         public bool AutoStartEnabled => autoStart;
+        public void ConfigureExternal(int count, float duration)
+        {
+            autoStart = false;
+            intervalBetweenWaves = 0f;
+            totalWaves = count;
+            waveDuration = duration;
+        }
 
         [Tooltip("是否在每波到点时清除场上残余敌人。按已定规则应为开。")]
         [SerializeField] private bool clearEnemiesOnWaveEnd = true;
@@ -160,6 +167,7 @@ namespace TideBorne.Battle
         /// <summary>开始下一波。已跑完全部波次时返回 false。</summary>
         public bool StartNextWave()
         {
+            if (State == WaveState.Running) return false;
             if (CurrentWave >= totalWaves)
             {
                 State = WaveState.AllWavesFinished;

@@ -1,6 +1,6 @@
 # 程序 B：真实配置装配与结算预览
 
-> 2026-10-11 整合第一步更新：预览改为选择 `Attack Range`（默认 3）内最近的存活目标，单体、TNT、黑洞均受发动距离限制；模拟玩家位置沿用 `explosionCenter`。范围中心的改动尚待第二步。详见 [ABCD整合记录](ABCD整合记录.md)。
+> 2026-10-12 整合更新：`SpringUpDemo.unity` 的实验室已接 D 的正式库存，支持装卸、原子替换、出售、丢弃、容量检查与下一波。预览使用不受暂停影响的时间，和真实战斗共用定义与库存实例 ID。模拟玩家位置改名为 `playerPosition`，旧 `explosionCenter` 通过 FormerlySerializedAs 自动迁移；TNT/黑洞使用目标位置快照。以下样例库存说明仅适用于独立 LaboratoryDemo。详见 [ABCD整合记录](ABCD整合记录.md)。
 
 更新：2026-10-10；当前集成分支 `main_temp`。入口为 `Assets/Scenes/LaboratoryDemo.unity`，或 `Tools > SpringUp > Open Laboratory Scene`，然后 Play。
 
@@ -38,10 +38,10 @@
 | --- | --- |
 | Target Health | A、B 均为 30；与装备无关 |
 | First Position / Second Position | 世界坐标 (0.75, 0)、(1.75, 0)，间距 1 |
-| Explosion Center | (0, 0)，同时为黑洞生成中心 |
+| Player Position | (0, 0)，只用于索敌距离起点；与效果中心独立 |
 | Replenish Delay | 死亡后 1.5 秒 |
 
-画面方块是两个世界目标的 UI 投影，不以 Canvas 像素坐标结算。目标实际 Transform 固定在以上位置。默认 TNT 半径可覆盖两者；将 A 的 TNT 半径改为 0.75 时只命中边界上的 A，B 不受伤。目标血量、位置、存活／死亡和补充倒计时可见。
+画面方块是两个世界目标的 UI 投影，不以 Canvas 像素坐标结算。目标实际 Transform 固定在以上位置。默认 TNT 半径可覆盖两者；将 A 的 TNT 半径改为 0.75 时只命中作为中心的 A，B 距 A 为 1，因此不受伤。目标血量、位置、存活／死亡和补充倒计时可见。
 
 每次死亡只通知一次，清除状态及延迟伤害来源；延迟后以新 TargetId 满血补充，不广播击杀、不发奖励。存活目标、管道节拍与正常游标不重置。全部死亡时允许短暂空场，单目标攻击不伪造命中，范围攻击允许命中 0 个。新身份拒绝命中旧目标编号的攻击。
 

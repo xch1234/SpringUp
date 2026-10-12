@@ -11,13 +11,13 @@ namespace SpringUp.Organs
         public float Remaining { get; private set; }
         public bool IsActive => Remaining > 0f;
 
-        public BlackHoleBehaviour(CastEvent cause, Vector2 center)
+        public BlackHoleBehaviour(CastEvent cause)
         {
             if (cause.Context == null || cause.Shape != AttackShape.BlackHole || cause.BlackHole == null)
                 throw new ArgumentException("需要有效的黑洞请求。", nameof(cause));
-            if (!Finite(center.x) || !Finite(center.y)) throw new ArgumentOutOfRangeException(nameof(center));
+            if (!cause.EffectCenter.HasValue) throw new ArgumentException("黑洞缺少位置快照。", nameof(cause));
             Cause = cause;
-            Center = center;
+            Center = cause.EffectCenter.Value;
             Remaining = cause.BlackHole.Duration;
         }
 

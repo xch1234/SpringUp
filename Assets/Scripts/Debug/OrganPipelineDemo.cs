@@ -43,6 +43,7 @@ namespace SpringUp.Organs
                 ConnectTargets();
                 controller.TargetSelector = SelectTarget;
                 controller.TargetValidator = ValidateTarget;
+                controller.TargetSnapshotProvider = Snapshot;
                 controller.AttackProduced += ApplyAttack;
             }
 
@@ -86,6 +87,7 @@ namespace SpringUp.Organs
                 controller.TriggeredSlotExecuted -= OnTriggeredSlotExecuted;
                 if (controller.TargetSelector == SelectTarget) controller.TargetSelector = null;
                 if (controller.TargetValidator == ValidateTarget) controller.TargetValidator = null;
+                if (controller.TargetSnapshotProvider == Snapshot) controller.TargetSnapshotProvider = null;
             }
             foreach (DemoTarget target in connectedTargets)
             {
@@ -134,17 +136,23 @@ namespace SpringUp.Organs
         {
             var snapshot = new List<AttackTarget>();
             foreach (DemoTarget target in connectedTargets)
-                if (target != null) snapshot.Add(new AttackTarget(target.TargetId, target.transform.position, target.IsAlive));
+                if (target != null && target.gameObject.scene == gameObject.scene)
+                    snapshot.Add(new AttackTarget(target.TargetId, target.transform.position, target.IsAlive));
             return AttackTargeting.SelectNearest(snapshot, transform.position, attackRange);
         }
 
         private bool ValidateTarget(string id)
+            => Snapshot(id).HasValue;
+
+        private AttackTarget? Snapshot(string id)
         {
             foreach (var target in connectedTargets)
-                if (target != null && target.TargetId == id)
-                    return AttackTargeting.IsInRange(new AttackTarget(id, target.transform.position, target.IsAlive),
-                        transform.position, attackRange);
-            return false;
+                if (target != null && target.TargetId == id && target.gameObject.scene == gameObject.scene)
+                {
+                    var snapshot = new AttackTarget(id, target.transform.position, target.IsAlive);
+                    if (AttackTargeting.IsInRange(snapshot, transform.position, attackRange)) return snapshot;
+                }
+            return null;
         }
 
         private void ApplyAttack(CastEvent attack)
@@ -167,7 +175,7 @@ namespace SpringUp.Organs
             {
                 lastAttack = $"{target.TargetId} 已死亡，发送击杀通知";
                 Debug.Log($"[触发链] {target.TargetId} 的击杀通知，链：{attack.ChainId}，深度：{attack.ChainDepth}", this);
-                controller.PublishSignal(new TriggerSignal(TriggerOn.Kill, attack));
+                controller.PublishSignal(new TriggerSignal(TriggerOn.Kill, attack, target.DeathPosition));
             }
         }
 

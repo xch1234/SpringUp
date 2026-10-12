@@ -25,6 +25,7 @@ namespace TideBorne.Battle
         [SerializeField] private float currentHealth = 20f;
 
         private bool _isDead;
+        public float OrganSpeedMultiplier { get; set; } = 1f;
 
         // Id 是敌人种类配置编号；TargetId 标识本次出生，池化再次启用后必须失效。
         public string TargetId { get; private set; }
@@ -112,6 +113,7 @@ namespace TideBorne.Battle
             TargetId = System.Guid.NewGuid().ToString("N");
             // 池化复用：重新激活时恢复满血，否则第二个"敌人"会带着上次的残血出现。
             _isDead = false;
+            OrganSpeedMultiplier = 1f;
 
             if (data == null)
                 data = GetComponent<EnemyData>();
@@ -125,6 +127,7 @@ namespace TideBorne.Battle
 
         private void OnDisable()
         {
+            OrganSpeedMultiplier = 1f;
             // 归还池会置为非激活，此时必须移出活列表，否则 HUD 会把池里的算成场上敌人。
             s_ActiveEnemies.Remove(this);
         }
@@ -142,12 +145,22 @@ namespace TideBorne.Battle
         /// <param name="hitPoint">命中点。</param>
         /// <returns>实际扣掉的血量。</returns>
         public float TakeDamage(float damage, string sourceOrganId, Vector2 hitPoint)
+            => ApplyDamage(damage, sourceOrganId, hitPoint, null);
+
+        public float TakeAttack(SpringUp.Organs.CastEvent attack)
         {
-            if (damage <= 0f || !IsAlive)
+            if (!isActiveAndEnabled || attack.Context == null || attack.TargetId != TargetId) return 0f;
+            return ApplyDamage(attack.Damage, attack.OriginDefinitionId, Position, attack);
+        }
+
+        private float ApplyDamage(float damage, string sourceOrganId, Vector2 hitPoint, SpringUp.Organs.CastEvent? attack)
+        {
+            if (float.IsNaN(damage) || float.IsInfinity(damage) || damage <= 0f || !IsAlive)
                 return 0f;
 
             var applied = Mathf.Min(damage, currentHealth);
             currentHealth -= applied;
+            Vector2 deathPosition = Position;
 
             EnemyEvents.RaiseDamaged(new EnemyEvents.DamagedInfo
             {
@@ -159,7 +172,7 @@ namespace TideBorne.Battle
             });
 
             if (currentHealth <= 0f)
-                Die(sourceOrganId, hitPoint);
+                Die(sourceOrganId, deathPosition, attack);
 
             return applied;
         }
@@ -192,7 +205,7 @@ namespace TideBorne.Battle
         }
 
         /// <summary>被击杀：发 `OnKilled` 后退场。只有真的被打死才走这里。</summary>
-        private void Die(string killerOrganId, Vector2 deathPoint)
+        private void Die(string killerOrganId, Vector2 deathPoint, SpringUp.Organs.CastEvent? attack)
         {
             if (_isDead)
                 return;
@@ -202,6 +215,8 @@ namespace TideBorne.Battle
             EnemyEvents.RaiseKilled(new EnemyEvents.KilledInfo
             {
                 enemyId = Id,
+                targetId = TargetId,
+                organAttack = attack,
                 deathPoint = deathPoint,
                 killerOrganId = killerOrganId,
                 enemy = gameObject

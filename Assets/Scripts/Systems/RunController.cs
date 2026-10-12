@@ -49,6 +49,8 @@ namespace Tideflesh.Systems
         public string Phase { get; private set; } = "boot";
         public int Wave { get; private set; }
         public int Marrow { get; private set; }
+        public int MaxWave => _maxWave;
+        public int WaveDuration => _waves[Wave].duration_sec;
 
         public RunController(
             Dictionary<string, OrganDefinition> catalog,
@@ -139,6 +141,20 @@ namespace Tideflesh.Systems
             RequireLab();
             Inventory.Unequip(part, slot);
             EmitLoadout();
+        }
+
+        public void Replace(string instanceId, string part, int slot)
+        {
+            RequireLab();
+            Inventory.Replace(instanceId, part, slot);
+            EmitLoadout();
+        }
+
+        public void LoseRun()
+        {
+            if (Phase != "combat") return;
+            Phase = "run_lost";
+            _emit("RunEnded", new RunEndedPayload { Result = "lost" });
         }
 
         public void Sell(string instanceId)

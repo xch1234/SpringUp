@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace SpringUp.Organs
 {
@@ -6,7 +7,7 @@ namespace SpringUp.Organs
     public static class ParameterisedBehaviour
     {
         public static bool TryCreateAttack(OrganInstance organ, string targetId, out CastEvent attack,
-            CastContext context = null)
+            CastContext context = null, Vector2? effectCenter = null)
         {
             if (organ == null) throw new ArgumentNullException(nameof(organ));
             attack = default;
@@ -15,8 +16,11 @@ namespace SpringUp.Organs
                 || string.IsNullOrWhiteSpace(targetId))
                 return false;
 
+            if ((definition.Shape != AttackShape.SingleTarget && !effectCenter.HasValue)
+                || (effectCenter.HasValue && !CastEvent.IsFinite(effectCenter.Value))) return false;
+
             attack = new CastEvent(targetId, definition.Damage, definition.Id, organ.InstanceId,
-                context ?? new CastContext(), definition.Status, definition.Shape, definition.Radius, definition.BlackHole);
+                context ?? new CastContext(), definition.Status, definition.Shape, definition.Radius, definition.BlackHole, effectCenter);
             return true;
         }
 

@@ -19,6 +19,9 @@ namespace TideBorne.Battle
         [Tooltip("全局节拍基准，秒。执行模型用；下限由 clampBaseCooldown 保护。")]
         [SerializeField] private float baseCooldown = 1f;
 
+        [Tooltip("Seconds between starts of consecutive organ cycles.")]
+        [SerializeField, Min(0.05f)] private float baseCycleDuration = 2f;
+
         [Tooltip("基础血量，点。")]
         [SerializeField] private float baseMaxHealth = 100f;
 
@@ -97,6 +100,7 @@ namespace TideBorne.Battle
 
         /// <summary>最终值：全局节拍基准，秒。</summary>
         public float BaseCooldown { get { return Read(StatField.BaseCooldown); } }
+        public float BaseCycleDuration { get { return Read(StatField.BaseCycleDuration); } }
 
         /// <summary>最终值：基础血量，点。</summary>
         public float BaseMaxHealth { get { return Read(StatField.BaseMaxHealth); } }
@@ -165,6 +169,7 @@ namespace TideBorne.Battle
             var snapshot = new PlayerStatsSnapshot
             {
                 baseCooldown = BaseCooldown,
+                baseCycleDuration = BaseCycleDuration,
                 baseMaxHealth = BaseMaxHealth,
                 moveSpeed = MoveSpeed,
                 turnSpeed = TurnSpeed,
@@ -225,12 +230,14 @@ namespace TideBorne.Battle
 
         private float Read(StatField field)
         {
+            // Invalidation must rebuild before consulting the previous cached value.
+            var collector = ModifierCollector;
             var index = (int)field;
             var cached = _cache[index];
             if (!float.IsNaN(cached))
                 return cached;
 
-            var value = Clamp(field, ModifierCollector.Apply(field, ReadBaseValue(field)));
+            var value = Clamp(field, collector.Apply(field, ReadBaseValue(field)));
             _cache[index] = value;
             return value;
         }
@@ -240,6 +247,7 @@ namespace TideBorne.Battle
             switch (field)
             {
                 case StatField.BaseCooldown: return baseCooldown;
+                case StatField.BaseCycleDuration: return baseCycleDuration;
                 case StatField.BaseMaxHealth: return baseMaxHealth;
                 case StatField.MoveSpeed: return moveSpeed;
                 case StatField.TurnSpeed: return turnSpeed;
@@ -267,6 +275,8 @@ namespace TideBorne.Battle
                 case StatField.MoveSpeed:
                     return Mathf.Max(value, minMoveSpeed);
                 case StatField.BaseCooldown:
+                case StatField.BaseCycleDuration:
+                    if (float.IsNaN(value) || float.IsInfinity(value)) return minBaseCooldown;
                     return Mathf.Max(value, minBaseCooldown);
                 case StatField.CritChance:
                     return Mathf.Clamp01(value);
@@ -284,6 +294,7 @@ namespace TideBorne.Battle
                 return false;
 
             return Mathf.Abs(left.baseCooldown - right.baseCooldown) <= Epsilon
+                   && Mathf.Abs(left.baseCycleDuration - right.baseCycleDuration) <= Epsilon
                    && Mathf.Abs(left.baseMaxHealth - right.baseMaxHealth) <= Epsilon
                    && Mathf.Abs(left.moveSpeed - right.moveSpeed) <= Epsilon
                    && Mathf.Abs(left.turnSpeed - right.turnSpeed) <= Epsilon

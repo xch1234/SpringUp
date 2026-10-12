@@ -24,7 +24,8 @@ namespace TideBorne.Battle
 
         [Header("派生值 · 部位执行速率（接口草案 §5.3）")]
         [Tooltip("头 / 手 / 腿 的实际执行速率，派生值，不可直接改。由程序 A 写入计时触发器的百分比之积。")]
-        [SerializeField] private float[] partRate = new float[3];
+        [SerializeField] private float[] partRate = { 1f, 1f, 1f };
+        [SerializeField] private float[] partCycleRate = { 1f, 1f, 1f };
 
         /// <summary>部位数量：头 / 手 / 腿。</summary>
         public const int PartCount = 3;
@@ -39,6 +40,7 @@ namespace TideBorne.Battle
         /// 这条是结算**结果**，载荷是真正扣掉的血量。
         /// </summary>
         public event System.Action<float> PlayerDamaged;
+        public event System.Action Died;
 
         /// <summary>当前血量。</summary>
         public float CurrentHealth { get { return currentHealth; } }
@@ -74,7 +76,7 @@ namespace TideBorne.Battle
                 return 0f;
             }
 
-            return partRate[partIndex];
+            return ValidRate(partRate[partIndex]);
         }
 
         /// <summary>实际步进间隔，秒：<c>PlayerStats.baseCooldown × partRate[i]</c>。</summary>
@@ -82,6 +84,23 @@ namespace TideBorne.Battle
         {
             return Stats.BaseCooldown * GetPartRate(partIndex);
         }
+
+        public float GetCycleDuration(int partIndex)
+        {
+            if (partIndex < 0 || partIndex >= PartCount) throw new System.ArgumentOutOfRangeException(nameof(partIndex));
+            return Stats.BaseCycleDuration * (partCycleRate != null && partIndex < partCycleRate.Length
+                ? ValidRate(partCycleRate[partIndex]) : 1f);
+        }
+
+        public void SetPartCycleRate(int partIndex, float value)
+        {
+            if (partIndex < 0 || partIndex >= PartCount) throw new System.ArgumentOutOfRangeException(nameof(partIndex));
+            if (partCycleRate == null || partCycleRate.Length != PartCount) partCycleRate = new[] { 1f, 1f, 1f };
+            partCycleRate[partIndex] = ValidRate(value);
+        }
+
+        private static float ValidRate(float value)
+            => value > 0f && !float.IsInfinity(value) ? value : 1f;
 
         /// <summary>写入某个部位的执行速率。由程序 A 计算后调用。</summary>
         public void SetPartRate(int partIndex, float value)
@@ -92,17 +111,18 @@ namespace TideBorne.Battle
                 return;
             }
 
-            partRate[partIndex] = value;
+            partRate[partIndex] = ValidRate(value);
         }
 
         /// <summary>扣血。返回实际扣掉的量（受当前血量限制，不会扣成负数）。</summary>
         public float TakeDamage(float amount)
         {
-            if (amount <= 0f)
+            if (amount <= 0f || currentHealth <= 0f || float.IsNaN(amount) || float.IsInfinity(amount))
                 return 0f;
 
             var applied = Mathf.Min(amount, currentHealth);
             currentHealth -= applied;
+            if (currentHealth <= 0f) Died?.Invoke();
             return applied;
         }
 
@@ -137,7 +157,7 @@ namespace TideBorne.Battle
             }
 
             if (partRate == null || partRate.Length != PartCount)
-                partRate = new float[PartCount];
+                partRate = new[] { 1f, 1f, 1f };
 
             // 首次启动把血量夹到上限，避免 inspector 里的初值超过上限。
             currentHealth = Mathf.Clamp(currentHealth, 0f, MaxHealth);
@@ -192,7 +212,7 @@ namespace TideBorne.Battle
 
         private void Update()
         {
-            if (applyHealthRegen)
+            if (applyHealthRegen && currentHealth > 0f)
             {
                 var regen = Stats.HealthRegen;
                 if (regen > 0f && currentHealth < MaxHealth)
