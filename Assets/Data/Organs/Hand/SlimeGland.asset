@@ -13,5 +13,6 @@ MonoBehaviour:
   m_Name: SlimeGland
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganConfig
   kind: 4
+  chargeCost: 25
   damage: 5
   statusEffect: {fileID: 11400000, guid: 343fbfad78954b348670508bb50b47da, type: 2}

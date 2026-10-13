@@ -106,11 +106,12 @@ namespace SpringUp.EditorChecks
                     go.transform.position = driver.player.transform.position + Vector3.right;
                     go.AddComponent<EnemyData>(); var enemy = go.AddComponent<EnemyRuntime>(); go.SetActive(true);
                     float before = enemy.CurrentHealth;
-                    driver.pipeline.GetBody(BodyPart.Hand).ResetTiming();
-                    driver.pipeline.GetBody(BodyPart.Hand).Tick(.15f);
-                    Require(enemy.CurrentHealth < before, "开局拳头实际扣敌人血。");
+                    Require(!driver.pipeline.AutomaticExecution && driver.ChargeAttack.TryAttack(), "统一入口使用主动充能攻击。");
+                    Require(enemy.CurrentHealth < before && driver.ChargeAttack.Charge < driver.ChargeAttack.Capacity,
+                        "开局拳头主动攻击实际扣敌人血并消耗充能。");
                     driver.director.CompleteCurrentWave();
                     Require(run.Phase == "lab" && run.Marrow == 45 && Time.timeScale == 0, "第一波奖励与暂停。");
+                    Require(!driver.ChargeAttack.TryAttack(), "休息阶段禁止实战攻击。");
                     CheckEquipmentHud(driver, false);
                     var bag = driver.Equipment.Inventory;
                     var knife = bag.Single(x => x.DefinitionId == "rust_knife");
@@ -149,6 +150,9 @@ namespace SpringUp.EditorChecks
                     while (!run.CanStartNextWave()) driver.Equipment.TryDiscard(run.Inventory.UnequippedIds()[0], out _);
                     driver.NextWave(); driver.NextWave();
                     Require(run.Wave == 2 && driver.director.CurrentWave == 2 && Time.timeScale == 1, "第二波与重复点击保护。");
+                    Require(driver.ChargeAttack.Charge == driver.ChargeAttack.Capacity
+                        && driver.ChargeAttack.RequiredCharge == driver.Definitions["rust_knife"].ChargeCost + driver.Definitions["fist"].ChargeCost,
+                        "下一波充满且按实际配装更新整轮消耗，触发器不额外收费。");
                     CheckEquipmentHud(driver, true);
                     var equippedBefore = run.Inventory.EquippedAt("hand", 1);
                     var blockedCandidate = run.Inventory.Spawn("fist");

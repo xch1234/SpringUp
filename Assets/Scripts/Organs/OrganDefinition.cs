@@ -17,11 +17,13 @@ namespace SpringUp.Organs
         public AttackShape Shape { get; }
         public float Radius { get; }
         public BlackHoleData BlackHole { get; }
+        public float ChargeCost { get; }
+        public bool CanAttack => Type == OrganType.Actuator && (Damage > 0f || Shape == AttackShape.BlackHole);
 
         public OrganDefinition(string id, string displayName, BodyPart part, OrganType type, float damage = 0f,
             TriggerOn triggerOn = TriggerOn.Kill, TriggerTargetKind triggerTarget = TriggerTargetKind.SelfSlots,
             StatusEffectData status = null, AttackShape shape = AttackShape.SingleTarget, float radius = 0f,
-            BlackHoleData blackHole = null)
+            BlackHoleData blackHole = null, float chargeCost = 20f)
         {
             if (string.IsNullOrWhiteSpace(id))
                 throw new ArgumentException("器官配置编号不能为空。", nameof(id));
@@ -39,6 +41,8 @@ namespace SpringUp.Organs
             if (float.IsNaN(radius) || float.IsInfinity(radius) || radius < 0f)
                 throw new ArgumentOutOfRangeException(nameof(radius));
             if (shape == AttackShape.BlackHole && blackHole == null) throw new ArgumentNullException(nameof(blackHole));
+            if (float.IsNaN(chargeCost) || float.IsInfinity(chargeCost) || chargeCost < 0f)
+                throw new ArgumentOutOfRangeException(nameof(chargeCost));
 
             Id = id;
             DisplayName = string.IsNullOrWhiteSpace(displayName) ? id : displayName;
@@ -51,6 +55,7 @@ namespace SpringUp.Organs
             Shape = shape;
             Radius = radius;
             BlackHole = blackHole;
+            ChargeCost = type == OrganType.Trigger ? 0f : chargeCost;
         }
     }
 }

@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganConfig
   kind: 1
   damage: 8
+  chargeCost: 30
   statusEffect: {fileID: 11400000, guid: 303d92d1764c48559503c7d182a80318, type: 2}

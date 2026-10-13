@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: CollapseBody
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganConfig
   kind: 5
+  chargeCost: 40
   damage: 0
   blackHoleRadius: 3
   blackHoleDuration: 5

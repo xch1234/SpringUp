@@ -44,10 +44,8 @@ namespace SpringUp.EditorChecks
                     var enemy = Object.Instantiate(Resources.Load<GameObject>("Enemies/Normal"));
                     enemy.SetActive(true);
                     enemy.transform.position = driver.player.transform.position + new Vector3(2, 0, 0);
-                    driver.pipeline.GetBody(SpringUp.Organs.BodyPart.Hand).SetSlot(0,
-                        new SpringUp.Organs.OrganInstance(driver.Definitions["tnt"]));
-                    driver.pipeline.GetBody(SpringUp.Organs.BodyPart.Hand).ResetTiming();
-                    driver.pipeline.GetBody(SpringUp.Organs.BodyPart.Hand).Tick(.15f);
+                    if (!driver.ChargeAttack.TryAttack()) throw new InvalidOperationException("充能主动攻击失败。");
+                    driver.runStatus.canvas.GetComponentInChildren<ChargeAttackHud>().Refresh(true);
                     Capture("battle-1280", 1280, 720);
                     Capture("battle-1920", 1920, 1080);
                     Capture("battle-1024", 1024, 768);

@@ -24,6 +24,9 @@ namespace SpringUp.Organs
         [SerializeField, Min(0f), Tooltip("基础伤害。0 表示不造成攻击伤害。多肢触手和坍缩体不使用此值；黑洞只吸引，不扣血。")]
         private float damage = 5f;
 
+        [SerializeField, Min(0f), Tooltip("玩家主动发动一次所需的充能。触发器不消耗充能；停止 Play 后修改。")]
+        private float chargeCost = 20f;
+
         [Header("范围爆炸：仅 TNT 使用")]
         [SerializeField, Min(0f), Tooltip("爆炸半径，单位为 Unity 世界单位。以触发目标的位置快照为中心，包含边界，每个敌人只扣一次血。")]
         private float explosionRadius = 2f;
@@ -68,6 +71,8 @@ namespace SpringUp.Organs
                 error = "器官种类无效。";
             else if (float.IsNaN(damage) || float.IsInfinity(damage) || damage < 0f)
                 error = DisplayName + "的伤害必须是有限的非负数。";
+            else if (float.IsNaN(chargeCost) || float.IsInfinity(chargeCost) || chargeCost < 0f)
+                error = DisplayName + "的充能消耗必须是有限的非负数。";
             else if (kind == HandOrganKind.CollapseBody && (float.IsNaN(blackHoleRadius)
                 || float.IsInfinity(blackHoleRadius) || blackHoleRadius < 0f))
                 error = "黑洞半径必须是有限的非负数。";
@@ -107,7 +112,7 @@ namespace SpringUp.Organs
                 trigger ? OrganType.Trigger : OrganType.Actuator, trigger || blackHole != null ? 0f : damage, status: status,
                 shape: blackHole != null ? AttackShape.BlackHole : kind == HandOrganKind.Tnt ? AttackShape.Explosion : AttackShape.SingleTarget,
                 radius: blackHole != null ? blackHoleRadius : kind == HandOrganKind.Tnt ? explosionRadius : 0f,
-                blackHole: blackHole);
+                blackHole: blackHole, chargeCost: chargeCost);
             return true;
         }
     }

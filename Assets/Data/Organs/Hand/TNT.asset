@@ -13,5 +13,6 @@ MonoBehaviour:
   m_Name: TNT
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganConfig
   kind: 6
+  chargeCost: 50
   damage: 10
   explosionRadius: 2

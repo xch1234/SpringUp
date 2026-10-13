@@ -25,6 +25,9 @@ namespace SpringUp.Laboratory
                 definition.Type == OrganType.Trigger ? LaboratoryTriggerTarget.SelfSlots : LaboratoryTriggerTarget.None)
         { Definition = definition; }
         private static string Describe(OrganDefinition d)
+            => (d.Type == OrganType.Trigger ? "触发追加不额外消耗充能。" : $"主动攻击消耗 {d.ChargeCost:g} 充能。") + DescribeEffect(d);
+
+        private static string DescribeEffect(OrganDefinition d)
         {
             if (d.Type == OrganType.Trigger) return "击杀追加执行本部位；同链每实例最多一次，深度上限 4。";
             if (d.BlackHole != null) return $"黑洞半径 {d.Radius:g}，持续 {d.BlackHole.Duration:g}s，吸引速度 {d.BlackHole.PullSpeed:g}；预览不展示位移。";

@@ -13,5 +13,6 @@ MonoBehaviour:
   m_Name: RustKnife
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganConfig
   kind: 3
+  chargeCost: 25
   damage: 1
   statusEffect: {fileID: 11400000, guid: b800b84d031e4e6a81e0ea4ccbf9f31b, type: 2}

@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: MultiTentacle
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.OrganConfig
   kind: 2
+  chargeCost: 0
   damage: 0

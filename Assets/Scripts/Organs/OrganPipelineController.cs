@@ -15,6 +15,7 @@ namespace SpringUp.Organs
         private readonly Queue<TriggerSignal> pendingSignals = new Queue<TriggerSignal>();
         private bool processingSignals;
         public bool UseUnscaledTime { get; set; }
+        public bool AutomaticExecution { get; set; } = true;
         public Func<BodyPart, float> StepIntervalProvider { get; set; }
         public Func<BodyPart, float> CycleDurationProvider { get; set; }
         public float StepInterval
@@ -64,6 +65,7 @@ namespace SpringUp.Organs
 
         private void Update()
         {
+            if (!AutomaticExecution) return;
             EnsureInitialized();
             SanitizeInterval();
             foreach (BodyRuntime body in bodies)
@@ -80,28 +82,41 @@ namespace SpringUp.Organs
             ExecuteAttack(organ, null);
         }
 
-        private void ExecuteAttack(OrganInstance organ, CastContext context, string causeTargetId = null, Vector2? causePosition = null)
+        public bool TryExecuteSlot(BodyPart part, int index)
         {
-            if (organ.Definition.Type != OrganType.Actuator
-                || (organ.Definition.Damage <= 0f && organ.Definition.Shape != AttackShape.BlackHole))
-                return;
+            if (!isActiveAndEnabled) return false;
+            var body = GetBody(part);
+            var organ = body.GetSlot(index);
+            if (organ == null) return false;
+            bool produced = ExecuteAttack(organ, null);
+            if (produced) SlotExecuted?.Invoke(body, index, organ);
+            return produced;
+        }
+
+        private bool ExecuteAttack(OrganInstance organ, CastContext context, string causeTargetId = null, Vector2? causePosition = null)
+        {
+            if (!organ.Definition.CanAttack) return false;
 
             // 已成立的击杀链允许范围效果沿用触发敌人的身份（它可能已死亡）。
             // 普通攻击，以及追加的单体攻击，必须重新索敌并校验，不能打已回池的目标。
             bool inheritedArea = context != null && organ.Definition.Shape != AttackShape.SingleTarget;
             string targetId = inheritedArea ? causeTargetId : TargetSelector?.Invoke();
-            if (string.IsNullOrWhiteSpace(targetId)) return;
-            if (!inheritedArea && TargetValidator != null && !TargetValidator(targetId)) return;
+            if (string.IsNullOrWhiteSpace(targetId)) return false;
+            if (!inheritedArea && TargetValidator != null && !TargetValidator(targetId)) return false;
             Vector2? center = causePosition;
             if (!inheritedArea)
             {
                 var target = TargetSnapshotProvider?.Invoke(targetId);
                 if (TargetSnapshotProvider != null && (!target.HasValue || !target.Value.IsAlive
-                    || target.Value.Id != targetId || !CastEvent.IsFinite(target.Value.Position))) return;
+                    || target.Value.Id != targetId || !CastEvent.IsFinite(target.Value.Position))) return false;
                 center = target?.Position;
             }
             if (ParameterisedBehaviour.TryCreateAttack(organ, targetId, out CastEvent attack, context, center))
+            {
                 AttackProduced?.Invoke(attack);
+                return true;
+            }
+            return false;
         }
 
         public void PublishSignal(TriggerSignal signal)
