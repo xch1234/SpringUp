@@ -32,6 +32,7 @@ namespace Tideflesh.Systems
         private readonly Dictionary<string, PipelineDefinition> definitions = new Dictionary<string, PipelineDefinition>();
         private bool restarting;
         private Rect originalViewport;
+        private RunEquipmentHud equipmentHud;
         private const float HudHeight = 44f;
 
         private void Awake()
@@ -50,6 +51,8 @@ namespace Tideflesh.Systems
             rect.pivot = new Vector2(0.5f, 1); rect.sizeDelta = new Vector2(0, HudHeight);
             header.GetComponent<Image>().color = new Color(.08f, .1f, .12f, 1f);
             header.GetComponent<Image>().raycastTarget = false;
+            equipmentHud = RunEquipmentHud.Create(runStatus.transform.parent, runStatus.font);
+            equipmentHud.gameObject.SetActive(false);
             ConfigureTiming(pipeline);
             presenter.GetComponentInChildren<LaboratoryCombatDemo>(true).ConfigureTiming = ConfigureTiming;
             pipeline.enabled = false;
@@ -110,6 +113,7 @@ namespace Tideflesh.Systems
                 }
                 Run = new RunController(catalog, waves, Signal);
                 Equipment = new RunLaboratoryEquipment(Run, definitions);
+                equipmentHud.Bind(Equipment);
                 laboratorySource.Bind(Equipment);
                 director.WaveCompleted += WaveCompleted;
                 player.Died += PlayerDied;
@@ -205,6 +209,7 @@ namespace Tideflesh.Systems
         {
             if (Run == null) return;
             bool lab = Run.Phase == "lab";
+            equipmentHud.gameObject.SetActive(Run.Phase == "combat");
             capacityText.transform.parent.gameObject.SetActive(lab || Run.Phase == "run_won" || Run.Phase == "run_lost");
             runStatus.text = Run.Phase == "run_won" ? "七波完成" : Run.Phase == "run_lost" ? "本局失败"
                 : "第 " + Run.Wave + " / " + Run.MaxWave + " 波    " + (lab ? "实验室" : Mathf.CeilToInt(director.RemainingTime) + " 秒")

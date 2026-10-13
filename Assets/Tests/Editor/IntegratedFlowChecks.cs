@@ -9,6 +9,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using BodyPart = SpringUp.Organs.BodyPart;
 using OrganInstance = SpringUp.Organs.OrganInstance;
@@ -63,6 +64,9 @@ namespace SpringUp.EditorChecks
                     InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
                     Application.runInBackground = true;
                     Require(!driver.capacityText.transform.parent.gameObject.activeSelf, "Combat must hide settlement background.");
+                    CheckEquipmentHud(driver, true);
+                    Require(!driver.Equipment.TryUnequip(LaboratoryPart.Hand, 0, out _)
+                        && run.Inventory.EquippedAt("hand", 1) != null, "战斗期间禁止拆卸。");
                     Require(driver.battleCamera.rect.yMax < 1f, "Combat viewport must reserve HUD space.");
                     movementStart = driver.player.transform.position;
                     keyboard = InputSystem.AddDevice<Keyboard>();
@@ -107,6 +111,7 @@ namespace SpringUp.EditorChecks
                     Require(enemy.CurrentHealth < before, "开局拳头实际扣敌人血。");
                     driver.director.CompleteCurrentWave();
                     Require(run.Phase == "lab" && run.Marrow == 45 && Time.timeScale == 0, "第一波奖励与暂停。");
+                    CheckEquipmentHud(driver, false);
                     var bag = driver.Equipment.Inventory;
                     var knife = bag.Single(x => x.DefinitionId == "rust_knife");
                     var tentacle = bag.Single(x => x.DefinitionId == "multi_tentacle");
@@ -114,6 +119,7 @@ namespace SpringUp.EditorChecks
                     driver.presenter.installButton.onClick.Invoke();
                     Require(run.Inventory.EquippedAt("hand", 2) == knife.InstanceId, "B 安装按钮写回 D 库存。");
                     Require(driver.Equipment.TryEquip(tentacle.InstanceId, LaboratoryPart.Hand, 2, out _), "装备触手。");
+                    CheckEquipmentHud(driver, false);
                     Require(driver.pipeline.GetBody(BodyPart.Hand).GetSlot(1).InstanceId == knife.InstanceId, "A 保留 D 实例身份。");
                     Require(run.Inventory.OrganOf(knife.InstanceId).damage == knife.Definition.Damage, "D 战斗字段与 A/B 定义一致。");
                     var preview = driver.presenter.GetComponentInChildren<LaboratoryCombatDemo>();
@@ -143,6 +149,13 @@ namespace SpringUp.EditorChecks
                     while (!run.CanStartNextWave()) driver.Equipment.TryDiscard(run.Inventory.UnequippedIds()[0], out _);
                     driver.NextWave(); driver.NextWave();
                     Require(run.Wave == 2 && driver.director.CurrentWave == 2 && Time.timeScale == 1, "第二波与重复点击保护。");
+                    CheckEquipmentHud(driver, true);
+                    var equippedBefore = run.Inventory.EquippedAt("hand", 1);
+                    var blockedCandidate = run.Inventory.Spawn("fist");
+                    Require(!driver.Equipment.TryEquip(blockedCandidate, LaboratoryPart.Hand, 0, out _)
+                        && !driver.Equipment.TryUnequip(LaboratoryPart.Hand, 0, out _)
+                        && run.Inventory.EquippedAt("hand", 1) == equippedBefore
+                        && run.Inventory.UnequippedIds().Contains(blockedCandidate), "新一波禁止替换和拆卸且保持库存。");
                     var enemyGo = new GameObject("Second wave target"); enemyGo.SetActive(false);
                     enemyGo.transform.position = driver.player.transform.position;
                     enemyGo.AddComponent<EnemyData>(); var enemy = enemyGo.AddComponent<EnemyRuntime>(); enemyGo.SetActive(true);
@@ -190,6 +203,23 @@ namespace SpringUp.EditorChecks
             EditorApplication.update -= Check;
             EditorApplication.playModeStateChanged -= StateChanged;
             EditorApplication.Exit(code);
+        }
+
+        private static void CheckEquipmentHud(SpringUpRunDriver driver, bool visible)
+        {
+            var hud = driver.runStatus.canvas.GetComponentInChildren<RunEquipmentHud>(true);
+            Require(hud != null && hud.gameObject.activeSelf == visible, "战斗显示装备 HUD，休息交由实验室显示。");
+            Require(hud.GetComponentsInChildren<Selectable>(true).Length == 0
+                && hud.GetComponentsInChildren<Graphic>(true).All(g => !g.raycastTarget), "装备 HUD 只读且不拦截输入。");
+            string[] parts = { "head", "hand", "leg", "torso" };
+            for (int p = 0; p < parts.Length; p++)
+                for (int s = 0; s < driver.Equipment.SlotCount((LaboratoryPart)p); s++)
+                {
+                    var cell = hud.transform.Find(parts[p] + " slot " + (s + 1));
+                    var item = driver.Equipment.GetSlot((LaboratoryPart)p, s);
+                    Require(cell != null && cell.GetComponentInChildren<Text>().text == (s + 1) + "\n" + (item?.Name ?? "空"),
+                        "HUD 槽位与真实装备同步：" + parts[p] + (s + 1));
+                }
         }
 
         private static void CheckCadence(SpringUpRunDriver driver)

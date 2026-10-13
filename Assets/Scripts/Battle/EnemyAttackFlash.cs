@@ -4,16 +4,11 @@ using UnityEngine;
 namespace TideBorne.Battle
 {
     /// <summary>
-    /// 灰盒阶段的敌人开火表现：出手瞬间把方块闪一下。
-    ///
-    /// **为什么现在必须有**：初版 <see cref="EnemyAttack"/> 只扣血、只抛事件，没有任何视觉反馈，
-    /// 实测表现是"看不到开火动作，只看到自己掉血"——玩家无法判断敌人什么时候在打自己。
-    /// 正式版这里会换成美术 B 的特效模板（按载荷类型复用），本组件是**临时占位**，
-    /// 灰盒验收通过后可以整体删掉。
+    /// 敌人开火闪黄、实际受伤闪白。统一控制颜色，受伤反馈优先于开火反馈。
+    /// 保留组件名和原字段，兼容已有敌人 prefab。
     /// </summary>
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(EnemyAttack))]
-    [AddComponentMenu("潮涌之躯/灰盒/敌人开火闪烁（EnemyAttackFlash）")]
+    [AddComponentMenu("潮涌之躯/灰盒/敌人攻击与受伤闪烁（EnemyAttackFlash）")]
     public class EnemyAttackFlash : MonoBehaviour
     {
         [Tooltip("闪烁时长，秒。")]
@@ -22,10 +17,17 @@ namespace TideBorne.Battle
         [Tooltip("闪烁到的最亮颜色。")]
         [SerializeField] private Color flashColor = new Color(1f, 0.95f, 0.6f, 1f);
 
+        [Tooltip("实际受伤后闪色并恢复原色的时长，秒。")]
+        [SerializeField, Min(0.01f)] private float damageFlashDuration = 0.16f;
+
+        [Tooltip("受伤闪色；优先于开火闪色。")]
+        [SerializeField] private Color damageFlashColor = Color.white;
+
         private EnemyAttack _attack;
         private SpriteRenderer _renderer;
         private Color _baseColor;
         private Coroutine _running;
+        private bool _damageFlashing;
 
         private void Awake()
         {
@@ -44,48 +46,70 @@ namespace TideBorne.Battle
 
         private void OnEnable()
         {
+            if (_renderer == null) return;
+            _baseColor = _renderer.color;
             if (_attack != null)
                 _attack.Attacked += OnAttacked;
+            EnemyEvents.Damaged += OnDamaged;
         }
 
         private void OnDisable()
         {
             if (_attack != null)
                 _attack.Attacked -= OnAttacked;
+            EnemyEvents.Damaged -= OnDamaged;
+
+            if (_running != null)
+                StopCoroutine(_running);
 
             if (_renderer != null)
                 _renderer.color = _baseColor;
 
             _running = null;
+            _damageFlashing = false;
         }
 
         private void OnAttacked(EnemyAttack.AttackInfo info)
         {
-            if (_renderer == null || !gameObject.activeInHierarchy)
+            if (_renderer == null || !isActiveAndEnabled || _damageFlashing)
                 return;
 
             if (_running != null)
                 StopCoroutine(_running);
 
-            _running = StartCoroutine(FlashRoutine());
+            _running = StartCoroutine(FlashRoutine(false));
         }
 
-        private IEnumerator FlashRoutine()
+        private void OnDamaged(EnemyEvents.DamagedInfo info)
         {
-            var elapsed = 0f;
-            while (elapsed < flashDuration)
-            {
-                elapsed += Time.deltaTime;
+            if (info.enemy != gameObject || info.damage <= 0f || _renderer == null || !isActiveAndEnabled)
+                return;
 
-                // 0 → 1 → 0 的三角波：亮起再熄灭。
-                var t = Mathf.PingPong(elapsed / (flashDuration * 0.5f), 1f);
-                _renderer.color = Color.Lerp(_baseColor, flashColor, t);
+            if (_running != null)
+                StopCoroutine(_running);
+            _damageFlashing = true;
+            _running = StartCoroutine(FlashRoutine(true));
+        }
+
+        private IEnumerator FlashRoutine(bool damaged)
+        {
+            var duration = Mathf.Max(0.01f, damaged ? damageFlashDuration : flashDuration);
+            var color = damaged ? damageFlashColor : flashColor;
+            color.a = _baseColor.a;
+            var elapsed = 0f;
+            while (elapsed < duration)
+            {
+                // 受伤当帧立即亮起再淡回；开火仍使用三角波。
+                var t = damaged ? 1f - elapsed / duration : Mathf.PingPong(elapsed / (duration * 0.5f), 1f);
+                _renderer.color = Color.Lerp(_baseColor, color, t);
 
                 yield return null;
+                elapsed += Time.deltaTime;
             }
 
             _renderer.color = _baseColor;
             _running = null;
+            _damageFlashing = false;
         }
     }
 }
