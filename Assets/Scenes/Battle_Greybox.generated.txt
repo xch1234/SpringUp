@@ -3,6 +3,6 @@
 # 本场景是**生成物**：版本号一升就会被重建，会覆盖对它的手工改动。
 # 想保住手工改动，请先把场景另存为别的名字。
 # 删掉本文件可强制下次打开工程时重建场景。
-version=10
+version=18
 scene=Assets/Scenes/Battle_Greybox.unity
-generated=2026-10-07 16:25:40
+generated=2026-10-13 21:43:22

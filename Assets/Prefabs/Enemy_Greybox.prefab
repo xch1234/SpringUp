@@ -223,10 +223,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyMotor
   data: {fileID: 0}
+  moveMode: 0
   faceMoveDirection: 1
   facingLerpSpeed: 720
   stopAtAttackRangeRatio: 0.9
   minStopDistance: 0.5
+  preferredDistance: 5
+  distanceTolerance: 0.8
+  clampToPlayArea: 1
+  playAreaHalfWidth: 32
+  playAreaHalfHeight: 18
 --- !u!114 &3721854039967309358
 MonoBehaviour:
   m_ObjectHideFlags: 0

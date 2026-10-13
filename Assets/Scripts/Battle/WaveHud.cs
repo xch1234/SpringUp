@@ -40,7 +40,7 @@ namespace TideBorne.Battle
             get
             {
                 if (director == null)
-                    director = FindFirstObjectByType<WaveDirector>();
+                    director = FindAnyObjectByType<WaveDirector>();
 
                 return director;
             }

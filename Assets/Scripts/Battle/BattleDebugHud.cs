@@ -135,16 +135,25 @@ namespace TideBorne.Battle
                 ? player.position.ToString("0.00")
                 : "(无玩家)";
 
-            var offsetText = TargetOffset.ToString("0.00") +
-                             (IsFollowOffsetOk() ? "  ✅跟随中" : "  ❌偏移异常");
-
             var follow = camera != null ? camera.GetComponent<CameraFollow>() : null;
+
+            // 边界限制生效时，相机与目标的偏移**本来就**会变大——那正是"镜头停住、角色走向边缘"
+            // 的设计意图。所以先问一句"是不是被边界夹住了"，再决定要不要报偏移异常，
+            // 否则一走到地图边缘 HUD 就会误报"跟随坏了"。
+            var bounded = follow != null && follow.IsBoundedByMap;
+
+            var offsetText = TargetOffset.ToString("0.00") +
+                             (bounded
+                                 ? "  ⛰边界限制"
+                                 : (IsFollowOffsetOk() ? "  ✅跟随中" : "  ❌偏移异常"));
+
             var followText = follow == null
                 ? "相机上没有 CameraFollow"
                 : "挂于 " + follow.OwnerName +
                   (string.IsNullOrEmpty(follow.OwnerParentName) ? "" : "(父:" + follow.OwnerParentName + ")") +
                   "，目标 " + (follow.HasTarget ? follow.TargetName : "(空)") +
-                  "，LateUpdate x" + follow.LateUpdateCount;
+                  "，LateUpdate x" + follow.LateUpdateCount +
+                  (follow.ClampEnabled ? "，边界限制开" : "，边界限制关");
 
             var nearestText = NearestEnemyDistance < 0f
                 ? "无"

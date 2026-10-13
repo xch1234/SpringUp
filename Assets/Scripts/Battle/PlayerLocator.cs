@@ -5,8 +5,10 @@ namespace TideBorne.Battle
     /// <summary>
     /// 找玩家并缓存。敌人、刷怪器、波次计时都要用，集中一处避免各自 <c>Find</c>。
     ///
-    /// 用 <c>FindFirstObjectByType</c> 而不是 <c>FindObjectOfType</c>：
-    /// 后者在 Unity 6 已标记过时（探针可另验）。
+    /// 用 <c>FindAnyObjectByType</c> 而不是 <c>FindObjectOfType</c>：
+    /// 后者在 Unity 6 已标记过时（探针可另验）。也刻意不用
+    /// <c>FindFirstObjectByType</c>——它在 6000.5 里同样已过时，
+    /// 理由是"依赖实例 ID 顺序"，换成 FindAny 才是它推荐的替代。
     /// </summary>
     public static class PlayerLocator
     {
@@ -20,7 +22,7 @@ namespace TideBorne.Battle
                 if (s_Cached != null)
                     return s_Cached;
 
-                var runtime = Object.FindFirstObjectByType<PlayerRuntime>();
+                var runtime = Object.FindAnyObjectByType<PlayerRuntime>();
                 if (runtime != null)
                 {
                     s_Cached = runtime.transform;
