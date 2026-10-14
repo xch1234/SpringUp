@@ -58,8 +58,9 @@ namespace TideBorne.Battle
         [Tooltip("true = 发射可见弹体（推荐，玩家能看清攻击从哪来）；false = 出手即扣血，无飞行物。")]
         [SerializeField] private bool useProjectiles = true;
 
-        [Tooltip("弹体视觉边长，世界单位。")]
-        [SerializeField] private float projectileVisualSize = 0.25f;
+        [Tooltip("弹体视觉边长，世界单位。取自 GreyboxAssets，跟着角色一起放大，" +
+                 "否则视野拉大后弹体会小到看不见。")]
+        [SerializeField] private float projectileVisualSize = GreyboxAssets.ProjectileWorldSize;
 
         [Tooltip("弹体颜色。")]
         [SerializeField] private Color projectileColor = new Color(1f, 0.75f, 0.3f, 1f);

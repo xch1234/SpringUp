@@ -114,7 +114,7 @@ namespace TideBorne.Battle
                 spawner = GetComponent<EnemySpawner>();
 
             if (spawner == null)
-                spawner = FindFirstObjectByType<EnemySpawner>();
+                spawner = FindAnyObjectByType<EnemySpawner>();
 
             if (spawner == null)
                 Debug.LogWarning("[WaveDirector] 场景里没有 EnemySpawner，本波次只会计时、不会刷怪。", this);

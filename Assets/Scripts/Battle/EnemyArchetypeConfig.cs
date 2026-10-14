@@ -48,6 +48,14 @@ namespace TideBorne.Battle
         /// <summary>兵工厂同时存在的产出物上限。</summary>
         public const int ArsenalMaxAliveProducts = 12;
 
+        /// <summary>
+        /// 木桩的血量。取一个"打得完才怪"的大数而不是 <c>float.MaxValue</c>：
+        /// 血条 / 百分比显示之类的 UI 遇到无穷大会算出 NaN，用有限大数更安全，
+        /// 而 99999 相对单次几十点的伤害已经等于无限。
+        /// </summary>
+        public const float DummyHealth = 99999f;
+
+
         /// <summary>一种敌人的完整配置。</summary>
         public struct Config
         {
@@ -110,6 +118,9 @@ namespace TideBorne.Battle
 
                 case EnemyArchetype.Medic:
                     return Medic();
+
+                case EnemyArchetype.Dummy:
+                    return Dummy();
 
                 default:
                     return Normal();
@@ -222,6 +233,39 @@ namespace TideBorne.Battle
             };
         }
 
+        /// <summary>
+        /// 7 木桩：**不动、不攻击**，只用来测伤害。
+        ///
+        /// 每个行为开关都是 false 是有意的，对应 <see cref="EnemyPrefabBuilder"/> 里的处理：
+        /// - <c>hasContactDamage = false</c> → 不挂 <c>EnemyContactDamage</c>，碰到玩家不掉血
+        /// - <c>hasRangedAttack = false</c> → <c>EnemyAttack</c> 被移除，不发射弹体
+        /// - <c>hasProducer</c> / <c>hasHealer = false</c> → 不产兵、不治疗
+        /// - <c>moveMode = Stationary</c> → <c>EnemyMotor</c> 不移动
+        ///
+        /// 于是它**只剩下被打**这一件事：仍然挂 <c>EnemyRuntime</c>，
+        /// 所以 <c>TakeDamage</c>（器官伤害唯一的真实入口）照常生效、照常发受击/击杀信号。
+        /// 这一点很重要——木桩要能验真实伤害路径，不能是个假的靶子。
+        /// </summary>
+        public static Config Dummy()
+        {
+            return new Config
+            {
+                archetype = EnemyArchetype.Dummy,
+                displayName = "Dummy",
+                moveSpeed = 0f,
+                health = DummyHealth,
+                attackPower = 0f,
+                attackCooldown = BaseAttackCooldown,
+                moveMode = EnemyMoveMode.Stationary,
+                hasContactDamage = false,
+                hasRangedAttack = false,
+                hasProducer = false,
+                hasHealer = false,
+                // 木头色，且刻意与六种战斗单位区分开（它们都偏红/橙/蓝/紫/黄/绿）。
+                color = new Color(0.62f, 0.52f, 0.40f, 1f)
+            };
+        }
+
         /// <summary>全部原型，按 <see cref="EnemyArchetype"/> 的声明顺序。</summary>
         public static EnemyArchetype[] AllArchetypes()
         {
@@ -232,8 +276,25 @@ namespace TideBorne.Battle
                 EnemyArchetype.RangedKeeper,
                 EnemyArchetype.RangedChaser,
                 EnemyArchetype.Arsenal,
-                EnemyArchetype.Medic
+                EnemyArchetype.Medic,
+                EnemyArchetype.Dummy
             };
         }
-    }
+
+        /// <summary>
+        /// 会被波次刷怪用到的原型。**木桩不在其中**——它是测试道具，不该混进战斗。
+        /// 刷怪表将来做成多条时，这个数组就是"可刷"的白名单。
+        /// </summary>
+        public static EnemyArchetype[] SpawnableArchetypes()
+        {
+            return new[]
+            {
+                EnemyArchetype.Normal,
+                EnemyArchetype.Fast,
+                EnemyArchetype.RangedKeeper,
+                EnemyArchetype.RangedChaser,
+                EnemyArchetype.Arsenal,
+                EnemyArchetype.Medic
+            };
+        }    }
 }

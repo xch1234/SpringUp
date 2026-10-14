@@ -20,8 +20,14 @@ namespace TideBorne.Battle
         /// <summary>灰盒敌人的默认攻击力。</summary>
         public const float DefaultAttackPower = 5f;
 
-        /// <summary>灰盒敌人的视觉边长，世界单位。</summary>
-        public const float VisualSize = 0.8f;
+        /// <summary>
+        /// 灰盒敌人的视觉边长，世界单位。
+        ///
+        /// **不再写死 0.8**：2026-10-13 相机视野拉大到 36 米长边后，玩家和敌人
+        /// 一起按 1.6875 倍放大，尺寸统一挪到 <see cref="GreyboxAssets"/> 里算，
+        /// 这样"敌人比玩家大/小多少"只在一个地方定义，不会两处各改一遍还改歪。
+        /// </summary>
+        public const float VisualSize = GreyboxAssets.EnemyWorldSize;
 
         /// <summary>灰盒敌人的攻击距离，米。默认 1.2 米太近，弹道一闪而过看不见。</summary>
         public const float GreyboxAttackRange = 6f;
@@ -95,6 +101,9 @@ namespace TideBorne.Battle
         public static GameObject CreateGreyboxEnemy(string name, Sprite sprite, Color color)
         {
             var enemy = new GameObject(name);
+
+            // 敌人层：与玩家层互不相碰，与敌人层和墙层相碰。见 BattleLayers。
+            enemy.layer = BattleLayers.Resolve(BattleLayers.Enemy);
 
             enemy.transform.localScale = new Vector3(VisualSize, VisualSize, 1f);
 

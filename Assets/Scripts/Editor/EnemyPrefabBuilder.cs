@@ -21,6 +21,31 @@ namespace TideBorne.EditorTools
         /// <summary>敌人 prefab 的输出目录（Resources 下，与 EnemyPrefabLibrary 对应）。</summary>
         public const string OutputFolder = "Assets/Resources/Enemies";
 
+        /// <summary>记录已生成 prefab 版本的标记文件。</summary>
+        private const string MarkerPath = OutputFolder + "/.generated-version.txt";
+
+        /// <summary>
+        /// prefab 生成器版本。**改动影响 prefab 序列化内容的东西就要加一**，
+        /// 否则已有的 prefab 会一直留着旧值——这里踩过一次：
+        /// 敌人尺寸从 <c>EnemyFactory.VisualSize</c> 烘进 prefab 的 Transform，
+        /// 2026-10-13 把它从 0.8 改成 1.35 时，六个 prefab 不会自己更新，
+        /// 结果"玩家变大了、敌人还是小的"。<c>projectileVisualSize</c> 同理，
+        /// 它是 <c>[SerializeField]</c> 的默认值，只在**生成 prefab 那一刻**被写进去。
+        ///
+        /// 版本历史：
+        /// 1 → 初版（六种原型，尺寸 0.8，弹体 0.25）
+        /// 2 → 尺寸随相机视野放大：敌人 0.8 → 1.35，弹体 0.25 → 0.421875
+        /// 3 → 新增第 7 个原型「木桩 Dummy」（不移动、不攻击、血量 99999）
+        /// 4 → **修木桩朝玩家开枪**：只删 EnemyAttack 会被
+        ///      `EnemyAttackFlash` 的 `[RequireComponent(typeof(EnemyAttack))]` 自动补回来，
+        ///      改为两个一起删，并加"保存后核对 prefab 内容"的校验
+        /// 5 → 敌人搬进 `TideBorne_Enemy` 层（角色要能穿过它们）。
+        ///      **4 版漏了这一步**：加分层代码时 prefab 已经是 4 版生成的，
+        ///      版本号没动 → 没有重建 → prefab 还留在 Default(0) 层，
+        ///      于是"角色穿过敌人"不生效，仍然能推着敌人走
+        /// </summary>
+        private const int PrefabVersion = 5;
+
         private static bool s_AutoBuildAttempted;
 
         /// <summary>
@@ -49,15 +74,121 @@ namespace TideBorne.EditorTools
                 return;
 
             var missing = FindMissingArchetypes();
-            if (missing.Count == 0)
-                return;
+            if (missing.Count > 0)
+            {
+                Debug.Log("[EnemyPrefabBuilder] 缺少 " + missing.Count + " 个敌人 prefab，自动补齐：" +
+                          string.Join(", ", missing));
+                BuildMissing(missing);
+            }
 
-            Debug.Log("[EnemyPrefabBuilder] 缺少 " + missing.Count + " 个敌人 prefab，自动补齐：" +
-                      string.Join(", ", missing));
-            BuildMissing(missing);
+            RebuildIfStale();
         }
 
-        /// <summary>找出还没有 prefab 的原型。</summary>
+        /// <summary>
+        /// 生成器版本变了就**自动重建全部敌人 prefab**。
+        ///
+        /// **为什么从"只警告"改成"自动重建"**：曾经只打印一句警告，结果是
+        /// 「玩家放大了、敌人还是小的」和「木桩朝玩家开枪」这两种半生效状态——
+        /// 前者肉眼难判断漏了哪步，后者更是要对着 prefab 内容才查得出来。
+        /// 版本号是**我们自己**在改序列化内容时主动加的，既然加了，就说明旧 prefab 一定不对，
+        /// 那么"让用户记得点菜单"就是纯粹的多余风险。
+        ///
+        /// 代价：会覆盖对 prefab 的手工调整。可接受——这些 prefab 是**生成物**
+        /// （版本标记文件里写明了），要长期手调应该另存成别的资产。
+        ///
+        /// 失败时只告警不抛出：`GenerateAll` 内部会删掉旧资产再重建，
+        /// 万一中途出错，宁可留一句明确的提示，也不要把编辑器加载整个搞崩。
+        /// </summary>
+        private static void RebuildIfStale()
+        {
+            var marker = ReadMarkerVersion();
+            if (marker == PrefabVersion)
+            {
+                VerifySpawnablePrefabsExist();
+                VerifyBakedLayers();
+                return;
+            }
+
+            Debug.Log("[EnemyPrefabBuilder] 敌人 prefab 的生成版本是 " + marker +
+                      "，当前代码是 " + PrefabVersion + "，自动重建全部敌人 prefab。");
+
+            try
+            {
+                var built = GenerateAll();
+                Debug.Log("[EnemyPrefabBuilder] 自动重建完成，共 " + built.Count + " 个。");
+                VerifyBakedLayers();
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogWarning("[EnemyPrefabBuilder] 自动重建失败（" + exception.Message + "）。" +
+                                 "请手动跑菜单 Tools → 程序C → 生成全部敌人 prefab。" +
+                                 "**旧的 prefab 可能已被删除**，别忽略这条。");
+            }
+        }
+
+        /// <summary>
+        /// 只有"会被波次刷出来"的原型缺了才算严重问题；木桩是测试道具，缺了不影响战斗。
+        /// 由 <see cref="RebuildIfStale"/> 在版本已是最新时调用。
+        /// </summary>
+        private static void VerifySpawnablePrefabsExist()
+        {
+            foreach (var archetype in EnemyArchetypeConfig.SpawnableArchetypes())
+            {
+                var config = EnemyArchetypeConfig.Get(archetype);
+                var path = OutputFolder + "/" + config.displayName + ".prefab";
+                if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)
+                {
+                    Debug.LogError("[EnemyPrefabBuilder] 可刷怪的原型缺少 prefab：" + path +
+                                   "（刷怪器会退回运行时原型，行为可能与预期不同）");
+                }
+            }
+        }
+
+        private static int ReadMarkerVersion()
+        {
+            try
+            {
+                if (!System.IO.File.Exists(MarkerPath))
+                    return 0;
+
+                foreach (var line in System.IO.File.ReadAllLines(MarkerPath))
+                {
+                    var trimmed = line.Trim();
+                    if (!trimmed.StartsWith("version="))
+                        continue;
+
+                    int parsed;
+                    if (int.TryParse(trimmed.Substring("version=".Length).Trim(), out parsed))
+                        return parsed;
+                }
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogWarning("[EnemyPrefabBuilder] 读版本标记失败：" + exception.Message);
+            }
+
+            return 0;
+        }
+
+        private static void WriteMarker()
+        {
+            var lines = new[]
+            {
+                "# 本文件由 EnemyPrefabBuilder 生成，记录六个敌人 prefab 的生成版本。",
+                "# 版本不符 = prefab 里可能还留着旧的尺寸/弹体大小，跑菜单重建。",
+                "version=" + PrefabVersion,
+                "generated=" + System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+
+            System.IO.File.WriteAllText(MarkerPath, string.Join(System.Environment.NewLine, lines) + System.Environment.NewLine);
+            AssetDatabase.ImportAsset(MarkerPath, ImportAssetOptions.ForceUpdate);
+        }
+
+        /// <summary>
+        /// 找出还没有 prefab 的原型。
+        /// 用 <see cref="EnemyArchetypeConfig.AllArchetypes"/>（含木桩）——木桩虽然不参与刷怪，
+        /// 但它也是个要能拖进场景的 prefab，所以同样要保证存在。
+        /// </summary>
         private static List<EnemyArchetype> FindMissingArchetypes()
         {
             var missing = new List<EnemyArchetype>();
@@ -94,6 +225,7 @@ namespace TideBorne.EditorTools
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             EnemyPrefabLibrary.Clear();
+            WriteMarker();
             Debug.Log("[EnemyPrefabBuilder] 已补齐 " + built + " 个敌人 prefab。");
         }
 
@@ -140,6 +272,7 @@ namespace TideBorne.EditorTools
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             EnemyPrefabLibrary.Clear();
+            WriteMarker();
             return results;
         }
 
@@ -162,6 +295,10 @@ namespace TideBorne.EditorTools
 
             var instance = EnemyFactory.CreateGreyboxEnemy(config.displayName, sprite, config.color);
 
+            // 敌人一律放「敌人层」：与玩家层互不相碰（角色穿过敌人），
+            // 但敌人彼此保留碰撞体积。碰撞矩阵见 BattleLayers。
+            instance.layer = BattleLayers.Resolve(BattleLayers.Enemy);
+
             try
             {
                 ConfigureInstance(instance, config);
@@ -172,6 +309,10 @@ namespace TideBorne.EditorTools
                     Debug.LogError("[EnemyPrefabBuilder] 保存失败：" + path);
                     return null;
                 }
+
+                // 必须在保存之后查：RequireComponent 的自动补挂发生在序列化阶段，
+                // 只看内存里的实例会漏掉"删了又长回来"。
+                VerifySavedPrefab(prefab, config, path);
 
                 return path;
             }
@@ -205,9 +346,8 @@ namespace TideBorne.EditorTools
 
             // 远程攻击：EnemyAttack 由 EnemyFactory 默认挂上；不需要就移除，
             // 避免"静止射击敌人"这类不该射的敌人悄悄射出子弹。
-            var attack = instance.GetComponent<EnemyAttack>();
-            if (attack != null && !config.hasRangedAttack)
-                Object.DestroyImmediate(attack, true);
+            if (!config.hasRangedAttack)
+                RemoveAttackIfUnused(instance, config);
 
             if (config.hasRangedAttack)
                 ApplyRangedAttack(instance, config);
@@ -265,21 +405,101 @@ namespace TideBorne.EditorTools
 
             var serialized = new SerializedObject(attack);
             SetBool(serialized, "useProjectiles", true);
-            SetFloat(serialized, "projectileVisualSize", 0.25f);
+            SetFloat(serialized, "projectileVisualSize", GreyboxAssets.ProjectileWorldSize);
             SetColor(serialized, "projectileColor", config.color);
             SetObject(serialized, "projectileSprite", EnsureSquareSprite());
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        /// <summary>不需要接触伤害时，把 EnemyAttack 一并移除——它现在的语义是远程射击。</summary>
+        /// <summary>
+        /// 不需要攻击能力时，把开火相关的组件全部移除。
+        ///
+        /// **踩过的坑（木桩朝玩家开枪）**：这里原来只销毁 <c>EnemyAttack</c>，
+        /// 而 <see cref="EnemyAttackFlash"/> 上写着 <c>[RequireComponent(typeof(EnemyAttack))]</c>——
+        /// Unity 会在保存 prefab 时**把这个依赖重新加回来**，于是销毁等于没做，
+        /// 子弹照飞。这种"删了又自己长回来"的问题不会报任何错，只能靠对照 prefab 内容发现。
+        ///
+        /// 所以现在两个一起删，顺序上先删带依赖的那个。
+        /// </summary>
         private static void RemoveAttackIfUnused(GameObject instance, EnemyArchetypeConfig.Config config)
         {
             if (config.hasRangedAttack)
                 return;
 
-            var attack = instance.GetComponent<EnemyAttack>();
-            if (attack != null)
-                Object.DestroyImmediate(attack, true);
+            RemoveComponent<EnemyAttackFlash>(instance);
+            RemoveComponent<EnemyAttack>(instance);
+        }
+
+        /// <summary>把某个组件从实例上删掉（没有就跳过）。</summary>
+        private static void RemoveComponent<T>(GameObject instance) where T : Component
+        {
+            var component = instance.GetComponent<T>();
+            if (component != null)
+                Object.DestroyImmediate(component, true);
+        }
+
+        /// <summary>
+        /// 保存后核对 prefab 的真实内容：不该有 <c>EnemyAttack</c> 的敌人身上必须没有。
+        ///
+        /// **为什么要在保存之后查**：`RequireComponent` 的自动补挂发生在序列化/保存阶段，
+        /// 只检查内存里的实例是查不出来的——上面那个坑正是这么漏过去的。
+        /// </summary>
+        private static void VerifySavedPrefab(GameObject prefab, EnemyArchetypeConfig.Config config, string path)
+        {
+            if (prefab == null)
+                return;
+
+            if (!config.hasRangedAttack && prefab.GetComponent<EnemyAttack>() != null)
+            {
+                Debug.LogError("[EnemyPrefabBuilder] " + path + " 上不该有 EnemyAttack，但它存在——" +
+                               "多半是某个组件的 [RequireComponent] 把它补回来了。" +
+                               "这个敌人会朝玩家开枪。（木桩曾因此出错）");
+            }
+
+            if (!config.hasContactDamage && prefab.GetComponent<EnemyContactDamage>() != null)
+            {
+                Debug.LogError("[EnemyPrefabBuilder] " + path + " 上不该有 EnemyContactDamage，但它存在。");
+            }
+
+            // 层也要核对。**加分层时漏掉这一步的后果很难反推**：
+            // prefab 留在 Default(0) 层时，"角色穿过敌人"会失效（仍然被卡住 / 推得动），
+            // 但场景里的 Player 层是对的，看起来一切正常。
+            var expectedLayer = BattleLayers.Resolve(BattleLayers.Enemy);
+            if (prefab.layer != expectedLayer)
+            {
+                Debug.LogError("[EnemyPrefabBuilder] " + path + " 的层是 " + prefab.layer +
+                               "，应为 " + expectedLayer + "（" + BattleLayers.Enemy + "）。" +
+                               "角色会推得动这个敌人。");
+            }
+        }
+
+        /// <summary>
+        /// 核对所有已存在的敌人 prefab 的层是否正确。
+        ///
+        /// 与 <see cref="VerifySavedPrefab"/>（只在刚生成后跑）不同，这个查的是**磁盘上的资产**，
+        /// 所以能发现"prefab 是旧版本生成的、版本号却没跟着动"这种情况——
+        /// 那正是"角色还能推动敌人"的成因。
+        /// </summary>
+        private static void VerifyBakedLayers()
+        {
+            var expectedLayer = BattleLayers.Resolve(BattleLayers.Enemy);
+
+            foreach (var archetype in EnemyArchetypeConfig.AllArchetypes())
+            {
+                var config = EnemyArchetypeConfig.Get(archetype);
+                var path = OutputFolder + "/" + config.displayName + ".prefab";
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (prefab == null)
+                    continue;
+
+                if (prefab.layer != expectedLayer)
+                {
+                    Debug.LogError("[EnemyPrefabBuilder] " + path + " 的层是 " + prefab.layer +
+                                   "，应为 " + expectedLayer + "（" + BattleLayers.Enemy + "）。" +
+                                   "角色会推得动这个敌人、也不会穿过它。" +
+                                   "把 PrefabVersion 加一强制重建即可。");
+                }
+            }
         }
 
         /// <summary>取共用的灰盒方块精灵资产；没有就生成。</summary>
