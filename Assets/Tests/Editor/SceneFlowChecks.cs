@@ -136,7 +136,13 @@ namespace SpringUp.EditorChecks
                         app.OpenWindow(WindowKind.Inventory);
                         Require(Time.timeScale == 0 && !app.WorldInputAllowed && !content.Attack.TryAttack(), "Inventory pauses and gates attack");
                         knife = run.Inventory.UnequippedIds().Single(id => run.Inventory.OrganOf(id).id == "rust_knife");
-                        run.Replace(knife, "hand", 1);
+                        var lab = Object.FindFirstObjectByType<FlowLaboratoryWindow>();
+                        Require(lab != null && lab.presenter.source == null, "Real laboratory view without demo bootstrap");
+                        Require(Object.FindFirstObjectByType<SpringUp.Laboratory.LaboratoryCombatDemo>() == null, "No internal combat preview");
+                        lab.presenter.SelectInventory(knife); lab.presenter.SelectSlot(1, 0);
+                        Require(lab.presenter.installButton.interactable, "Select item and slot enables installation");
+                        lab.presenter.installButton.onClick.Invoke();
+                        Require(lab.presenter.inventoryRoot.childCount == run.Inventory.UnequippedIds().Count, "Inventory refreshes after equip");
                         Require(!content.Attack.IsAttacking && content.combat.ActiveBlackHoles == 0, "Equipment clears old execution");
                         Require(content.pipeline.GetBody(BodyPart.Hand).GetSlot(0).InstanceId == knife, "Rest pipeline updated immediately");
                         app.CloseTop();

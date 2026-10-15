@@ -49,7 +49,7 @@ Esc 顺序：取消重绑定 → 关闭最上层设置/提示/确认 → 关闭�
 
 ## 占位与限制
 
-界面为开发验证用途；背包提供六个手槽的替换/卸下、出售与丢弃，无拖拽与正式排版；长列表鼠标滚轮滚动。
+背包复用 SpringUpDemo 的实验室布局、物品卡片和部位槽位，支持选择物品与槽位后安装/替换、拆卸、出售及丢弃；背包溢出后可以滚动。不含拖拽。新窗口不携带实验室战斗预览或演示库存，关闭背包后在休整地图测试真实构筑。
 商店只有固定 rust_knife 商品，TryPurchase 是正式业务边界；旧 TryBuy 保留旧 Demo 的 not_open 兼容行为。
 设置仅攻击重绑定；无音量、存档、继续游戏、随机商品或刷新。
 休整沿用灰盒场地，是可移动可攻击地图。结算是窗口。
@@ -75,3 +75,20 @@ Assets/Scenes/SpringUpDemo.unity、LaboratoryDemo.unity、Battle_Greybox.unity �
 另打开两个旧 Demo 核对可视化表现。自动 batchmode 检查不能替代画面、音频及最终交互手感验收。
 
 实际运行结果与全量测试的已知失败见 [GameFlowValidation.md](GameFlowValidation.md)。
+
+## 地图平铺与编辑视图
+
+Battle_Greybox、新流程 Battle 和 Rest 共用 `Assets/Prefabs/Flow/ArenaTiles.prefab`。
+地图仍为 72×72 世界单位，20×20 格，每格 3.6×3.6：4 个角各使用一次，四条边各重复 18 次，中心重复 18×18 次。
+480×480 源图保持方形像素比例，统一缩放；没有将中心或边缘拉伸成大块。使用与原战场一致的 URP Unlit 材质。
+旧 SpringUpDemo 原有纯色地图和 LaboratoryDemo 场景布局不变。
+
+屏幕空间 Canvas 在 Scene 视图中的边框不代表世界碰撞。无需移动战场或改刷怪、相机坐标：
+`Tools > SpringUp > Scene View > Hide UI for Map Editing` 隐藏 Scene 视图中的 Canvas，
+`Show UI` 恢复。此操作仅影响编辑视图，Game UI 仍正常显示与交互。
+新流程常驻 UI 和实验室 Prefab 使用 UI 图层；该工具也处理旧 Demo 的 Canvas。
+
+`LaboratoryWindow.prefab` 是从 SpringUpDemo 实验室提取的独立窗口，
+`FlowLaboratoryWindow` 显式绑定 `RunLaboratoryEquipment`，订阅装备变更并随窗口销毁取消订阅。
+全局窗口栈负责暂停、Esc 和焦点恢复，`LaboratoryPresenter.Bind` 支持脱离演示入口复用；旧 Demo 的 `source` 初始化兼容保留。
+`Tools > SpringUp > Flow > Repair Terrain and Import Laboratory` 是显式迁移工具，会替换上述三个地图的 MapBackground 和重建新实验室 Prefab；日常编辑直接修改 Prefab，无需重复运行迁移。

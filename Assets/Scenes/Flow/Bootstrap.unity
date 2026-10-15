@@ -130,7 +130,7 @@ GameObject:
   - component: {fileID: 48036737}
   - component: {fileID: 48036739}
   - component: {fileID: 48036738}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Status
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -975,7 +975,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 567943998}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Windows
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1147,7 +1147,7 @@ GameObject:
   - component: {fileID: 1242375454}
   - component: {fileID: 1242375453}
   - component: {fileID: 1242375452}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Global UI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1187,7 +1187,7 @@ MonoBehaviour:
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1440, y: 900}
-  m_ScreenMatchMode: 0
+  m_ScreenMatchMode: 1
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
@@ -1251,7 +1251,7 @@ GameObject:
   - component: {fileID: 1391893041}
   - component: {fileID: 1391893043}
   - component: {fileID: 1391893042}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Loading title
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1367,6 +1367,7 @@ MonoBehaviour:
   organCatalog: {fileID: 11400000, guid: cdef01a9745c436b9664a0a17c25aa11, type: 2}
   uiRoot: {fileID: 567943998}
   windowPrefab: {fileID: 196330437321699773, guid: 1a9d7df27e63d294099897dc1c130183, type: 3}
+  laboratoryPrefab: {fileID: 3271827299790044533, guid: 0dcf4a4751f40ec48945b5770f2ea8a4, type: 3}
   loading: {fileID: 2105131074}
   menuCamera: {fileID: 1192958510}
   hud: {fileID: 48036738}
@@ -1397,7 +1398,7 @@ GameObject:
   - component: {fileID: 2105131075}
   - component: {fileID: 2105131077}
   - component: {fileID: 2105131076}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Loading
   m_TagString: Untagged
   m_Icon: {fileID: 0}

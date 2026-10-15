@@ -25,6 +25,7 @@ namespace SpringUp.Flow
         public OrganCatalog organCatalog;
         public Transform uiRoot;
         public FlowWindow windowPrefab;
+        public FlowWindow laboratoryPrefab;
         public GameObject loading;
         public Camera menuCamera;
         public Text hud;
@@ -274,7 +275,9 @@ namespace SpringUp.Flow
                 case WindowKind.Confirm:
                     view.AddText("Abandon this run? Progress will be lost.");
                     view.AddButton("Cancel", CloseTop); view.AddButton("Abandon run", AbandonRun); break;
-                case WindowKind.Inventory: PopulateInventory(view); break;
+                case WindowKind.Inventory:
+                    view.GetComponent<FlowLaboratoryWindow>().Bind(this);
+                    break;
                 case WindowKind.Shop:
                     var item = Configuration.Organs["rust_knife"];
                     view.AddText($"Fixed test item: {item.name}, cost {item.shop_price}. Marrow {Session.Run.Marrow}");
@@ -290,44 +293,16 @@ namespace SpringUp.Flow
                     view.AddButton("New game", StartNewRun);
                     view.AddButton("Main menu", RequestMainMenu); break;
             }
+            view.gameObject.SetActive(true);
             FocusFirst(view);
-        }
-        void PopulateInventory(FlowWindow view)
-        {
-            var run = Session.Run;
-            view.AddText($"Bag {run.Inventory.UnequippedIds().Count}/{run.Inventory.UnequippedCapacity()} - overflow blocks next wave");
-            view.AddButton("Close", CloseTop);
-            // Six hand slots expose real replacement/removal; other body parts remain future UI.
-            for (int slot = 1; slot <= 6; slot++)
-            {
-                int target = slot; var id = run.Inventory.EquippedAt("hand", slot);
-                view.AddButton($"Hand {slot}: {(id == null ? "empty" : run.Inventory.OrganOf(id).name)} / unequip",
-                    () => EquipmentOperation(() => run.Unequip("hand", target)));
-            }
-            foreach (var id in run.Inventory.UnequippedIds())
-            {
-                var captured = id; var item = run.Inventory.OrganOf(id);
-                view.AddText(item.name);
-                for (int slot = 1; slot <= 6; slot++)
-                {
-                    int target = slot;
-                    view.AddButton("Equip / replace hand " + slot, () => EquipmentOperation(() => run.Replace(captured, "hand", target)));
-                }
-                view.AddButton("Sell", () => EquipmentOperation(() => run.Sell(captured)));
-                view.AddButton("Discard", () => EquipmentOperation(() => run.Discard(captured)));
-            }
-        }
-        void EquipmentOperation(Action operation)
-        {
-            try { operation(); CloseTop(); OpenWindow(WindowKind.Inventory); }
-            catch (Exception error) when (error is InventoryException || error is RunException) { OpenNotice(error.Message); }
         }
         FlowWindow Push(WindowKind kind, string title)
         {
             if (actions != null) actions.group.interactable = false;
             if (windows.Count > 0) windows[windows.Count - 1].View.group.interactable = false;
             var focus = eventSystem.currentSelectedGameObject;
-            var view = CreateView(); view.title.text = title;
+            var view = kind == WindowKind.Inventory ? Instantiate(laboratoryPrefab, uiRoot) : CreateView();
+            view.title.text = title;
             windows.Add(new WindowEntry { Kind = kind, View = view, Lease = Pause.Acquire(), Focus = focus });
             return view;
         }

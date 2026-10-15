@@ -24,11 +24,13 @@ namespace SpringUp.Laboratory
         private LaboratoryItem Candidate => equipment.Inventory.FirstOrDefault(x => x.InstanceId == candidateId);
         public string SelectedInstanceId => candidateId ?? equipment?.GetSlot((LaboratoryPart)part, slot)?.InstanceId;
         private void OnEnable() { if (source != null) InitializeView(); }
-        private void Start() { if (equipment == null) InitializeView(); }
-        public void InitializeView()
+        private void Start() { if (equipment == null && source != null) InitializeView(); }
+        public void InitializeView() => Bind(source.Equipment);
+        // Explicit binding lets production windows reuse the view without demo initialization.
+        public void Bind(ILaboratoryEquipment value)
         {
             if (equipment != null) equipment.Changed -= EquipmentChanged;
-            equipment = source.Equipment;
+            equipment = value ?? throw new System.ArgumentNullException(nameof(value));
             equipment.Changed += EquipmentChanged;
             if (font == null)
             {

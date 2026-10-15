@@ -155,6 +155,7 @@ namespace SpringUp.EditorChecks
             app.organsJson = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Organs/organs.json");
             app.wavesJson = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Waves/waves.json");
             app.organCatalog = AssetDatabase.LoadAssetAtPath<OrganCatalog>("Assets/Resources/OrganCatalog.asset");
+            app.laboratoryPrefab = AssetDatabase.LoadAssetAtPath<FlowWindow>(FlowPresentationRepair.LabPath);
             app.windowPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath).GetComponent<FlowWindow>();
             var camera = new GameObject("Menu Camera", typeof(Camera), typeof(AudioListener));
             app.menuCamera = camera.GetComponent<Camera>(); app.menuCamera.clearFlags = CameraClearFlags.SolidColor;
@@ -163,6 +164,7 @@ namespace SpringUp.EditorChecks
             canvas.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
             var scaler = canvas.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1440, 900);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             app.uiRoot = UI("Windows", canvas.transform).transform; Stretch((RectTransform)app.uiRoot);
             app.hud = Label("Status", canvas.transform, "SpringUp");
             var rect = (RectTransform)app.hud.transform; rect.anchorMin = new Vector2(0, 1); rect.anchorMax = Vector2.one;

@@ -36,3 +36,16 @@ Unity 6000.5.11f1，在工作区旁的 FlowValidation 独立副本中运行 batc
 
 FlowValidation/flow-keyboard-final.log（最终新流程）、legacy-flow-release.log、legacy-lab-release.log；
 全量结果 edit-verified-results.xml，早期对照 edit-results.xml / edit-final-results.xml。
+
+## 2026-10-15：地图平铺与实验室移植复验
+
+在独立 `FlowValidation` 工程、Unity 6000.5.11f1 中执行；未接管用户打开的编辑器。
+
+- `FlowPresentationRepair.RepairAndVerify`：通过。三个地图改为 20×20；四角各 1、四边各 18、中心 324 个等比例格子。
+- `FlowPresentationChecks.Run`：通过。实际渲染地图及实验室 PNG；检查 1440×900、1280×720、1024×768 的按钮/背包视口边界，以及超容量背包滚动到底部。已查看地图、1280 和 1024 实验室渲染图。发现并修复共用默认材质导致贴图串用的问题，现为九种地形各自显式绑定纹理的 Unlit 材质。
+- `SceneFlowChecks.RunBatch`：通过。换装检查现在实际调用移植界面的物品选择、槽位选择和安装按钮；无演示库存、无内部战斗预览。七波胜负、跨地图生命/装备、木桩伤害、暂停/Esc、重复请求及故障恢复检查通过。
+- `IntegratedFlowChecks.RunBatch`、`LaboratoryPlayChecks.Run`：均退出码 0，旧 Demo 回归通过。
+- 日志：`FlowValidation/presentation-final.log`、`presentation-legacy-flow.log`、`presentation-legacy-lab.log`。渲染图：`FlowValidation/Logs/Presentation/`。
+
+测试中的 Missing.unity 是预期故障注入；仍可见 UnityEditor.Search 的启动异常，与此前相同。此次未重跑全量 NUnit，此前记录中的已知失败不视为修复。
+尚需人工确认 Scene 视图隔离菜单的编辑体验、真实鼠标/键盘导航手感；未做独立 Player 构建。第 1 项按 Scene 编辑边框重叠处理，未将战场整体平移，也未据此改动 Game 视图布局。
