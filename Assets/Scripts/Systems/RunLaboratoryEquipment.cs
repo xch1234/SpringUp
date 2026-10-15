@@ -58,7 +58,7 @@ namespace Tideflesh.Systems
         {
             try { action(); error = null; return true; }
             catch (Exception ex) when (ex is RunException || ex is InventoryException)
-            { error = ex.Message; return false; }
+            { error = SpringUp.UI.ChineseText.Error(ex.Message); return false; }
         }
     }
 }

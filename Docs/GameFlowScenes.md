@@ -79,14 +79,18 @@ Assets/Scenes/SpringUpDemo.unity、LaboratoryDemo.unity、Battle_Greybox.unity �
 ## 地图平铺与编辑视图
 
 Battle_Greybox、新流程 Battle 和 Rest 共用 `Assets/Prefabs/Flow/ArenaTiles.prefab`。
-地图仍为 72×72 世界单位，20×20 格，每格 3.6×3.6：4 个角各使用一次，四条边各重复 18 次，中心重复 18×18 次。
+地图仍为 72×72 世界单位，40×40 格，每格 1.8×1.8：4 个角各使用一次，四条边各重复 38 次，中心重复 38×38 次。
 480×480 源图保持方形像素比例，统一缩放；没有将中心或边缘拉伸成大块。使用与原战场一致的 URP Unlit 材质。
 旧 SpringUpDemo 原有纯色地图和 LaboratoryDemo 场景布局不变。
 
 屏幕空间 Canvas 在 Scene 视图中的边框不代表世界碰撞。无需移动战场或改刷怪、相机坐标：
-`Tools > SpringUp > Scene View > Hide UI for Map Editing` 隐藏 Scene 视图中的 Canvas，
+`Tools > SpringUp > Scene View > Hide UI for Map Editing` 隐藏 Scene 视图中的 Canvas 和 EventSystem，
 `Show UI` 恢复。此操作仅影响编辑视图，Game UI 仍正常显示与交互。
 新流程常驻 UI 和实验室 Prefab 使用 UI 图层；该工具也处理旧 Demo 的 Canvas。
+EventSystem 只负责 UI 输入，不绘制游戏画面，不参与物理碰撞。Scene 中看到的是编辑器辅助显示；也可在 Hierarchy 左侧用眼睛图标隐藏它。不要取消对象或组件的启用勾选，否则 UI 输入会失效。
+
+玩家保留运动学刚体。`PlayerMotor` 在设置速度前用实际碰撞形状向墙层扫掠，限制朝墙方向的速度分量，同时保留沿墙移动；测试覆盖四边、角落、疾跑与极高速度。无需移动场景原点或修改用户的输入引用。
+新流程标题、状态、按钮和业务提示使用简体中文；业务错误码保持稳定，在显示层翻译。通用窗口按宽度排版并自动计算文本换行高度。
 
 `LaboratoryWindow.prefab` 是从 SpringUpDemo 实验室提取的独立窗口，
 `FlowLaboratoryWindow` 显式绑定 `RunLaboratoryEquipment`，订阅装备变更并随窗口销毁取消订阅。

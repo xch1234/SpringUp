@@ -189,7 +189,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: SpringUp
+  m_Text: 春生
 --- !u!222 &48036739
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1310,7 +1310,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Loading...
+  m_Text: 正在加载……
 --- !u!222 &1391893043
 CanvasRenderer:
   m_ObjectHideFlags: 0

@@ -14,7 +14,8 @@ namespace SpringUp.Flow
             go.transform.SetParent(body, false);
             var text = go.GetComponent<Text>(); text.font = title.font; text.fontSize = 18;
             text.color = Color.white; text.text = caption;
-            go.GetComponent<LayoutElement>().preferredHeight = 28;
+            // Text supplies its wrapped preferred height after the layout assigns its width.
+            go.GetComponent<LayoutElement>().minHeight = 28;
             return text;
         }
         public Button AddButton(string caption, UnityEngine.Events.UnityAction action)

@@ -129,7 +129,7 @@ namespace SpringUp.EditorChecks
             var rect = (RectTransform)go.transform; rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f); rect.sizeDelta = new Vector2(660, 640);
             go.GetComponent<Image>().color = new Color(.045f, .07f, .09f, .98f);
             var view = go.GetComponent<FlowWindow>(); view.group = go.GetComponent<CanvasGroup>();
-            var title = Label("Title", go.transform, "Window");
+            var title = Label("Title", go.transform, "窗口");
             var tr = (RectTransform)title.transform; tr.anchorMin = new Vector2(0, 1); tr.anchorMax = Vector2.one;
             tr.pivot = new Vector2(.5f, 1); tr.anchoredPosition = new Vector2(0, -10); tr.sizeDelta = new Vector2(-24, 36);
             title.fontSize = 24; title.alignment = TextAnchor.MiddleCenter; view.title = title;
@@ -142,7 +142,7 @@ namespace SpringUp.EditorChecks
             var br = (RectTransform)body.transform; br.anchorMin = new Vector2(0, 1); br.anchorMax = Vector2.one;
             br.pivot = new Vector2(.5f, 1); br.sizeDelta = Vector2.zero;
             var layout = body.GetComponent<VerticalLayoutGroup>(); layout.spacing = 6;
-            layout.childControlHeight = true; layout.childForceExpandHeight = false;
+            layout.childControlHeight = true; layout.childControlWidth = true; layout.childForceExpandHeight = false;
             body.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             sr.content = br; sr.viewport = (RectTransform)scroll.transform; sr.horizontal = false; sr.movementType = ScrollRect.MovementType.Clamped;
             view.body = body.transform;
@@ -166,13 +166,13 @@ namespace SpringUp.EditorChecks
             scaler.referenceResolution = new Vector2(1440, 900);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             app.uiRoot = UI("Windows", canvas.transform).transform; Stretch((RectTransform)app.uiRoot);
-            app.hud = Label("Status", canvas.transform, "SpringUp");
+            app.hud = Label("Status", canvas.transform, "春生");
             var rect = (RectTransform)app.hud.transform; rect.anchorMin = new Vector2(0, 1); rect.anchorMax = Vector2.one;
             rect.pivot = new Vector2(.5f, 1); rect.sizeDelta = new Vector2(-24, 60);
             app.hud.raycastTarget = false;
             app.loading = UI("Loading", canvas.transform, typeof(Image)); Stretch((RectTransform)app.loading.transform);
             app.loading.GetComponent<Image>().color = new Color(0, 0, 0, .9f);
-            var label = Label("Loading title", app.loading.transform, "Loading...");
+            var label = Label("Loading title", app.loading.transform, "正在加载……");
             Stretch((RectTransform)label.transform); label.alignment = TextAnchor.MiddleCenter;
             app.loading.SetActive(false);
             var events = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));

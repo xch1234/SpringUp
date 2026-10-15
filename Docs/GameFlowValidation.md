@@ -49,3 +49,13 @@ FlowValidation/flow-keyboard-final.log（最终新流程）、legacy-flow-releas
 
 测试中的 Missing.unity 是预期故障注入；仍可见 UnityEditor.Search 的启动异常，与此前相同。此次未重跑全量 NUnit，此前记录中的已知失败不视为修复。
 尚需人工确认 Scene 视图隔离菜单的编辑体验、真实鼠标/键盘导航手感；未做独立 Player 构建。第 1 项按 Scene 编辑边框重叠处理，未将战场整体平移，也未据此改动 Game 视图布局。
+
+## 2026-10-15：边界、40×40 与简体中文
+
+- `FlowPresentationRepair.UpdateTerrainAndVerify`：生成 1600 格共用地图；验证四角各 1、四边各 38、中心 1444，每格 1.8×1.8。已查看实际渲染图。
+- `ArenaBoundaryChecks`：从 Battle/Rest 复制真实墙体与玩家碰撞形状到独立物理场景，使用真实 PlayerMotor 扫掠和物理模拟，验证四边、四角、15/2000 单位每秒速度、沿墙移动；两场景均通过。
+- `SceneFlowChecks.RunBatch`：最终中文排版版本完整七波流程通过；生成并查看中文主菜单和背包截图，确认长提示不再被 100 宽的旧布局截断。
+- Scene 视图隐藏 EventSystem 后检查编辑器隐藏标记成立，同时 EventSystem 和 Canvas 仍启用；恢复显示后继续完整流程通过。
+- 旧 IntegratedFlowChecks、LaboratoryPlayChecks 回归均退出码 0。未重跑全量 NUnit，也未做 Player 构建。
+- 日志：`FlowValidation/boundaries-chinese.log`、`boundaries-chinese-layout.log`、`boundaries-legacy-flow.log`、`boundaries-legacy-lab.log`。截图在 `FlowValidation/Logs/Presentation/`。
+- 原有 `Battle_Greybox.unity` 未提交的输入引用修改保持原样，不包含在本次提交中；地图通过共用 Prefab 更新。仍需人工试玩确认碰墙手感。

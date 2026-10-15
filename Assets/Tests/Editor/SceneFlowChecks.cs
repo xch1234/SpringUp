@@ -108,8 +108,11 @@ namespace SpringUp.EditorChecks
                 {
                     case 0:
                         Require(content.kind == ContentKind.MainMenu, "Independent main menu");
+                        Require(app.uiRoot.GetComponentsInChildren<UnityEngine.UI.Text>().Any(t => t.text == "开始新局"), "Chinese main menu");
+                        FlowPresentationChecks.CaptureFlowUI(app, "main-menu-zh.png");
                         app.StartNewRun(); app.StartNewRun(); stage++; break;
                     case 1:
+                        ArenaBoundaryChecks.Run(content);
                         Require(run.Wave == 1 && content.director.CurrentWave == 1, "One initial wave");
                         Require(content.Attack.Charge == content.Attack.Capacity, "Battle charge filled");
                         Require(!run.TryPurchase("fist").Ok, "Battle purchase rejected");
@@ -127,6 +130,7 @@ namespace SpringUp.EditorChecks
                         Require(run.Marrow == reward, "Duplicate completion rewards once");
                         stage++; break;
                     case 2:
+                        ArenaBoundaryChecks.Run(content);
                         Require(content.kind == ContentKind.Rest && content.player.CurrentHealth == health, "Health preserved entering rest");
                         Require(content.director == null && EnemyRuntime.ActiveCount == 1, "Only training dummy in rest, count=" + EnemyRuntime.ActiveCount);
                         Require(content.Attack.Charge < content.Attack.Capacity, "Rest does not refill charge");
@@ -138,6 +142,7 @@ namespace SpringUp.EditorChecks
                         knife = run.Inventory.UnequippedIds().Single(id => run.Inventory.OrganOf(id).id == "rust_knife");
                         var lab = Object.FindFirstObjectByType<FlowLaboratoryWindow>();
                         Require(lab != null && lab.presenter.source == null, "Real laboratory view without demo bootstrap");
+                        FlowPresentationChecks.CaptureFlowUI(app, "inventory-zh.png");
                         Require(Object.FindFirstObjectByType<SpringUp.Laboratory.LaboratoryCombatDemo>() == null, "No internal combat preview");
                         lab.presenter.SelectInventory(knife); lab.presenter.SelectSlot(1, 0);
                         Require(lab.presenter.installButton.interactable, "Select item and slot enables installation");

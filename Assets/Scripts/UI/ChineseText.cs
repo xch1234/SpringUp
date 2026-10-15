@@ -1,0 +1,22 @@
+namespace SpringUp.UI
+{
+    // Translate at the presentation boundary; domain error codes remain stable for callers/tests.
+    public static class ChineseText
+    {
+        public static string Error(string code) => code switch
+        {
+            "rest_only" or "lab actions only in lab" => "仅可在休整期间操作。",
+            "capacity" => "背包容量不足，请先出售或丢弃物品。",
+            "insufficient_marrow" => "骨髓不足，无法购买。",
+            "unknown_item" => "商品不存在。",
+            "not_open" => "该功能暂未开放。",
+            "equip only from unequipped" => "请先将物品从装备槽拆下。",
+            "part mismatch" => "物品与所选部位不匹配。",
+            "empty slot" => "所选槽位没有装备。",
+            "invalid part" or "invalid slot" => "请选择有效的部位和槽位。",
+            "slot occupied" => "所选槽位已有装备。",
+            "cannot start next wave" => "暂时无法进入下一波，请检查阶段和背包容量。",
+            _ => "操作未完成，请重新选择物品后重试。"
+        };
+    }
+}

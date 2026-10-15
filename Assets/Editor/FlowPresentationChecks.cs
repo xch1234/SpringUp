@@ -14,17 +14,43 @@ namespace SpringUp.EditorChecks
     public static class FlowPresentationChecks
     {
         static void Require(bool condition, string message) { if (!condition) throw new Exception(message); }
+        public static void CaptureFlowUI(FlowApplication app, string name)
+        {
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null) return;
+            var canvas = app.hud.GetComponentInParent<Canvas>();
+            var originalMode = canvas.renderMode; var originalCamera = canvas.worldCamera;
+            float distance = canvas.planeDistance;
+            var camera = new GameObject("UI capture", typeof(Camera)).GetComponent<Camera>();
+            camera.transform.position = new Vector3(0, 0, -10000);
+            camera.orthographic = true; camera.orthographicSize = 450;
+            camera.farClipPlane = 100; camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(.03f,.04f,.05f);
+            try
+            {
+                canvas.renderMode = RenderMode.ScreenSpaceCamera; canvas.worldCamera = camera; canvas.planeDistance = 10;
+                Capture(camera, 1440, 900, name);
+                FlowPresentationRepair.HideUI();
+                Require(SceneVisibilityManager.instance.IsHidden(app.eventSystem.gameObject), "EventSystem hidden in Scene view");
+                Require(app.eventSystem.isActiveAndEnabled && canvas.isActiveAndEnabled, "Editor hiding preserves runtime input and UI");
+            }
+            finally
+            {
+                FlowPresentationRepair.ShowUI();
+                canvas.renderMode = originalMode; canvas.worldCamera = originalCamera; canvas.planeDistance = distance;
+                Object.DestroyImmediate(camera.gameObject); Canvas.ForceUpdateCanvases();
+            }
+        }
         public static void Run()
         {
             Directory.CreateDirectory("Logs/Presentation");
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var map = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(FlowPresentationRepair.MapPath));
             var tiles = map.GetComponentsInChildren<SpriteRenderer>();
-            Require(tiles.Length == 400, "20 x 20 cells");
-            Require(tiles.Count(t => t.sprite.name == "5") == 324, "18 x 18 repeatable center");
+            Require(tiles.Length == 1600, "40 x 40 cells");
+            Require(tiles.Count(t => t.sprite.name == "5") == 1444, "38 x 38 repeatable center");
             foreach (int id in new[] {1,3,7,9}) Require(tiles.Count(t => t.sprite.name == id.ToString()) == 1, "One tile per corner");
-            foreach (int id in new[] {2,4,6,8}) Require(tiles.Count(t => t.sprite.name == id.ToString()) == 18, "Repeated edges");
-            foreach (var tile in tiles) Require(Vector2.Distance(tile.bounds.size, new Vector2(3.6f,3.6f)) < .001f, "Equal native-aspect tiles");
+            foreach (int id in new[] {2,4,6,8}) Require(tiles.Count(t => t.sprite.name == id.ToString()) == 38, "Repeated edges");
+            foreach (var tile in tiles) Require(Vector2.Distance(tile.bounds.size, new Vector2(1.8f,1.8f)) < .001f, "Equal native-aspect tiles");
             var camera = new GameObject("Capture camera", typeof(Camera)).GetComponent<Camera>();
             camera.transform.position = new Vector3(0,0,-10); camera.orthographic = true; camera.orthographicSize = 37;
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.03f,.04f,.05f);

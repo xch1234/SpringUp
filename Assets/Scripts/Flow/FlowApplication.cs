@@ -58,7 +58,8 @@ namespace SpringUp.Flow
             IsActive = true;
             Pause = new PauseService();
             uiFont = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft YaHei", "SimHei", "Arial" }, 18);
-            if (uiFont != null) hud.font = uiFont;
+            if (uiFont != null)
+                foreach (var text in hud.GetComponentInParent<Canvas>().GetComponentsInChildren<Text>(true)) text.font = uiFont;
             // Bootstrap stays loaded; every content scene is additive.
         }
         void Start()
@@ -66,6 +67,13 @@ namespace SpringUp.Flow
             try { Configuration = new RunConfiguration(organsJson.text, wavesJson.text, organCatalog); Switch(MenuPath); }
             catch (Exception error) { ShowFailure(error); }
         }
+        static string ContentTitle(ContentKind kind) => kind == ContentKind.Battle ? "战斗" : kind == ContentKind.Rest ? "休整" : "主菜单";
+        static string WindowTitle(WindowKind kind) => kind switch
+        {
+            WindowKind.Inventory => "实验室 · 装备", WindowKind.Shop => "商店",
+            WindowKind.Settings => "设置", WindowKind.Confirm => "确认放弃",
+            WindowKind.Settlement => "本局结算", WindowKind.Failure => "加载失败", _ => "暂停"
+        };
         void Update()
         {
             if (Pause == null) return;
@@ -73,12 +81,12 @@ namespace SpringUp.Flow
             if (Content?.player != null && Session != null)
             {
                 var run = Session.Run;
-                hud.text = $"{Content.kind}  Wave {run.Wave}/{run.MaxWave}  HP {Content.player.CurrentHealth:0}/{Content.player.MaxHealth:0}"
-                    + $"  Marrow {run.Marrow}  Charge {Content.Attack.Charge:0}/{Content.Attack.Capacity:0}"
-                    + $"  Attack [{Content.Attack.KeyLabel}]  Esc: menu";
-                if (Content.dummy != null) hud.text += $"  Dummy HP {Content.dummy.CurrentHealth:0}";
+                hud.text = $"{ContentTitle(Content.kind)}  波次 {run.Wave}/{run.MaxWave}  生命 {Content.player.CurrentHealth:0}/{Content.player.MaxHealth:0}"
+                    + $"  骨髓 {run.Marrow}  充能 {Content.Attack.Charge:0}/{Content.Attack.Capacity:0}"
+                    + $"  攻击 [{Content.Attack.KeyLabel}]  Esc：菜单";
+                if (Content.dummy != null) hud.text += $"  木桩生命 {Content.dummy.CurrentHealth:0}";
             }
-            else hud.text = "SpringUp - scene flow prototype";
+            else hud.text = "春生 · 流程验证";
         }
         public void HandleEscape()
         {
@@ -189,9 +197,9 @@ namespace SpringUp.Flow
         {
             Debug.LogException(error);
             ClearWindows();
-            var view = Push(WindowKind.Failure, "Loading failed");
-            view.AddText(error.Message);
-            view.AddButton("Retry", () => {
+            var view = Push(WindowKind.Failure, "加载失败");
+            view.AddText("加载暂未完成，请重试或返回主菜单。详细原因见控制台。");
+            view.AddButton("重试", () => {
                 if (Configuration == null)
                 {
                     try { Configuration = new RunConfiguration(organsJson.text, wavesJson.text, organCatalog); }
@@ -199,7 +207,7 @@ namespace SpringUp.Flow
                 }
                 Switch(retryPath ?? MenuPath);
             });
-            view.AddButton("Return to main menu", RequestMainMenu);
+            view.AddButton("返回主菜单", RequestMainMenu);
             FocusFirst(view);
         }
         FlowWindow CreateView()
@@ -213,85 +221,85 @@ namespace SpringUp.Flow
         void ShowMainMenu()
         {
             ClearActions();
-            actions = CreateView(); actions.title.text = "SpringUp";
-            actions.AddText("New game / no saves");
-            actions.AddButton("New game", StartNewRun);
+            actions = CreateView(); actions.title.text = "春生";
+            actions.AddText("开始新局 · 暂不支持存档");
+            actions.AddButton("开始新局", StartNewRun);
             FocusFirst(actions);
         }
         void ShowContentActions()
         {
             ClearActions();
             if (Content.kind == ContentKind.MainMenu) return;
-            actions = CreateView(); actions.title.text = Content.kind.ToString();
+            actions = CreateView(); actions.title.text = ContentTitle(Content.kind);
             // Small non-modal corner panel; only windows acquire pause leases.
             var rect = (RectTransform)actions.transform;
             rect.anchorMin = rect.anchorMax = new Vector2(1, 0);
             rect.pivot = new Vector2(1, 0); rect.anchoredPosition = new Vector2(-12, 12); rect.sizeDelta = new Vector2(310, 280);
-            actions.AddButton("Pause [Esc]", () => OpenWindow(WindowKind.Pause));
+            actions.AddButton("暂停［Esc］", () => OpenWindow(WindowKind.Pause));
             if (Content.kind == ContentKind.Rest)
             {
-                actions.AddButton("Inventory", () => OpenWindow(WindowKind.Inventory));
-                actions.AddButton("Shop", () => OpenWindow(WindowKind.Shop));
-                actions.AddButton("Reset dummy", () => Content.ResetDummy());
-                actions.AddButton("Next wave", NextWave);
+                actions.AddButton("背包", () => OpenWindow(WindowKind.Inventory));
+                actions.AddButton("商店", () => OpenWindow(WindowKind.Shop));
+                actions.AddButton("重置木桩", () => Content.ResetDummy());
+                actions.AddButton("进入下一波", NextWave);
             }
             else
             {
-                actions.AddButton("Debug: finish wave", () => { if (WorldInputAllowed) Content.director.CompleteCurrentWave(); });
-                actions.AddButton("Debug: defeat", () => { if (WorldInputAllowed) Content.player.TakeDamage(Content.player.MaxHealth); });
-                actions.AddButton("Verify equipment lock", () => {
+                actions.AddButton("测试：结束本波", () => { if (WorldInputAllowed) Content.director.CompleteCurrentWave(); });
+                actions.AddButton("测试：战败结算", () => { if (WorldInputAllowed) Content.player.TakeDamage(Content.player.MaxHealth); });
+                actions.AddButton("测试：战斗换装限制", () => {
                     try { Session.Run.Unequip("hand", 1); }
-                    catch (RunException) { OpenNotice("Equipment is locked during battle."); }
+                    catch (RunException) { OpenNotice("战斗期间无法更换装备，请在休整时操作。"); }
                 });
             }
         }
         void OpenNotice(string text)
         {
-            var view = Push(WindowKind.Settings, "Notice"); view.AddText(text);
-            view.AddButton("Close", CloseTop); FocusFirst(view);
+            var view = Push(WindowKind.Settings, "提示"); view.AddText(text);
+            view.AddButton("关闭", CloseTop); FocusFirst(view);
         }
         public void OpenWindow(WindowKind kind)
         {
             if (IsTransitioning) return;
             if ((kind == WindowKind.Inventory || kind == WindowKind.Shop) && Session?.Run.Stage != RunPhase.Rest) return;
             if (windows.Any(w => w.Kind == kind)) return;
-            var view = Push(kind, kind == WindowKind.Pause ? $"Pause - {Content.kind}" : kind.ToString());
+            var view = Push(kind, kind == WindowKind.Pause ? $"暂停 · {ContentTitle(Content.kind)}" : WindowTitle(kind));
             switch (kind)
             {
                 case WindowKind.Pause:
-                    view.AddButton("Resume", CloseTop);
+                    view.AddButton("继续游戏", CloseTop);
                     if (Session?.Run.Stage == RunPhase.Rest)
                     {
-                        view.AddButton("Inventory", () => OpenWindow(WindowKind.Inventory));
-                        view.AddButton("Shop", () => OpenWindow(WindowKind.Shop));
+                        view.AddButton("背包", () => OpenWindow(WindowKind.Inventory));
+                        view.AddButton("商店", () => OpenWindow(WindowKind.Shop));
                     }
-                    view.AddButton("Settings", () => OpenWindow(WindowKind.Settings));
-                    view.AddButton("Main menu (abandon run)", RequestMainMenu);
+                    view.AddButton("设置", () => OpenWindow(WindowKind.Settings));
+                    view.AddButton("返回主菜单（放弃本局）", RequestMainMenu);
                     break;
                 case WindowKind.Settings:
-                    view.AddText("Settings placeholder");
-                    view.AddButton("Rebind attack (Esc cancels)", () => Content?.Attack.ToggleRebind());
-                    view.AddButton("Close", CloseTop); break;
+                    view.AddText("设置 · 功能开发中");
+                    view.AddButton("更改攻击按键（Esc 取消）", () => Content?.Attack.ToggleRebind());
+                    view.AddButton("关闭", CloseTop); break;
                 case WindowKind.Confirm:
-                    view.AddText("Abandon this run? Progress will be lost.");
-                    view.AddButton("Cancel", CloseTop); view.AddButton("Abandon run", AbandonRun); break;
+                    view.AddText("确定放弃本局吗？当前进度不会保存。");
+                    view.AddButton("取消", CloseTop); view.AddButton("放弃本局", AbandonRun); break;
                 case WindowKind.Inventory:
                     view.GetComponent<FlowLaboratoryWindow>().Bind(this);
                     break;
                 case WindowKind.Shop:
                     var item = Configuration.Organs["rust_knife"];
-                    view.AddText($"Fixed test item: {item.name}, cost {item.shop_price}. Marrow {Session.Run.Marrow}");
-                    view.AddButton("Buy", () => {
+                    view.AddText($"测试商品：{item.name}，价格 {item.shop_price} 骨髓。持有 {Session.Run.Marrow} 骨髓。");
+                    view.AddButton("购买", () => {
                         var result = Session.Run.TryPurchase("rust_knife");
                         if (result.Ok) { CloseTop(); OpenWindow(WindowKind.Shop); }
-                        OpenNotice(result.Ok ? "Purchased." : result.Reason);
+                        OpenNotice(result.Ok ? "购买成功。" : SpringUp.UI.ChineseText.Error(result.Reason));
                     });
-                    view.AddButton("Close", CloseTop); break;
+                    view.AddButton("关闭", CloseTop); break;
                 case WindowKind.Settlement:
-                    view.AddText(Session.Run.Stage == RunPhase.Won ? "Victory!" : "Defeat");
-                    view.AddText($"Wave {Session.Run.Wave}, marrow {Session.Run.Marrow}");
-                    view.AddButton("New game", StartNewRun);
-                    view.AddButton("Main menu", RequestMainMenu); break;
+                    view.AddText(Session.Run.Stage == RunPhase.Won ? "挑战成功！" : "挑战失败");
+                    view.AddText($"到达第 {Session.Run.Wave} 波，持有骨髓 {Session.Run.Marrow}");
+                    view.AddButton("开始新局", StartNewRun);
+                    view.AddButton("主菜单", RequestMainMenu); break;
             }
             view.gameObject.SetActive(true);
             FocusFirst(view);

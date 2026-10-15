@@ -20,6 +20,17 @@ namespace SpringUp.EditorChecks
             FlowPresentationChecks.Run();
             SceneFlowChecks.RunBatch();
         }
+        // Density updates preserve all existing scene edits and laboratory prefab customization.
+        public static void UpdateTerrainAndVerify()
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var map = CreateMap();
+            PrefabUtility.SaveAsPrefabAsset(map, MapPath);
+            Object.DestroyImmediate(map);
+            AssetDatabase.SaveAssets();
+            FlowPresentationChecks.Run();
+            SceneFlowChecks.RunBatch();
+        }
         [MenuItem("Tools/SpringUp/Scene View/Hide UI for Map Editing")]
         public static void HideUI() { Tools.visibleLayers &= ~(1 << LayerMask.NameToLayer("UI")); SetCanvasVisibility(true); }
         [MenuItem("Tools/SpringUp/Scene View/Show UI")]
@@ -29,6 +40,9 @@ namespace SpringUp.EditorChecks
             foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (hide) SceneVisibilityManager.instance.Hide(canvas.gameObject, true);
                 else SceneVisibilityManager.instance.Show(canvas.gameObject, true);
+            foreach (var events in Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (hide) SceneVisibilityManager.instance.Hide(events.gameObject, true);
+                else SceneVisibilityManager.instance.Show(events.gameObject, true);
             SceneView.RepaintAll();
         }
         static void LayerUI(UnityEngine.SceneManagement.Scene scene)
@@ -38,7 +52,7 @@ namespace SpringUp.EditorChecks
         }
         public static GameObject CreateMap()
         {
-            const int count = 20;
+            const int count = 40;
             const float cell = 72f / count;
             var sprites = Enumerable.Range(1, 9).Select(i => AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Art/bk1440-s/{i}.png")).ToArray();
             if (sprites.Any(s => s == null)) throw new InvalidOperationException("Missing terrain sprite");
@@ -103,7 +117,7 @@ namespace SpringUp.EditorChecks
             LayerUI(bootstrap);
             EditorUtility.SetDirty(app); EditorSceneManager.SaveScene(bootstrap);
             AssetDatabase.SaveAssets();
-            Debug.Log("[Presentation Repair] PASS: three maps tiled 20x20 and laboratory prefab bound.");
+            Debug.Log("[Presentation Repair] PASS: three maps tiled 40x40 and laboratory prefab bound.");
         }
         public static void BuildLaboratory()
         {
