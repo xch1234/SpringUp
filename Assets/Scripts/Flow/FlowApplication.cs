@@ -43,6 +43,8 @@ namespace SpringUp.Flow
         string retryPath;
         bool quitting;
         Font uiFont;
+        Text bindingStatus;
+        public bool HasModal => windows.Count > 0;
         sealed class WindowEntry
         {
             public WindowKind Kind;
@@ -78,15 +80,37 @@ namespace SpringUp.Flow
         {
             if (Pause == null) return;
             if (Keyboard.current?.escapeKey.wasPressedThisFrame == true) HandleEscape();
+            else if (Keyboard.current?.bKey.wasPressedThisFrame == true || Keyboard.current?.tabKey.wasPressedThisFrame == true) ToggleInventory();
+            if (Content?.Attack != null)
+            {
+                if (bindingStatus != null) bindingStatus.text = "当前攻击：" + Content.Attack.KeyLabel + "\n"
+                    + (Content.Attack.IsRebinding ? "按键盘键或鼠标左右键，Esc 取消\n" : "") + Content.Attack.Feedback + Content.Attack.BindingNotice;
+            }
             if (Content?.player != null && Session != null)
             {
                 var run = Session.Run;
                 hud.text = $"{ContentTitle(Content.kind)}  波次 {run.Wave}/{run.MaxWave}  生命 {Content.player.CurrentHealth:0}/{Content.player.MaxHealth:0}"
                     + $"  骨髓 {run.Marrow}  充能 {Content.Attack.Charge:0}/{Content.Attack.Capacity:0}"
-                    + $"  攻击 [{Content.Attack.KeyLabel}]  Esc：菜单";
+                    + $"  攻击 [{Content.Attack.KeyLabel}]  B/Tab：背包  Esc：菜单";
+                if (CanInteractWithShop()) hud.text += "  E：商店";
                 if (Content.dummy != null) hud.text += $"  木桩生命 {Content.dummy.CurrentHealth:0}";
             }
             else hud.text = "春生 · 流程验证";
+        }
+        public void ToggleInventory()
+        {
+            if (IsTransitioning || Content?.Attack?.CaptureBlocksUI == true) return;
+            if (windows.Count == 1 && windows[0].Kind == WindowKind.Inventory) { CloseTop(); return; }
+            if (WorldInputAllowed && windows.Count == 0) OpenWindow(WindowKind.Inventory);
+        }
+        public bool CanInteractWithShop() => WorldInputAllowed && !HasModal && Session?.Run.Stage == RunPhase.Rest
+            && Content.kind == ContentKind.Rest && Content.Merchant != null
+            && Vector2.Distance(Content.player.transform.position, Content.Merchant.position) <= 2f
+            && Content.Attack?.CaptureBlocksUI != true;
+        public bool TryOpenShop()
+        {
+            if (!CanInteractWithShop()) return false;
+            OpenWindow(WindowKind.Shop); return true;
         }
         public void HandleEscape()
         {
@@ -238,8 +262,7 @@ namespace SpringUp.Flow
             actions.AddButton("暂停［Esc］", () => OpenWindow(WindowKind.Pause));
             if (Content.kind == ContentKind.Rest)
             {
-                actions.AddButton("背包", () => OpenWindow(WindowKind.Inventory));
-                actions.AddButton("商店", () => OpenWindow(WindowKind.Shop));
+                actions.AddText("B / Tab：背包 · 靠近商人 E：商店");
                 actions.AddButton("重置木桩", () => Content.ResetDummy());
                 actions.AddButton("进入下一波", NextWave);
             }
@@ -261,24 +284,22 @@ namespace SpringUp.Flow
         public void OpenWindow(WindowKind kind)
         {
             if (IsTransitioning) return;
-            if ((kind == WindowKind.Inventory || kind == WindowKind.Shop) && Session?.Run.Stage != RunPhase.Rest) return;
+            if (kind == WindowKind.Inventory && (HasModal || Session == null ||
+                (Session.Run.Stage != RunPhase.Rest && Session.Run.Stage != RunPhase.Combat))) return;
+            if (kind == WindowKind.Shop && !CanInteractWithShop()) return;
             if (windows.Any(w => w.Kind == kind)) return;
             var view = Push(kind, kind == WindowKind.Pause ? $"暂停 · {ContentTitle(Content.kind)}" : WindowTitle(kind));
             switch (kind)
             {
                 case WindowKind.Pause:
                     view.AddButton("继续游戏", CloseTop);
-                    if (Session?.Run.Stage == RunPhase.Rest)
-                    {
-                        view.AddButton("背包", () => OpenWindow(WindowKind.Inventory));
-                        view.AddButton("商店", () => OpenWindow(WindowKind.Shop));
-                    }
                     view.AddButton("设置", () => OpenWindow(WindowKind.Settings));
                     view.AddButton("返回主菜单（放弃本局）", RequestMainMenu);
                     break;
                 case WindowKind.Settings:
-                    view.AddText("设置 · 功能开发中");
-                    view.AddButton("更改攻击按键（Esc 取消）", () => Content?.Attack.ToggleRebind());
+                    bindingStatus = view.AddText("当前攻击：" + Content.Attack.KeyLabel);
+                    view.AddButton("更改", () => Content?.Attack.ToggleRebind());
+                    view.AddButton("恢复默认 F", () => Content?.Attack.SetAttackKey(Key.F));
                     view.AddButton("关闭", CloseTop); break;
                 case WindowKind.Confirm:
                     view.AddText("确定放弃本局吗？当前进度不会保存。");
@@ -287,14 +308,7 @@ namespace SpringUp.Flow
                     view.GetComponent<FlowLaboratoryWindow>().Bind(this);
                     break;
                 case WindowKind.Shop:
-                    var item = Configuration.Organs["rust_knife"];
-                    view.AddText($"测试商品：{item.name}，价格 {item.shop_price} 骨髓。持有 {Session.Run.Marrow} 骨髓。");
-                    view.AddButton("购买", () => {
-                        var result = Session.Run.TryPurchase("rust_knife");
-                        if (result.Ok) { CloseTop(); OpenWindow(WindowKind.Shop); }
-                        OpenNotice(result.Ok ? "购买成功。" : SpringUp.UI.ChineseText.Error(result.Reason));
-                    });
-                    view.AddButton("关闭", CloseTop); break;
+                    BuildShop(view); break;
                 case WindowKind.Settlement:
                     view.AddText(Session.Run.Stage == RunPhase.Won ? "挑战成功！" : "挑战失败");
                     view.AddText($"到达第 {Session.Run.Wave} 波，持有骨髓 {Session.Run.Marrow}");
@@ -304,8 +318,48 @@ namespace SpringUp.Flow
             view.gameObject.SetActive(true);
             FocusFirst(view);
         }
+        void BuildShop(FlowWindow view)
+        {
+            var run = Session.Run;
+            var item = Configuration.Organs["rust_knife"];
+            var balance = view.AddText("");
+            var message = view.AddText("仅出售背包中未装备的物品；已装备物品请先在休整背包拆卸。");
+            var selection = view.AddText("未选择物品");
+            string selected = null;
+            var choices = new List<Button>();
+            Button sell = null;
+            Action refresh = null;
+            refresh = () => {
+                balance.text = $"骨髓 {run.Marrow} · 背包 {run.Inventory.UnequippedIds().Count}/{run.Inventory.UnequippedCapacity()}";
+                selected = null; selection.text = run.Inventory.UnequippedIds().Count == 0 ? "空库存：没有可出售物品" : "请选择出售物品";
+                if (sell != null) sell.interactable = false;
+                foreach (var button in choices) { button.gameObject.SetActive(false); Destroy(button.gameObject); }
+                choices.Clear();
+                foreach (var id in run.Inventory.UnequippedIds())
+                {
+                    string captured = id;
+                    var organ = run.Inventory.OrganOf(id);
+                    choices.Add(view.AddButton(organ.name + " #" + id, () => {
+                        if (!run.Inventory.UnequippedIds().Contains(captured)) { refresh(); return; }
+                        selected = captured; selection.text = $"{organ.name} · 售价 {run.Inventory.SalePrice(captured)} 骨髓";
+                        sell.interactable = true;
+                    }));
+                }
+            };
+            view.AddButton($"购买 {item.name}（{item.shop_price} 骨髓）", () => {
+                var result = run.TryPurchase("rust_knife");
+                message.text = result.Ok ? "购买成功" : SpringUp.UI.ChineseText.Error(result.Reason); refresh();
+            });
+            sell = view.AddButton("出售所选物品", () => {
+                if (selected == null || !run.Inventory.UnequippedIds().Contains(selected)) { message.text = "请重新选择有效物品"; refresh(); return; }
+                var equipment = new RunLaboratoryEquipment(run, Configuration.Definitions);
+                message.text = equipment.TrySell(selected, out var error) ? "出售成功" : error; refresh();
+            });
+            view.AddButton("关闭", CloseTop); refresh();
+        }
         FlowWindow Push(WindowKind kind, string title)
         {
+            Content?.Attack?.CancelRound();
             if (actions != null) actions.group.interactable = false;
             if (windows.Count > 0) windows[windows.Count - 1].View.group.interactable = false;
             var focus = eventSystem.currentSelectedGameObject;
@@ -317,6 +371,7 @@ namespace SpringUp.Flow
         public void CloseTop()
         {
             if (windows.Count == 0) return;
+            Content?.Attack?.SuppressInput();
             var last = windows[windows.Count - 1]; windows.RemoveAt(windows.Count - 1);
             if (last.Kind == WindowKind.Settings && Content?.Attack?.IsRebinding == true) Content.Attack.ToggleRebind();
             if (last.View != null) { last.View.gameObject.SetActive(false); Destroy(last.View.gameObject); }

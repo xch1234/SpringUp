@@ -143,11 +143,13 @@ namespace Tideflesh.Systems
             if (previous != null) _unequipped.Add(previous);
         }
 
+        public int SalePrice(string instanceId) => OrganOf(instanceId).shop_price / 2;
+
         public int Sell(string instanceId)
         {
-            var organ = OrganOf(instanceId);
+            int price = SalePrice(instanceId);
             Remove(instanceId);
-            return organ.shop_price / 2;
+            return price;
         }
 
         public void Discard(string instanceId) => Remove(instanceId);

@@ -15,6 +15,7 @@ namespace SpringUp.Laboratory
         public Text selectionText, inventoryTitle;
         public Button installButton, removeButton;
         public Font fontOverride;
+        public bool ReadOnly { get; set; }
         private ILaboratoryEquipment equipment;
         private string candidateId;
         private int part = 1, slot = -1;
@@ -78,8 +79,8 @@ namespace SpringUp.Laboratory
             var candidate = Candidate;
             var target = equipment.GetSlot((LaboratoryPart)part, slot);
             inventoryTitle.text = $"背包 · {equipment.Inventory.Count} 件";
-            installButton.interactable = candidate != null && slot >= 0 && candidate.Part == (LaboratoryPart)part;
-            removeButton.interactable = candidate == null && target != null;
+            installButton.interactable = !ReadOnly && candidate != null && slot >= 0 && candidate.Part == (LaboratoryPart)part;
+            removeButton.interactable = !ReadOnly && candidate == null && target != null;
             installButton.GetComponentInChildren<Text>().text = target == null ? "安装" : "替换";
             selectionText.text = $"物品：{candidate?.Name ?? "未选择"} {(ShortId((candidate ?? target)?.InstanceId) ?? "")}    {(candidate ?? target)?.Kind}    槽位：{(slot < 0 ? "未选择" : PartNames[part] + " " + (slot + 1))}\n" +
                 (candidate?.Description ?? target?.Description ?? "选择物品和对应槽位安装；只选择已装备槽位可拆下。");

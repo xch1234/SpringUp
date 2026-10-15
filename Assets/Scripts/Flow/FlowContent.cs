@@ -3,6 +3,7 @@ using SpringUp.Organs;
 using TideBorne.Battle;
 using Tideflesh.Systems;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace SpringUp.Flow
 {
@@ -19,6 +20,8 @@ namespace SpringUp.Flow
         public BattleOrganEffects effects;
         public EnemyRuntime dummy;
         public PlayerChargeAttack Attack { get; private set; }
+        [SerializeField] Transform merchant;
+        public Transform Merchant => merchant;
         FlowApplication app;
         RunSession session;
         bool initialized;
@@ -39,6 +42,7 @@ namespace SpringUp.Flow
             pipeline.GetComponent<BattleOrganTargeting>().AttackOrigin = player.transform;
             Attack = pipeline.gameObject.AddComponent<PlayerChargeAttack>();
             Attack.Configure(pipeline, () => app.WorldInputAllowed, 100, 20);
+            if (kind == ContentKind.Rest) EnsureMerchant();
             initialized = true;
             session.Run.LoadoutChanged += LoadoutChanged;
             player.Died += Died;
@@ -48,6 +52,27 @@ namespace SpringUp.Flow
             else Attack.RestoreCharge(session.Charge);
             if (dummy != null) { dummy.TrainingTarget = true; dummy.ResetTrainingTarget(); }
             initialized = true;
+        }
+        // Created by the shared scene entry, so regenerated Rest scenes retain the interaction.
+        public void EnsureMerchant()
+        {
+            if (merchant != null || kind != ContentKind.Rest) return;
+            var go = new GameObject("Merchant · E Shop");
+            go.transform.SetParent(world.transform, false);
+            go.transform.position = player.transform.position + Vector3.left * 3;
+            merchant = go.transform;
+            var sprite = go.AddComponent<SpriteRenderer>();
+            sprite.sprite = player.GetComponentInChildren<SpriteRenderer>().sprite;
+            sprite.color = new Color(.2f, .9f, .85f);
+            go.transform.localScale = new Vector3(1.4f, 1.4f, 1);
+            var label = new GameObject("Merchant label").AddComponent<TextMesh>();
+            label.transform.SetParent(go.transform, false); label.transform.localPosition = Vector3.up;
+            label.text = "SHOP [E]"; label.characterSize = .15f; label.fontSize = 40;
+            label.anchor = TextAnchor.MiddleCenter;
+        }
+        void Update()
+        {
+            if (kind == ContentKind.Rest && Keyboard.current?.eKey.wasPressedThisFrame == true) app?.TryOpenShop();
         }
         public void Begin()
         {
