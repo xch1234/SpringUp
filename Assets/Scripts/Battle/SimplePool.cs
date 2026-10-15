@@ -115,6 +115,7 @@ namespace TideBorne.Battle
             }
 
             s_Pools.Clear();
+            if (s_Root != null) Object.Destroy(s_Root.gameObject);
             s_Root = null;
         }
 

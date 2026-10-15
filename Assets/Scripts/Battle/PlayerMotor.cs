@@ -38,6 +38,7 @@ namespace TideBorne.Battle
         [Tooltip("疾跑倍率。体力系统尚未定（策划案待定问题 7），故暂不消耗资源。")]
         [SerializeField] private float sprintMultiplier = 1.5f;
 
+        public System.Func<bool> InputAllowed { get; set; }
         private Rigidbody2D _body;
         private Vector2 _moveInput;
         private bool _sprintHeld;
@@ -102,6 +103,8 @@ namespace TideBorne.Battle
         /// <summary>读输入、不做物理写入（物理写入放 FixedUpdate）。</summary>
         private void Update()
         {
+            if (InputAllowed != null && !InputAllowed())
+            { _moveInput = Vector2.zero; _sprintHeld = false; _body.linearVelocity = Vector2.zero; return; }
             _moveInput = ReadMoveInput();
             // 每帧读值而不是只听 performed 回调：回调收不到"松开"，会卡在按下状态。
             _sprintHeld = ReadSprintHeld();

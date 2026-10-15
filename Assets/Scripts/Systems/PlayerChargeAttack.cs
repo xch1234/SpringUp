@@ -68,6 +68,8 @@ namespace Tideflesh.Systems
             waitForRelease = true;
         }
 
+        public void RestoreCharge(float value) => Charge = Mathf.Clamp(value, 0, Capacity);
+
         public void CancelRound()
         {
             while (pending.Count > 0)

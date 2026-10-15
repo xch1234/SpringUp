@@ -51,6 +51,8 @@ namespace TideBorne.Battle
         public static bool HasPlayer { get { return Player != null; } }
 
         /// <summary>清掉缓存。切换场景或玩家被重建后调用。</summary>
+        public static void Bind(Transform player) => s_Cached = player;
+
         public static void Reset()
         {
             s_Cached = null;

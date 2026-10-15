@@ -58,6 +58,8 @@ namespace TideBorne.Battle
 
         private void Update()
         {
+            // A ready cooldown / overlapping projectile must not resolve while the world is paused.
+            if (Time.timeScale <= 0f) return;
             // 兵工厂自己死了就不该继续产兵。
             if (_self != null && !_self.IsAlive)
                 return;

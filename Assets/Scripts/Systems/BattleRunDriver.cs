@@ -29,6 +29,7 @@ namespace Tideflesh.Systems
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Install()
         {
+            if (SpringUp.Flow.FlowApplication.IsActive) return;
             if (UnityEngine.Object.FindFirstObjectByType<SpringUpRunDriver>() != null) return;
             if (UnityEngine.Object.FindFirstObjectByType<WaveDirector>() == null) return;
             if (UnityEngine.Object.FindFirstObjectByType<BattleRunDriver>() != null) return;
@@ -74,7 +75,7 @@ namespace Tideflesh.Systems
         {
             if (_director != null)
                 _director.WaveCompleted -= OnWaveCompleted;
-            if (Time.timeScale == 0f)
+            if (!SpringUp.Flow.FlowApplication.IsActive && Time.timeScale == 0f)
                 Time.timeScale = 1f;
         }
 
