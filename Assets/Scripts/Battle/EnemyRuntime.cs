@@ -24,6 +24,9 @@ namespace TideBorne.Battle
         [Tooltip("当前血量。")]
         [SerializeField] private float currentHealth = 20f;
 
+        // Training targets use the real damage/status pipeline but never die by default.
+        public bool TrainingTarget { get; set; }
+        public void ResetTrainingTarget() { currentHealth = MaxHealth; OrganSpeedMultiplier = 1f; }
         private bool _isDead;
         public float OrganSpeedMultiplier { get; set; } = 1f;
 
@@ -160,6 +163,7 @@ namespace TideBorne.Battle
 
             var applied = Mathf.Min(damage, currentHealth);
             currentHealth -= applied;
+            if (TrainingTarget) currentHealth = Mathf.Max(1f, currentHealth);
             Vector2 deathPosition = Position;
 
             EnemyEvents.RaiseDamaged(new EnemyEvents.DamagedInfo

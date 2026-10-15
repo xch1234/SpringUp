@@ -108,6 +108,14 @@ namespace TideBorne.Battle
         /// <summary>全部波次结束。</summary>
         public event Action AllWavesCompleted;
 
+        public bool StartExternalWave(int wave, int count, float duration)
+        {
+            if (State == WaveState.Running || wave < 1 || wave > count) return false;
+            ConfigureExternal(count, duration);
+            CurrentWave = wave - 1;
+            return StartNextWave();
+        }
+
         private void Awake()
         {
             if (spawner == null)

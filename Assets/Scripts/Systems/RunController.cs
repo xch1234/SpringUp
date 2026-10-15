@@ -36,6 +36,8 @@ namespace Tideflesh.Systems
         public string Reason;
     }
 
+    public enum RunPhase { Boot, Combat, Settling, Rest, Won, Lost }
+
     public sealed class RunController
     {
         public delegate void Emit(string name, object payload);
@@ -46,7 +48,15 @@ namespace Tideflesh.Systems
         readonly Emit _emit;
 
         public Inventory Inventory { get; private set; }
-        public string Phase { get; private set; } = "boot";
+        public RunPhase Stage { get; private set; } = RunPhase.Boot;
+        // Compatibility adapter for existing demos; new consumers use Stage/events.
+        public string Phase => Stage switch { RunPhase.Boot => "boot", RunPhase.Combat => "combat",
+            RunPhase.Settling => "wave_settling", RunPhase.Rest => "lab", RunPhase.Won => "run_won", _ => "run_lost" };
+        public event Action<InventorySnapshot> LoadoutChanged;
+        public event Action<int> WaveStarted;
+        public event Action<int> WaveFinished;
+        public event Action<LabOpenedPayload> RestOpened;
+        public event Action<RunPhase> Ended;
         public int Wave { get; private set; }
         public int Marrow { get; private set; }
         public int MaxWave => _maxWave;
@@ -70,23 +80,25 @@ namespace Tideflesh.Systems
 
         public void StartRun()
         {
-            if (Phase != "boot")
+            if (Stage != RunPhase.Boot)
                 throw new RunException("run already started");
             Inventory = new Inventory(_catalog);
             Marrow = 0;
             Wave = 1;
             Inventory.SpawnEquipped("fist", "hand", 1);
-            Phase = "combat";
+            Stage = RunPhase.Combat;
             EmitLoadout();
-            _emit("RunStarted", new RunStartedPayload { Wave = Wave });
+            WaveStarted?.Invoke(Wave);
+            _emit?.Invoke("RunStarted", new RunStartedPayload { Wave = Wave });
         }
 
         public void CombatTimerFinished()
         {
-            if (Phase != "combat")
+            if (Stage != RunPhase.Combat)
                 throw new RunException("timer only valid in combat");
-            Phase = "wave_settling";
-            _emit("WaveEnded", new WaveEndedPayload { Wave = Wave, Reason = "timer" });
+            Stage = RunPhase.Settling;
+            WaveFinished?.Invoke(Wave);
+            _emit?.Invoke("WaveEnded", new WaveEndedPayload { Wave = Wave, Reason = "timer" });
             var cfg = _waves[Wave];
             var drops = new List<string>();
             if (cfg.guaranteed_drops != null)
@@ -100,11 +112,12 @@ namespace Tideflesh.Systems
             Marrow += gained;
             if (Wave >= _maxWave)
             {
-                Phase = "run_won";
-                _emit("RunEnded", new RunEndedPayload { Result = "won" });
+                Stage = RunPhase.Won;
+                Ended?.Invoke(Stage);
+                _emit?.Invoke("RunEnded", new RunEndedPayload { Result = "won" });
                 return;
             }
-            Phase = "lab";
+            Stage = RunPhase.Rest;
             var payloadDrops = new List<OrganInstance>();
             foreach (var iid in spawned)
             {
@@ -115,18 +128,21 @@ namespace Tideflesh.Systems
                     organ_id = inst.organ_id
                 });
             }
-            _emit("LabOpened", new LabOpenedPayload { Drops = payloadDrops, MarrowDelta = gained });
+            var reward = new LabOpenedPayload { Drops = payloadDrops, MarrowDelta = gained };
+            RestOpened?.Invoke(reward);
+            _emit?.Invoke("LabOpened", reward);
         }
 
-        public bool CanStartNextWave() => Phase == "lab" && Inventory.UnequippedWithinCap();
+        public bool CanStartNextWave() => Stage == RunPhase.Rest && Inventory.UnequippedWithinCap();
 
         public void StartNextWave()
         {
             if (!CanStartNextWave())
                 throw new RunException("cannot start next wave");
             Wave += 1;
-            Phase = "combat";
-            _emit("RunStarted", new RunStartedPayload { Wave = Wave });
+            Stage = RunPhase.Combat;
+            WaveStarted?.Invoke(Wave);
+            _emit?.Invoke("RunStarted", new RunStartedPayload { Wave = Wave });
         }
 
         public void Equip(string instanceId, string part, int slot)
@@ -152,9 +168,10 @@ namespace Tideflesh.Systems
 
         public void LoseRun()
         {
-            if (Phase != "combat") return;
-            Phase = "run_lost";
-            _emit("RunEnded", new RunEndedPayload { Result = "lost" });
+            if (Stage != RunPhase.Combat && Stage != RunPhase.Rest) return;
+            Stage = RunPhase.Lost;
+            Ended?.Invoke(Stage);
+            _emit?.Invoke("RunEnded", new RunEndedPayload { Result = "lost" });
         }
 
         public void Sell(string instanceId)
@@ -173,14 +190,32 @@ namespace Tideflesh.Systems
 
         public ShopResult TryBuy(string organId) => new() { Ok = false, Reason = "not_open" };
 
+        // Opt-in transaction for the new flow. Keep the legacy shop placeholder compatible.
+        public ShopResult TryPurchase(string organId)
+        {
+            if (Stage != RunPhase.Rest) return new ShopResult { Reason = "rest_only" };
+            if (!_catalog.TryGetValue(organId, out var item)) return new ShopResult { Reason = "unknown_item" };
+            if (Inventory.UnequippedIds().Count >= Inventory.UnequippedCapacity()) return new ShopResult { Reason = "capacity" };
+            if (item.shop_price < 0 || Marrow < item.shop_price) return new ShopResult { Reason = "insufficient_marrow" };
+            Inventory.Spawn(organId);
+            Marrow -= item.shop_price;
+            EmitLoadout();
+            return new ShopResult { Ok = true };
+        }
+
         public ShopResult TryUpgradeTorso(string nodeId) => new() { Ok = false, Reason = "not_open" };
 
         void RequireLab()
         {
-            if (Phase != "lab")
+            if (Stage != RunPhase.Rest)
                 throw new RunException("lab actions only in lab");
         }
 
-        void EmitLoadout() => _emit("LoadoutChanged", Inventory.Snapshot());
+        void EmitLoadout()
+        {
+            var snapshot = Inventory.Snapshot();
+            LoadoutChanged?.Invoke(snapshot);
+            _emit?.Invoke("LoadoutChanged", snapshot);
+        }
     }
 }

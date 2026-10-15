@@ -6,6 +6,18 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Flow/Bootstrap.unity
+    guid: 24cd5199af1ceee40bee3602b8f5c5f8
+  - enabled: 1
+    path: Assets/Scenes/Flow/MainMenu.unity
+    guid: 9fa10c67a2b13f2419fecef85f8d9112
+  - enabled: 1
+    path: Assets/Scenes/Flow/Battle.unity
+    guid: 59965dea34c45b84dbe7c55108b609f3
+  - enabled: 1
+    path: Assets/Scenes/Flow/Rest.unity
+    guid: 51cceda697d8c5f4098fc38a3677d868
+  - enabled: 1
     path: Assets/Scenes/SpringUpDemo.unity
     guid: 6ddf8492910d8fb4cb369ff719301d0c
   - enabled: 0

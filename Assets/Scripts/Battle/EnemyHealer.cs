@@ -47,6 +47,8 @@ namespace TideBorne.Battle
 
         private void Update()
         {
+            // A ready cooldown / overlapping projectile must not resolve while the world is paused.
+            if (Time.timeScale <= 0f) return;
             _cooldownRemaining -= Time.deltaTime;
             if (_cooldownRemaining > 0f)
                 return;
