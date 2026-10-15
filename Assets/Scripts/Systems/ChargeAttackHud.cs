@@ -45,7 +45,7 @@ namespace Tideflesh.Systems
         {
             panel.SetActive(combat);
             bindingText.text = attack.IsRebinding
-                ? (attack.Feedback.Length > 0 ? "按键已占用 · 请换一个" : "按新攻击键 · Esc 取消")
+                ? (attack.Feedback.Length > 0 ? "按键已占用 · 请换一个" : "键盘/鼠标左右键 · Esc 取消")
                 : "攻击键 [" + attack.KeyLabel + "] · 点击改键";
             chargeText.text = $"充能 {attack.Charge:0} / {attack.Capacity:0}    本轮需要 {attack.RequiredCharge:0}";
             fill.anchorMax = new Vector2(attack.Capacity > 0 ? Mathf.Clamp01(attack.Charge / attack.Capacity) : 0, 1);
@@ -53,7 +53,7 @@ namespace Tideflesh.Systems
             statusText.text = attack.Feedback.Length > 0 ? attack.Feedback : attack.IsRebinding ? "等待新按键；Esc 取消"
                 : !attack.HasAttackOrgans ? "请在休息期装备攻击器官"
                 : attack.IsAttacking ? "正在按槽位顺序攻击…"
-                : attack.Ready ? "按 " + attack.KeyLabel + " 发动一轮攻击" : "充能恢复中…";
+                : attack.Ready ? "按 " + attack.KeyLabel + " 攻击，长按连续发动" : "充能恢复中…";
         }
 
         private static GameObject Box(Transform parent, string name, Vector2 anchor, Vector2 position, Vector2 size)

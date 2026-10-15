@@ -45,6 +45,26 @@ namespace SpringUp.EditorChecks
             AssetDatabase.SaveAssets(); AssetDatabase.Refresh();
             Debug.Log("[Flow Build] PASS");
         }
+        // Narrow migration: preserve layout customizations while removing the obsolete transaction control.
+        public static void UpgradeInputShop()
+        {
+            var root = PrefabUtility.LoadPrefabContents(FlowPresentationRepair.LabPath);
+            try
+            {
+                var binding = root.GetComponent<FlowLaboratoryWindow>();
+                if (binding.sellButton != null) Object.DestroyImmediate(binding.sellButton.gameObject);
+                binding.sellButton = null;
+                binding.closeButton.GetComponentInChildren<Text>().text = "关闭背包 · 返回游戏 [Esc / B / Tab]";
+                PrefabUtility.SaveAsPrefabAsset(root, FlowPresentationRepair.LabPath);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+            var scene = EditorSceneManager.OpenScene(FlowApplication.RestPath);
+            var entry = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<FlowContent>(true)).Single();
+            entry.EnsureMerchant();
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
+        }
         static void BuildWorld(ContentKind kind, string path)
         {
             var scene = EditorSceneManager.OpenScene("Assets/Scenes/Battle_Greybox.unity");
@@ -106,6 +126,7 @@ namespace SpringUp.EditorChecks
             var entry = new GameObject("Content Entry").AddComponent<FlowContent>();
             entry.kind = kind; entry.world = world; entry.player = player; entry.director = director;
             entry.pipeline = pipeline; entry.combat = combat; entry.effects = effects; entry.dummy = dummy;
+            entry.EnsureMerchant();
             world.SetActive(false);
             EditorSceneManager.SaveScene(scene, path);
         }

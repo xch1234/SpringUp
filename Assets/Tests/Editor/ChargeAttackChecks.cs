@@ -10,6 +10,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.TestTools;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using OrganDefinition = SpringUp.Organs.OrganDefinition;
 using OrganInstance = SpringUp.Organs.OrganInstance;
@@ -39,6 +41,122 @@ namespace SpringUp.EditorChecks
                 Assert.AreEqual(0, trigger.ChargeCost);
             }
             finally { Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void BindingCompatibilityAndReservedKeys()
+        {
+            var saved = PlayerPrefs.GetString(PlayerChargeAttack.BindingPreference, "F");
+            var root = new GameObject("Binding checks");
+            var mouse = InputSystem.AddDevice<Mouse>();
+            try
+            {
+                var pipeline = root.AddComponent<OrganPipelineController>();
+                var attack = root.AddComponent<PlayerChargeAttack>();
+                foreach (var invalid in new[] { "B", "E", "Tab", "99999", "None", "bad" })
+                {
+                    PlayerPrefs.SetString(PlayerChargeAttack.BindingPreference, invalid);
+                    attack.Configure(pipeline, () => true, 100, 20);
+                    Assert.AreEqual(Key.F, attack.AttackKey);
+                    Assert.IsNotEmpty(attack.BindingNotice);
+                }
+                Assert.IsFalse(attack.SetAttackKey(Key.B)); StringAssert.Contains("背包", attack.Feedback);
+                Assert.IsFalse(attack.SetAttackKey(Key.E)); StringAssert.Contains("商人", attack.Feedback);
+                Assert.IsTrue(attack.SetMouseBinding(false)); Assert.AreEqual("鼠标左键", attack.KeyLabel);
+                attack.Configure(pipeline, () => true, 100, 20); Assert.AreEqual("鼠标左键", attack.KeyLabel);
+                Assert.IsTrue(attack.SetMouseBinding(true));
+                Assert.AreEqual("MouseRight", PlayerPrefs.GetString(PlayerChargeAttack.BindingPreference));
+                Assert.IsTrue(attack.SetAttackKey(Key.F)); Assert.AreEqual("F", attack.KeyLabel);
+            }
+            finally { Object.DestroyImmediate(root); InputSystem.RemoveDevice(mouse); PlayerPrefs.SetString(PlayerChargeAttack.BindingPreference, saved); }
+        }
+
+        [UnityTest]
+        public IEnumerator HeldZeroCostAttackRespectsFinalIntervalAndReleaseGate()
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            yield return new EnterPlayMode();
+            var saved = PlayerPrefs.GetString(PlayerChargeAttack.BindingPreference, "F");
+            var previousInput = InputSystem.settings.editorInputBehaviorInPlayMode;
+            var previousBackground = InputSystem.settings.backgroundBehavior;
+            var root = new GameObject("Held input checks"); var keyboard = InputSystem.AddDevice<Keyboard>();
+            var mouse = InputSystem.AddDevice<Mouse>();
+            GameObject canvas = null, events = null;
+            try
+            {
+                InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+                InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+                Time.timeScale = 1;
+                var pipeline = root.AddComponent<OrganPipelineController>(); pipeline.StepInterval = .15f;
+                pipeline.GetBody(BodyPart.Hand).SetSlot(0, new OrganInstance(new OrganDefinition("free", "free", BodyPart.Hand, OrganType.Actuator, 5, chargeCost: 0)));
+                string target = "target"; bool allowed = true; pipeline.TargetSelector = () => target; pipeline.TargetValidator = id => id == target;
+                var times = new List<float>(); pipeline.AttackProduced += _ => times.Add(Time.time);
+                var attack = root.AddComponent<PlayerChargeAttack>(); attack.Configure(pipeline, () => allowed, 100, 20);
+                attack.SetAttackKey(Key.F); attack.BeginWave(); yield return null; yield return null;
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.F));
+                { float until = Time.time + .65f; while (Time.time < until) yield return null; }
+                Assert.That(times.Count, Is.InRange(3, 6), $"pressed={keyboard.fKey.isPressed} feedback={attack.Feedback} time={Time.time} scale={Time.timeScale}");
+                for (int i = 1; i < times.Count; i++) Assert.GreaterOrEqual(times[i] - times[i - 1], .149f);
+                Assert.IsFalse(attack.TryAttack(), "点按不能绕过最后出手间隔");
+                allowed = false; yield return null; allowed = true; int count = times.Count;
+                { float until = Time.time + .3f; while (Time.time < until) yield return null; } Assert.AreEqual(count, times.Count, "恢复后持续按住不攻击");
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState()); yield return null; yield return null;
+                target = null; InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.F));
+                { float until = Time.time + .2f; while (Time.time < until) yield return null; } Assert.AreEqual(count, times.Count);
+                target = "target"; { float until = Time.time + .2f; while (Time.time < until) yield return null; } Assert.Greater(times.Count, count);
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState()); yield return null; yield return null;
+                count = times.Count; { float until = Time.time + .3f; while (Time.time < until) yield return null; } Assert.AreEqual(count, times.Count);
+                pipeline.GetBody(BodyPart.Hand).SetSlot(1, new OrganInstance(new OrganDefinition("second", "second", BodyPart.Hand, OrganType.Actuator, 5, chargeCost: 0)));
+                attack.RefreshLoadout(); Assert.IsTrue(attack.TryAttack());
+                { float until = Time.time + .2f; while (Time.time < until) yield return null; } Assert.AreEqual(count + 2, times.Count, "松键不取消已经开始的多器官轮次");
+                pipeline.GetBody(BodyPart.Hand).SetSlot(1, null); attack.RefreshLoadout();
+                { float until = Time.time + .2f; while (Time.time < until) yield return null; }
+                events = new GameObject("UI input", typeof(EventSystem));
+                canvas = new GameObject("UI", typeof(RectTransform), typeof(Canvas), typeof(GraphicRaycaster));
+                canvas.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+                var button = new GameObject("Interactive", typeof(RectTransform), typeof(Image), typeof(Button));
+                button.transform.SetParent(canvas.transform, false);
+                var rect = (RectTransform)button.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+                Canvas.ForceUpdateCanvases();
+                attack.SetMouseBinding(false); yield return null; yield return null;
+                var center = new Vector2(Screen.width / 2f, Screen.height / 2f);
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = center }.WithButton(MouseButton.Left));
+                count = times.Count; { float until = Time.time + .2f; while (Time.time < until) yield return null; }
+                Assert.AreEqual(count, times.Count, "点击 UI 不攻击");
+                Object.Destroy(button.GetComponent<Button>()); { float until = Time.time + .2f; while (Time.time < until) yield return null; }
+                Assert.AreEqual(count, times.Count, "点击 UI 后按住离开也不攻击");
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = center }); yield return null; yield return null;
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = center }.WithButton(MouseButton.Left));
+                { float until = Time.time + .2f; while (Time.time < until) yield return null; } Assert.Greater(times.Count, count, "释放重按鼠标可攻击");
+                attack.SendMessage("OnApplicationFocus", false); attack.SendMessage("OnApplicationFocus", true);
+                count = times.Count; { float until = Time.time + .2f; while (Time.time < until) yield return null; } Assert.AreEqual(count, times.Count, "恢复焦点须释放");
+                attack.ToggleRebind(); yield return null; yield return null;
+                Assert.IsTrue(attack.IsRebinding, "等待启动输入释放");
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = center }); yield return null; yield return null;
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = center }.WithButton(MouseButton.Right));
+                yield return null; yield return null;
+                Assert.IsFalse(attack.IsRebinding); Assert.AreEqual("鼠标右键", attack.KeyLabel);
+                Assert.AreEqual(count, times.Count, "换绑点击不得攻击");
+                InputSystem.QueueStateEvent(mouse, new MouseState()); yield return null; yield return null;
+                attack.SetAttackKey(Key.F);
+                pipeline.GetBody(BodyPart.Hand).SetSlot(0, new OrganInstance(new OrganDefinition("waiting", "waiting", BodyPart.Hand, OrganType.Actuator, 5, chargeCost: 5)));
+                attack.RefreshLoadout(); attack.RestoreCharge(0); yield return null; yield return null;
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.F));
+                { float until = Time.time + .1f; while (Time.time < until) yield return null; }
+                Assert.AreEqual(count, times.Count, "充能不足时按住等待");
+                { float until = Time.time + .3f; while (Time.time < until) yield return null; }
+                Assert.Greater(times.Count, count, "持续按住在充能恢复后发动");
+
+
+            }
+            finally
+            {
+                Object.Destroy(root); Object.Destroy(canvas); Object.Destroy(events); InputSystem.RemoveDevice(keyboard); InputSystem.RemoveDevice(mouse);
+                InputSystem.settings.editorInputBehaviorInPlayMode = previousInput;
+                InputSystem.settings.backgroundBehavior = previousBackground;
+                PlayerPrefs.SetString(PlayerChargeAttack.BindingPreference, saved); Time.timeScale = 1;
+            }
+            yield return new ExitPlayMode();
         }
 
         [UnityTest]
@@ -89,7 +207,7 @@ namespace SpringUp.EditorChecks
                 attack.BeginWave();
                 until = Time.time + .2f;
                 while (Time.time < until) yield return null;
-                Assert.AreEqual(2, shots.Count, "长按不会重复攻击或跨波触发。");
+                Assert.AreEqual(2, shots.Count, "跨波必须释放按键后重新输入。");
 
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState());
                 yield return null;

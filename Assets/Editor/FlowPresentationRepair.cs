@@ -146,8 +146,8 @@ namespace SpringUp.EditorChecks
             column.childControlHeight = true; column.childControlWidth = true; column.childForceExpandHeight = false;
             var binding = root.AddComponent<FlowLaboratoryWindow>(); binding.presenter = presenter;
             binding.status = view.AddText(""); binding.status.GetComponent<LayoutElement>().preferredHeight = 410;
-            binding.closeButton = view.AddButton("关闭背包 · 返回休整 [Esc]", () => {});
-            binding.sellButton = view.AddButton("出售选中物品", () => {});
+            binding.closeButton = view.AddButton("关闭背包 · 返回游戏 [Esc / B / Tab]", () => {});
+
             binding.discardButton = view.AddButton("丢弃选中物品", () => {});
             foreach (Transform t in root.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = LayerMask.NameToLayer("UI");
             PrefabUtility.SaveAsPrefabAsset(root, LabPath);

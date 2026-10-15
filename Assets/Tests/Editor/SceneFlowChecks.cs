@@ -57,6 +57,7 @@ namespace SpringUp.EditorChecks
     {
         const string Key = "SpringUp.SceneFlow.Checks";
         static int stage;
+        static bool shortcutsChecked;
         static double next, deadline;
         static float health, charge;
         static string knife;
@@ -73,6 +74,7 @@ namespace SpringUp.EditorChecks
         public static void RunBatch()
         {
             if (!Application.isBatchMode) throw new InvalidOperationException("Use a separate batch validation copy");
+            System.IO.Directory.CreateDirectory("Logs/Presentation");
             var core = new SceneFlowCoreTests();
             core.NestedPauseLeasesAreIdempotent();
             core.RewardsOverflowButPurchaseAndNextWaveAreAtomic();
@@ -85,7 +87,7 @@ namespace SpringUp.EditorChecks
         static void StateChanged(PlayModeStateChange state)
         {
             if (state != PlayModeStateChange.EnteredPlayMode) return;
-            stage = 0; next = EditorApplication.timeSinceStartup + 1; deadline = next + 120;
+            stage = 0; shortcutsChecked = false; next = EditorApplication.timeSinceStartup + 1; deadline = next + 120;
             EditorApplication.update += Tick;
         }
         static void Require(bool value, string message)
@@ -112,6 +114,14 @@ namespace SpringUp.EditorChecks
                         FlowPresentationChecks.CaptureFlowUI(app, "main-menu-zh.png");
                         app.StartNewRun(); app.StartNewRun(); stage++; break;
                     case 1:
+                        if (!shortcutsChecked)
+                        {
+                            InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+                            InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+                            keyboard = InputSystem.AddDevice<Keyboard>();
+                            InputSystem.QueueStateEvent(keyboard, new KeyboardState(UnityEngine.InputSystem.Key.B));
+                            stage = 20; next = EditorApplication.timeSinceStartup + .15; break;
+                        }
                         ArenaBoundaryChecks.Run(content);
                         Require(run.Wave == 1 && content.director.CurrentWave == 1, "One initial wave");
                         Require(content.Attack.Charge == content.Attack.Capacity, "Battle charge filled");
@@ -119,6 +129,15 @@ namespace SpringUp.EditorChecks
                         bool rejected = false;
                         try { run.Unequip("hand", 1); } catch (RunException) { rejected = true; }
                         Require(rejected, "Battle equipment locked");
+                        app.ToggleInventory();
+                        var battleBag = Object.FindFirstObjectByType<FlowLaboratoryWindow>();
+                        Require(battleBag != null && battleBag.presenter.ReadOnly && !battleBag.discardButton.interactable, "Battle inventory read-only");
+                        Require(battleBag.sellButton == null || !battleBag.sellButton.gameObject.activeSelf, "No inventory selling");
+                        app.HandleEscape(); Require(app.WorldInputAllowed, "Inventory Esc returns directly to game");
+                        app.ToggleInventory(); app.ToggleInventory(); Require(app.WorldInputAllowed, "Inventory toggle closes");
+                        app.OpenWindow(WindowKind.Pause); app.ToggleInventory();
+                        Require(Object.FindObjectsByType<FlowLaboratoryWindow>(FindObjectsSortMode.None).All(x => !x.gameObject.activeInHierarchy), "Pause blocks inventory");
+                        app.HandleEscape();
                         var target = new GameObject("Battle attack verification"); target.SetActive(false);
                         target.transform.position = content.player.transform.position + Vector3.right;
                         target.AddComponent<EnemyData>(); target.AddComponent<EnemyRuntime>(); target.SetActive(true);
@@ -129,6 +148,24 @@ namespace SpringUp.EditorChecks
                         reward = run.Marrow; content.director.CompleteCurrentWave();
                         Require(run.Marrow == reward, "Duplicate completion rewards once");
                         stage++; break;
+                    case 20:
+                        Require(Time.timeScale == 0 && app.HasModal, "B opens combat inventory");
+                        InputSystem.QueueStateEvent(keyboard, new KeyboardState(UnityEngine.InputSystem.Key.Tab));
+                        stage++; next = EditorApplication.timeSinceStartup + .15; break;
+                    case 21:
+                        Require(app.WorldInputAllowed, "Tab closes B-opened inventory");
+                        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                        stage++; next = EditorApplication.timeSinceStartup + .1; break;
+                    case 22:
+                        InputSystem.QueueStateEvent(keyboard, new KeyboardState(UnityEngine.InputSystem.Key.Tab));
+                        stage++; next = EditorApplication.timeSinceStartup + .15; break;
+                    case 23:
+                        Require(Time.timeScale == 0, "Tab opens inventory");
+                        InputSystem.QueueStateEvent(keyboard, new KeyboardState(UnityEngine.InputSystem.Key.Escape));
+                        stage++; next = EditorApplication.timeSinceStartup + .15; break;
+                    case 24:
+                        Require(app.WorldInputAllowed && !app.HasModal, "Inventory Esc returns directly to game");
+                        InputSystem.RemoveDevice(keyboard); keyboard = null; shortcutsChecked = true; stage = 1; break;
                     case 2:
                         ArenaBoundaryChecks.Run(content);
                         Require(content.kind == ContentKind.Rest && content.player.CurrentHealth == health, "Health preserved entering rest");
@@ -155,10 +192,12 @@ namespace SpringUp.EditorChecks
                         Require(content.dummy.IsAlive && run.Marrow == reward && run.Stage == RunPhase.Rest, "Dummy cannot reward or end wave");
                         content.ResetDummy();
                         Require(content.dummy.CurrentHealth == content.dummy.MaxHealth, "Reset training target");
+                        // A newly equipped loadout still respects the previous round cooldown.
+                        content.Attack.BeginWave();
                         Require(content.Attack.TryAttack(), "Changed build attacks");
                         Require(Mathf.Approximately(content.dummy.MaxHealth - content.dummy.CurrentHealth, app.Configuration.Definitions["rust_knife"].Damage), "Changed build damage");
-                        app.OpenWindow(WindowKind.Pause); app.OpenWindow(WindowKind.Inventory);
-                        app.HandleEscape(); Require(Time.timeScale == 0, "Closing nested inventory preserves pause");
+                        app.OpenWindow(WindowKind.Pause); app.OpenWindow(WindowKind.Settings);
+                        app.HandleEscape(); Require(Time.timeScale == 0, "Closing nested settings preserves pause");
                         app.HandleEscape(); Require(Time.timeScale == 1 && app.WorldInputAllowed, "Closing pause restores input");
                         InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
                         InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
@@ -169,7 +208,26 @@ namespace SpringUp.EditorChecks
                         stage++; next = EditorApplication.timeSinceStartup + .5; break;
                     case 3:
                         Require(content.player.transform.position.x > position.x + .1f, "Rest keyboard movement");
-                        app.OpenWindow(WindowKind.Shop); position = content.player.transform.position;
+                        content.player.transform.position = content.Merchant.position + Vector3.right * 5;
+                        Require(!app.TryOpenShop(), "Merchant rejects out of range");
+                        content.player.transform.position = content.Merchant.position;
+                        Require(app.TryOpenShop(), "Merchant shop entry");
+                        var buttons = app.uiRoot.GetComponentsInChildren<UnityEngine.UI.Button>();
+                        var buy = buttons.Single(b => b.name.StartsWith("购买 "));
+                        int marrowBefore = run.Marrow, inventoryBefore = run.Inventory.Instances.Count;
+                        buy.onClick.Invoke();
+                        Require(run.Marrow == marrowBefore - app.Configuration.Organs["rust_knife"].shop_price && run.Inventory.Instances.Count == inventoryBefore + 1, "Shop purchase refresh");
+                        var sell = buttons.Single(b => b.name == "出售所选物品");
+                        Require(!sell.interactable, "Selling requires selection");
+                        var saleId = run.Inventory.UnequippedIds().Last();
+                        int price = run.Inventory.SalePrice(saleId);
+                        var choice = app.uiRoot.GetComponentsInChildren<UnityEngine.UI.Button>().Single(b => b.name.EndsWith("#" + saleId));
+                        choice.onClick.Invoke(); Require(sell.interactable, "Selection enables selling");
+                        marrowBefore = run.Marrow; sell.onClick.Invoke();
+                        Require(run.Marrow == marrowBefore + price && !run.Inventory.Instances.ContainsKey(saleId), "Sale uses inventory price and removes instance");
+                        sell.onClick.Invoke(); Require(run.Marrow == marrowBefore + price, "Repeat sale cannot reward twice");
+                        FlowPresentationChecks.CaptureFlowUI(app, "shop-zh.png");
+                        position = content.player.transform.position;
                         pausedEnemy = new GameObject("Ready enemy during pause"); pausedEnemy.SetActive(false);
                         pausedEnemy.transform.position = position;
                         pausedEnemy.AddComponent<EnemyData>(); pausedEnemy.AddComponent<EnemyRuntime>();
