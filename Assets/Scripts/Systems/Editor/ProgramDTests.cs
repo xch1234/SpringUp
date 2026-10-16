@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
@@ -36,11 +37,11 @@ public class ProgramDTests
         var catalog = Catalog.LoadOrgans(File.ReadAllText(OrgansPath));
         var waves = Catalog.LoadWaves(File.ReadAllText(WavesPath), catalog);
         Assert.AreEqual(7, waves.Count);
-        Assert.AreEqual(45, waves[0].marrow_reward);
+        Assert.AreEqual(450, waves[0].marrow_reward);
         Assert.AreEqual("multi_tentacle", waves[0].guaranteed_drops[0]);
         Assert.AreEqual("rust_knife", waves[0].guaranteed_drops[1]);
         Assert.AreEqual(0, waves[0].optional_drops.Length);
-        Assert.AreEqual(120, waves[6].marrow_reward);
+        Assert.AreEqual(1200, waves[6].marrow_reward);
     }
 
     [Test]
@@ -87,7 +88,7 @@ public class ProgramDTests
     {
         var inv = NewInventory();
         var iid = inv.Spawn("rust_knife");
-        Assert.AreEqual(4, inv.Sell(iid));
+        Assert.AreEqual(40, inv.Sell(iid));
     }
 
     [Test]
@@ -111,14 +112,14 @@ public class ProgramDTests
         run.StartRun();
         run.CombatTimerFinished();
         Assert.AreEqual("lab", run.Phase);
-        Assert.AreEqual(45, run.Marrow);
+        Assert.AreEqual(450, run.Marrow);
         CollectionAssert.AreEquivalent(
             new[] { "multi_tentacle", "rust_knife" },
             BagOrganIds(run));
         Assert.AreEqual("WaveEnded", rec.Events[rec.Events.Count - 2].Name);
         Assert.AreEqual("LabOpened", rec.Events[rec.Events.Count - 1].Name);
         var lab = (LabOpenedPayload)rec.Events[rec.Events.Count - 1].Payload;
-        Assert.AreEqual(45, lab.MarrowDelta);
+        Assert.AreEqual(450, lab.MarrowDelta);
         Assert.AreEqual(2, lab.Drops.Count);
     }
 
@@ -132,7 +133,7 @@ public class ProgramDTests
         run.StartNextWave();
         run.CombatTimerFinished();
         Assert.AreEqual("lab", run.Phase);
-        Assert.AreEqual(100, run.Marrow);
+        Assert.AreEqual(1000, run.Marrow);
         var labCount = 0;
         foreach (var n in rec.Names)
             if (n == "LabOpened") labCount++;
@@ -194,11 +195,32 @@ public class ProgramDTests
         return new Inventory(Catalog.LoadOrgans(File.ReadAllText(OrgansPath)));
     }
 
-    static RunController NewRun(Recorder rec)
+    [Test]
+    public void WaveReward_UsesFractionalPercent()
+    {
+        var run = NewRun(new Recorder(), () => 0.24);
+        run.StartRun();
+        run.CombatTimerFinished();
+        double percent = EconomySwing.Percent(0.24, EconomySwing.MarrowHalfPercent);
+        Assert.Greater(Math.Abs(percent - Math.Round(percent)), 0.2);
+        Assert.AreEqual(438, run.Marrow);
+    }
+
+    [Test]
+    public void PurchasePrice_UsesFractionalPercent()
+    {
+        var run = NewRun(new Recorder(), () => 0.24);
+        double percent = EconomySwing.Percent(0.24, EconomySwing.PurchaseHalfPercent);
+        Assert.Greater(Math.Abs(percent - Math.Round(percent)), 0.2);
+        Assert.AreEqual(237, run.QuotePurchasePrice("collection_net"));
+        Assert.AreEqual(238, EconomySwing.RoundAwayFromZero(250, 0.25, EconomySwing.PurchaseHalfPercent));
+    }
+
+    static RunController NewRun(Recorder rec, Func<double> unit = null)
     {
         var catalog = Catalog.LoadOrgans(File.ReadAllText(OrgansPath));
         var waves = Catalog.LoadWaves(File.ReadAllText(WavesPath), catalog);
-        return new RunController(catalog, waves, rec.Emit);
+        return new RunController(catalog, waves, rec.Emit, unit ?? (() => 0.5));
     }
 
     static List<string> BagOrganIds(RunController run)

@@ -5,49 +5,49 @@
       "duration_sec": 60,
       "guaranteed_drops": ["multi_tentacle", "rust_knife"],
       "optional_drops": [],
-      "marrow_reward": 45
+      "marrow_reward": 450
     },
     {
       "wave": 2,
       "duration_sec": 60,
       "guaranteed_drops": ["steel_pipe"],
       "optional_drops": [],
-      "marrow_reward": 55
+      "marrow_reward": 550
     },
     {
       "wave": 3,
       "duration_sec": 60,
       "guaranteed_drops": ["slime_gland"],
       "optional_drops": [],
-      "marrow_reward": 65
+      "marrow_reward": 650
     },
     {
       "wave": 4,
       "duration_sec": 60,
       "guaranteed_drops": ["tnt"],
       "optional_drops": [],
-      "marrow_reward": 80
+      "marrow_reward": 800
     },
     {
       "wave": 5,
       "duration_sec": 60,
       "guaranteed_drops": ["collapse_body"],
       "optional_drops": [],
-      "marrow_reward": 90
+      "marrow_reward": 900
     },
     {
       "wave": 6,
       "duration_sec": 60,
       "guaranteed_drops": ["spider_nest"],
       "optional_drops": [],
-      "marrow_reward": 100
+      "marrow_reward": 1000
     },
     {
       "wave": 7,
       "duration_sec": 60,
       "guaranteed_drops": [],
       "optional_drops": [],
-      "marrow_reward": 120
+      "marrow_reward": 1200
     }
   ]
 }

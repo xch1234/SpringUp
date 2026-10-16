@@ -110,7 +110,7 @@ namespace SpringUp.EditorChecks
                     Require(enemy.CurrentHealth < before && driver.ChargeAttack.Charge < driver.ChargeAttack.Capacity,
                         "开局拳头主动攻击实际扣敌人血并消耗充能。");
                     driver.director.CompleteCurrentWave();
-                    Require(run.Phase == "lab" && run.Marrow == 45 && Time.timeScale == 0, "第一波奖励与暂停。");
+                    Require(run.Phase == "lab" && run.Marrow >= 427 && run.Marrow <= 472 && Time.timeScale == 0, "第一波奖励与暂停。");
                     Require(!driver.ChargeAttack.TryAttack(), "休息阶段禁止实战攻击。");
                     CheckEquipmentHud(driver, false);
                     var bag = driver.Equipment.Inventory;

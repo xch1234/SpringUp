@@ -42,10 +42,13 @@ namespace Tideflesh.Systems
     {
         public delegate void Emit(string name, object payload);
 
+        static readonly Random SharedRandom = new Random();
+
         readonly Dictionary<string, OrganDefinition> _catalog;
         readonly Dictionary<int, WaveDefinition> _waves;
         readonly int _maxWave;
         readonly Emit _emit;
+        readonly Func<double> _nextUnit;
 
         public Inventory Inventory { get; private set; }
         public RunPhase Stage { get; private set; } = RunPhase.Boot;
@@ -65,7 +68,8 @@ namespace Tideflesh.Systems
         public RunController(
             Dictionary<string, OrganDefinition> catalog,
             List<WaveDefinition> waves,
-            Emit emit)
+            Emit emit,
+            Func<double> nextUnit = null)
         {
             _catalog = catalog;
             _waves = new Dictionary<int, WaveDefinition>();
@@ -75,7 +79,14 @@ namespace Tideflesh.Systems
             foreach (var key in _waves.Keys)
                 if (key > _maxWave) _maxWave = key;
             _emit = emit;
+            _nextUnit = nextUnit ?? NextSharedUnit;
             Inventory = new Inventory(catalog);
+        }
+
+        static double NextSharedUnit()
+        {
+            lock (SharedRandom)
+                return SharedRandom.NextDouble();
         }
 
         public void StartRun()
@@ -108,7 +119,10 @@ namespace Tideflesh.Systems
             var spawned = new List<string>();
             foreach (var oid in drops)
                 spawned.Add(Inventory.Spawn(oid));
-            var gained = (int)Math.Floor(cfg.marrow_reward * Inventory.MarrowGainMult());
+            var gained = EconomySwing.Floor(
+                cfg.marrow_reward * (double)Inventory.MarrowGainMult(),
+                _nextUnit(),
+                EconomySwing.MarrowHalfPercent);
             Marrow += gained;
             if (Wave >= _maxWave)
             {
@@ -186,6 +200,14 @@ namespace Tideflesh.Systems
             RequireLab();
             Inventory.Discard(instanceId);
             EmitLoadout();
+        }
+
+        public int QuotePurchasePrice(string organId)
+        {
+            if (!_catalog.TryGetValue(organId, out var organ))
+                throw new RunException("unknown organ");
+            return EconomySwing.RoundAwayFromZero(
+                organ.shop_price, _nextUnit(), EconomySwing.PurchaseHalfPercent);
         }
 
         public ShopResult TryBuy(string organId) => new() { Ok = false, Reason = "not_open" };
