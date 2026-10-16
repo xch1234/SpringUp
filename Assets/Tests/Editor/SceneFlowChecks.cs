@@ -48,7 +48,11 @@ namespace SpringUp.EditorChecks
             while (!run.CanStartNextWave()) run.Discard(run.Inventory.UnequippedIds()[0]);
             run.Discard(run.Inventory.UnequippedIds()[0]);
             Assert.IsTrue(run.TryPurchase("rust_knife").Ok);
-            Assert.AreEqual(reward - run.Inventory.Catalog["rust_knife"].shop_price, run.Marrow);
+            int paid = reward - run.Marrow;
+            int list = run.Inventory.Catalog["rust_knife"].shop_price;
+            int low = EconomySwing.RoundAwayFromZero(list, 0, EconomySwing.PurchaseHalfPercent);
+            int high = EconomySwing.RoundAwayFromZero(list, 1, EconomySwing.PurchaseHalfPercent);
+            Assert.That(paid, Is.InRange(Math.Min(low, high), Math.Max(low, high)));
         }
     }
 
@@ -216,7 +220,11 @@ namespace SpringUp.EditorChecks
                         var buy = buttons.Single(b => b.name.StartsWith("购买 "));
                         int marrowBefore = run.Marrow, inventoryBefore = run.Inventory.Instances.Count;
                         buy.onClick.Invoke();
-                        Require(run.Marrow == marrowBefore - app.Configuration.Organs["rust_knife"].shop_price && run.Inventory.Instances.Count == inventoryBefore + 1, "Shop purchase refresh");
+                        int listPrice = app.Configuration.Organs["rust_knife"].shop_price;
+                        int paid = marrowBefore - run.Marrow;
+                        int low = EconomySwing.RoundAwayFromZero(listPrice, 0, EconomySwing.PurchaseHalfPercent);
+                        int high = EconomySwing.RoundAwayFromZero(listPrice, 1, EconomySwing.PurchaseHalfPercent);
+                        Require(paid >= Math.Min(low, high) && paid <= Math.Max(low, high) && run.Inventory.Instances.Count == inventoryBefore + 1, "Shop purchase refresh");
                         var sell = buttons.Single(b => b.name == "出售所选物品");
                         Require(!sell.interactable, "Selling requires selection");
                         var saleId = run.Inventory.UnequippedIds().Last();

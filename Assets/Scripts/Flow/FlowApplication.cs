@@ -346,8 +346,9 @@ namespace SpringUp.Flow
                     }));
                 }
             };
-            view.AddButton($"购买 {item.name}（{item.shop_price} 骨髓）", () => {
-                var result = run.TryPurchase("rust_knife");
+            int price = run.QuotePurchasePrice("rust_knife");
+            view.AddButton($"购买 {item.name}（{price} 骨髓）", () => {
+                var result = run.TryPurchase("rust_knife", price);
                 message.text = result.Ok ? "购买成功" : SpringUp.UI.ChineseText.Error(result.Reason); refresh();
             });
             sell = view.AddButton("出售所选物品", () => {

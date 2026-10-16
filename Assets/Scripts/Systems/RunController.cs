@@ -213,16 +213,26 @@ namespace Tideflesh.Systems
         public ShopResult TryBuy(string organId) => new() { Ok = false, Reason = "not_open" };
 
         // Opt-in transaction for the new flow. Keep the legacy shop placeholder compatible.
-        public ShopResult TryPurchase(string organId)
+        public ShopResult TryPurchase(string organId, int? quotedPrice = null)
         {
             if (Stage != RunPhase.Rest) return new ShopResult { Reason = "rest_only" };
             if (!_catalog.TryGetValue(organId, out var item)) return new ShopResult { Reason = "unknown_item" };
             if (Inventory.UnequippedIds().Count >= Inventory.UnequippedCapacity()) return new ShopResult { Reason = "capacity" };
-            if (item.shop_price < 0 || Marrow < item.shop_price) return new ShopResult { Reason = "insufficient_marrow" };
+            int price = quotedPrice ?? QuotePurchasePrice(organId);
+            if (!PurchasePriceInBand(item.shop_price, price)) return new ShopResult { Reason = "invalid_price" };
+            if (price < 0 || Marrow < price) return new ShopResult { Reason = "insufficient_marrow" };
             Inventory.Spawn(organId);
-            Marrow -= item.shop_price;
+            Marrow -= price;
             EmitLoadout();
             return new ShopResult { Ok = true };
+        }
+
+        static bool PurchasePriceInBand(int listPrice, int price)
+        {
+            int low = EconomySwing.RoundAwayFromZero(listPrice, 0, EconomySwing.PurchaseHalfPercent);
+            int high = EconomySwing.RoundAwayFromZero(listPrice, 1, EconomySwing.PurchaseHalfPercent);
+            if (low > high) { int swap = low; low = high; high = swap; }
+            return price >= low && price <= high;
         }
 
         public ShopResult TryUpgradeTorso(string nodeId) => new() { Ok = false, Reason = "not_open" };
