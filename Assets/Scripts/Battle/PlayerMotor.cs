@@ -8,7 +8,7 @@ namespace TideBorne.Battle
     ///
     /// 本项目只启用新 Input System（<c>ProjectSettings.asset</c> 的 <c>activeInputHandler: 1</c>），
     /// 因此不使用旧的 <c>Input.GetAxis</c>——它在当前设置下会在运行时抛异常。
-    /// 输入引用来自 <c>Assets/InputSystem_Actions.inputactions</c> 的 Player 动作表：
+    /// 输入引用来自 <c>Assets/Settings/InputSystem_Actions.inputactions</c> 的 Player 动作表：
     /// <c>Move</c>（Value / Vector2）与 <c>Sprint</c>（Button）。
     /// </summary>
     [DisallowMultipleComponent]
@@ -39,6 +39,7 @@ namespace TideBorne.Battle
         [SerializeField] private float sprintMultiplier = 1.5f;
 
         private Rigidbody2D _body;
+        private readonly RaycastHit2D[] wallHits = new RaycastHit2D[16];
         private Vector2 _moveInput;
         private bool _sprintHeld;
 
@@ -107,6 +108,9 @@ namespace TideBorne.Battle
             _sprintHeld = ReadSprintHeld();
         }
 
+        public bool DirectionalSteering { get; set; }
+        public Vector2 FacingDirection => transform.right;
+
         private void FixedUpdate()
         {
             var direction = _moveInput;
@@ -120,7 +124,7 @@ namespace TideBorne.Battle
             // Rigidbody2D.linearVelocity 是 Unity 6 的写法；旧版本叫 velocity。
             _body.linearVelocity = direction * speed;
 
-            if (faceMoveDirection && direction.sqrMagnitude > 0.0001f)
+            if ((faceMoveDirection || DirectionalSteering) && direction.sqrMagnitude > 0.0001f)
             {
                 var targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
                 var currentAngle = _body.rotation;
@@ -136,7 +140,43 @@ namespace TideBorne.Battle
                     : Mathf.MoveTowardsAngle(currentAngle, targetAngle, maxStep * Time.fixedDeltaTime);
 
                 _body.MoveRotation(nextAngle);
+                if (DirectionalSteering)
+                {
+                    float radians = nextAngle * Mathf.Deg2Rad;
+                    _body.linearVelocity = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)) * (direction.magnitude * speed);
+                }
             }
+            // Kinematic velocity is not stopped by static walls automatically.
+            // Sweep the actual colliders and retain tangential movement along the wall.
+            if (_body.bodyType == RigidbodyType2D.Kinematic)
+                _body.linearVelocity = LimitWallVelocity(_body.linearVelocity, Time.fixedDeltaTime);
+        }
+
+        private Vector2 LimitWallVelocity(Vector2 velocity, float deltaTime)
+        {
+            int wallLayer = LayerMask.NameToLayer(BattleLayers.Wall);
+            if (wallLayer < 0 || deltaTime <= 0) return velocity;
+            var filter = new ContactFilter2D { useLayerMask = true, layerMask = 1 << wallLayer, useTriggers = false };
+            const float skin = .02f;
+            for (int pass = 0; pass < 3; pass++)
+            {
+                float distance = velocity.magnitude * deltaTime;
+                if (distance < .000001f) break;
+                int count = _body.Cast(velocity.normalized, filter, wallHits, distance + skin);
+                bool limited = false;
+                for (int i = 0; i < count; i++)
+                {
+                    var hit = wallHits[i];
+                    float inward = Vector2.Dot(velocity, hit.normal);
+                    if (inward >= -.00001f) continue;
+                    float fraction = Mathf.Clamp01((hit.distance - skin) / distance);
+                    if (fraction >= 1) continue;
+                    velocity -= hit.normal * inward * (1 - fraction);
+                    limited = true;
+                }
+                if (!limited) break;
+            }
+            return velocity;
         }
 
         private Vector2 ReadMoveInput()

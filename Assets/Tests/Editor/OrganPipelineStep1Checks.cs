@@ -86,8 +86,9 @@ namespace SpringUp.EditorChecks
             body.Tick(1f);
             Require(body.LastExecutedSlot == 3, "更换器官不应重置游标。");
             Throws<ArgumentException>(() => body.SetSlot(4, second));
-            Throws<ArgumentException>(() => body.SetSlot(4, MakeOrgan(BodyPart.Leg)));
             Require(body.GetSlot(4) == null, "安装失败不能改变原来的槽位。");
+            body.SetSlot(4, MakeOrgan(BodyPart.Leg));
+            Require(body.GetSlot(4) != null, "普通器官不受旧部位分类限制");
         }
 
         private static void CheckInvalidInput()

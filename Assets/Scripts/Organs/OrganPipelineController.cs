@@ -5,7 +5,7 @@ using UnityEngine;
 namespace SpringUp.Organs
 {
     [DisallowMultipleComponent]
-    public sealed class OrganPipelineController : MonoBehaviour
+    public sealed partial class OrganPipelineController : MonoBehaviour
     {
         [SerializeField, Min(BodyRuntime.MinimumStepInterval)]
         [Tooltip("每走到一个有器官的槽位，需要等待的秒数。目前暂用固定值。")]
@@ -30,6 +30,8 @@ namespace SpringUp.Organs
         }
         public event Action<BodyRuntime, int, OrganInstance> SlotExecuted;
         public event Action<CastEvent> AttackProduced;
+        public event Action<ActuatorContext> ActuatorProduced;
+        public Func<Vector2?> OriginProvider { get; set; }
         public event Action<BodyRuntime, int, OrganInstance, CastContext> TriggerActivated;
         public event Action<BodyRuntime, int, OrganInstance, CastContext, TriggerBlockReason> TriggerBlocked;
         public event Action<BodyRuntime, int, OrganInstance, CastContext> TriggeredSlotExecuted;
@@ -55,31 +57,43 @@ namespace SpringUp.Organs
             SanitizeInterval();
             bodies = new[]
             {
-                new BodyRuntime(BodyPart.Head, stepInterval),
-                new BodyRuntime(BodyPart.Hand, stepInterval),
-                new BodyRuntime(BodyPart.Leg, stepInterval)
+                new BodyRuntime(BodyPart.Head, stepInterval, id => OccupiedElsewhere(BodyPart.Head, id)),
+                new BodyRuntime(BodyPart.Hand, stepInterval, id => OccupiedElsewhere(BodyPart.Hand, id)),
+                new BodyRuntime(BodyPart.Leg, stepInterval, id => OccupiedElsewhere(BodyPart.Leg, id))
             };
             foreach (BodyRuntime body in bodies)
-                body.SlotExecuted += ForwardSlotExecuted;
+                { body.SlotExecuted += ForwardSlotExecuted; body.LoadoutChanged += ResetTriggers; }
         }
 
-        private void Update()
+        private void Update() => AdvanceAutomatic(UseUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime);
+
+        public void AdvanceAutomatic(float deltaTime)
         {
-            if (!AutomaticExecution) return;
+            if (!isActiveAndEnabled || !AutomaticExecution) return;
             EnsureInitialized();
             SanitizeInterval();
             foreach (BodyRuntime body in bodies)
             {
                 body.StepInterval = Mathf.Max(BodyRuntime.MinimumStepInterval, StepIntervalProvider?.Invoke(body.Part) ?? stepInterval);
                 body.CycleDuration = CycleDurationProvider?.Invoke(body.Part) ?? 0f;
-                body.Tick(UseUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime);
+                body.Tick(deltaTime);
             }
+        }
+
+        private bool OccupiedElsewhere(BodyPart part, string instanceId)
+        {
+            if (bodies == null) return false;
+            foreach (var body in bodies)
+                if (body.Part != part)
+                    for (int i = 0; i < BodyRuntime.SlotCount; i++)
+                        if (body.GetSlot(i)?.InstanceId == instanceId) return true;
+            return false;
         }
 
         private void ForwardSlotExecuted(BodyRuntime body, int index, OrganInstance organ)
         {
             SlotExecuted?.Invoke(body, index, organ);
-            ExecuteAttack(organ, null);
+            ExecuteAttack(organ, null, body.Part, index);
         }
 
         public bool TryExecuteSlot(BodyPart part, int index)
@@ -88,18 +102,33 @@ namespace SpringUp.Organs
             var body = GetBody(part);
             var organ = body.GetSlot(index);
             if (organ == null) return false;
-            bool produced = ExecuteAttack(organ, null);
+            bool produced = ExecuteAttack(organ, null, part, index);
             if (produced) SlotExecuted?.Invoke(body, index, organ);
             return produced;
         }
 
-        private bool ExecuteAttack(OrganInstance organ, CastContext context, string causeTargetId = null, Vector2? causePosition = null)
+        private bool ExecuteAttack(OrganInstance organ, CastContext context, BodyPart part, int slot,
+            string causeTargetId = null, Vector2? causePosition = null)
         {
             if (!organ.Definition.CanAttack) return false;
 
+            if (organ.Definition.Projectile is PatternActuatorSettings self && !self.RequiresTarget)
+            {
+                var origin = OriginProvider?.Invoke();
+                if (!origin.HasValue || !CastEvent.IsFinite(origin.Value) || ActuatorProduced == null) return false;
+                string selected = TargetSelector?.Invoke();
+                var target = selected == null ? null : TargetSnapshotProvider?.Invoke(selected);
+                Vector2 direction = target.HasValue ? target.Value.Position - origin.Value : Vector2.up;
+                if (direction.sqrMagnitude < .000001f) direction = Vector2.up;
+                var cause = new CastEvent(selected ?? "owner", organ.Definition.Damage, organ.Definition.Id,
+                    organ.InstanceId, context ?? new CastContext(), effectCenter: origin, allowZeroDamage: true);
+                ActuatorProduced.Invoke(new ActuatorContext(cause, part, slot, origin.Value, direction, self));
+                return true;
+            }
+
             // 已成立的击杀链允许范围效果沿用触发敌人的身份（它可能已死亡）。
             // 普通攻击，以及追加的单体攻击，必须重新索敌并校验，不能打已回池的目标。
-            bool inheritedArea = context != null && organ.Definition.Shape != AttackShape.SingleTarget;
+            bool inheritedArea = context != null && causeTargetId != null && causeTargetId != "owner" && organ.Definition.Shape != AttackShape.SingleTarget;
             string targetId = inheritedArea ? causeTargetId : TargetSelector?.Invoke();
             if (string.IsNullOrWhiteSpace(targetId)) return false;
             if (!inheritedArea && TargetValidator != null && !TargetValidator(targetId)) return false;
@@ -111,9 +140,23 @@ namespace SpringUp.Organs
                     || target.Value.Id != targetId || !CastEvent.IsFinite(target.Value.Position))) return false;
                 center = target?.Position;
             }
+            if (organ.Definition.Projectile != null)
+            {
+                var origin = OriginProvider?.Invoke();
+                if (!origin.HasValue || !center.HasValue || !CastEvent.IsFinite(origin.Value) || ActuatorProduced == null) return false;
+                Vector2 direction = center.Value - origin.Value;
+                if (direction.sqrMagnitude < .000001f) direction = Vector2.up;
+                var cause = new CastEvent(targetId, organ.Definition.Damage, organ.Definition.Id,
+                    organ.InstanceId, context ?? new CastContext(), organ.Definition.Status, effectCenter: center);
+                ActuatorProduced.Invoke(new ActuatorContext(cause, part, slot, origin.Value, direction, organ.Definition.Projectile));
+                return true;
+            }
             if (ParameterisedBehaviour.TryCreateAttack(organ, targetId, out CastEvent attack, context, center))
             {
+                int epoch = triggerEpoch;
+                NotifyExecutionStarted(attack);
                 AttackProduced?.Invoke(attack);
+                if (epoch == triggerEpoch && attack.Shape != AttackShape.BlackHole) NotifyExecutionEnded(attack);
                 return true;
             }
             return false;
@@ -141,12 +184,17 @@ namespace SpringUp.Organs
 
         private void ProcessSignal(TriggerSignal signal)
         {
+            if (!isActiveAndEnabled) return;
+            int epoch = triggerEpoch;
             foreach (BodyRuntime body in bodies)
             {
                 for (int index = 0; index < BodyRuntime.SlotCount; index++)
                 {
+                    if (!isActiveAndEnabled || epoch != triggerEpoch) return;
                     OrganInstance trigger = body.GetSlot(index);
                     if (trigger == null || !ParameterisedBehaviour.Matches(signal, trigger.Definition)) continue;
+                    if (trigger.Definition.Trigger != null)
+                    { ProcessConfiguredTrigger(body, index, trigger, signal); continue; }
                     if (trigger.Definition.TriggerTarget != TriggerTargetKind.SelfSlots) continue;
 
                     if (!signal.Cause.Context.TryEnterTrigger(trigger.InstanceId,
@@ -159,9 +207,10 @@ namespace SpringUp.Organs
                     TriggerActivated?.Invoke(body, index, trigger, child);
                     body.ExecuteAllSlots((slotIndex, organ) =>
                     {
+                        if (!isActiveAndEnabled || epoch != triggerEpoch) return;
                         TriggeredSlotExecuted?.Invoke(body, slotIndex, organ, child);
                         // 扫到触发器不等于条件满足。这里只会让执行器产出攻击。
-                        ExecuteAttack(organ, child, signal.Cause.TargetId, signal.Position);
+                        ExecuteAttack(organ, child, body.Part, slotIndex, signal.Cause.TargetId, signal.Position);
                     });
                 }
             }

@@ -16,7 +16,7 @@ namespace SpringUp.LaboratoryEditor
             service.AddSample(a); service.AddSample(b);
             int changes = 0; service.Changed += () => changes++;
             Check(!service.TryUnequip(LaboratoryPart.Hand, 0, out _), "空槽不可拆下");
-            Check(!service.TryEquip(a.InstanceId, LaboratoryPart.Head, 0, out _), "拒绝错误部位");
+            Check(!service.TryEquip(a.InstanceId, LaboratoryPart.Torso, 0, out _), "普通器官不能装入躯干");
             Check(!service.TryEquip(a.InstanceId, LaboratoryPart.Hand, 6, out _), "拒绝无效槽位");
             Check(changes == 0 && service.Inventory.Count == 2, "失败操作不改变装备或库存");
             Check(service.TryEquip(a.InstanceId, LaboratoryPart.Hand, 0, out _), "安装成功");
@@ -26,7 +26,14 @@ namespace SpringUp.LaboratoryEditor
             Check(service.TryUnequip(LaboratoryPart.Hand, 0, out _), "拆下成功");
             Check(!service.TryUnequip(LaboratoryPart.Hand, 0, out _), "拒绝重复拆下");
             Check(changes == 3, "每次成功操作只通知一次");
+            foreach (var part in new[] { LaboratoryPart.Head, LaboratoryPart.Leg })
+            {
+                Check(service.TryEquip(a.InstanceId, part, 0, out _), "普通器官可跨部位安装");
+                Check(!service.TryEquip(a.InstanceId, LaboratoryPart.Hand, 1, out _), "跨部位不能复制实例");
+                Check(service.TryUnequip(part, 0, out _), "跨部位拆卸");
+            }
             var torso = Item(LaboratoryPart.Torso); service.AddSample(torso);
+            Check(!service.TryEquip(torso.InstanceId, LaboratoryPart.Head, 0, out _), "躯干器官不能装普通槽");
             Check(service.TryEquip(torso.InstanceId, LaboratoryPart.Torso, 1, out _), "躯干安装成功");
             service.ResizeTorso(1);
             Check(service.Inventory.Contains(torso), "缩容退回已装备器官");

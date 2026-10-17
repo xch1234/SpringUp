@@ -167,12 +167,11 @@ namespace SpringUp.EditorChecks
             pipeline.AttackProduced += attack => { count++; last = attack; };
             foreach (var shape in new[] { AttackShape.SingleTarget, AttackShape.Explosion, AttackShape.BlackHole })
             {
-                var config = ScriptableObject.CreateInstance<OrganConfig>();
+                var config = ScriptableObject.CreateInstance<DirectActuatorConfig>();
                 try
                 {
                     var edit = new SerializedObject(config);
-                    edit.FindProperty("kind").intValue = (int)(shape == AttackShape.SingleTarget ? HandOrganKind.Fist
-                        : shape == AttackShape.Explosion ? HandOrganKind.Tnt : HandOrganKind.CollapseBody);
+                    edit.FindProperty("shape").intValue = (int)shape;
                     edit.ApplyModifiedPropertiesWithoutUndo();
                     Require(config.TryCreateDefinition(out var definition, out var error), error);
                     var organ = new OrganInstance(definition);

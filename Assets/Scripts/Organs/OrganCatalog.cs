@@ -11,7 +11,7 @@ namespace SpringUp.Organs
         [SerializeField] private OrganConfig[] organs;
         public IReadOnlyList<OrganDefinition> CreateDefinitions()
         {
-            if (organs == null || organs.Length != 7) throw new InvalidOperationException("器官目录必须引用七份手部配置。");
+            if (organs == null || organs.Length == 0) throw new InvalidOperationException("器官目录不能为空。");
             var result = new List<OrganDefinition>();
             var ids = new HashSet<string>();
             foreach (var config in organs)

@@ -22,19 +22,19 @@ namespace SpringUp.Organs
 
         public CastEvent(string targetId, float damage, string originDefinitionId,
             string originInstanceId, int chainDepth = 0, StatusEffectData status = null,
-            AttackShape shape = AttackShape.SingleTarget, float radius = 0f, BlackHoleData blackHole = null, Vector2? effectCenter = null)
-            : this(targetId, damage, originDefinitionId, originInstanceId, new CastContext(chainDepth), status, shape, radius, blackHole, effectCenter)
+            AttackShape shape = AttackShape.SingleTarget, float radius = 0f, BlackHoleData blackHole = null, Vector2? effectCenter = null, bool allowZeroDamage = false)
+            : this(targetId, damage, originDefinitionId, originInstanceId, new CastContext(chainDepth), status, shape, radius, blackHole, effectCenter, allowZeroDamage)
         {
         }
 
         public CastEvent(string targetId, float damage, string originDefinitionId,
             string originInstanceId, CastContext context, StatusEffectData status = null,
-            AttackShape shape = AttackShape.SingleTarget, float radius = 0f, BlackHoleData blackHole = null, Vector2? effectCenter = null)
+            AttackShape shape = AttackShape.SingleTarget, float radius = 0f, BlackHoleData blackHole = null, Vector2? effectCenter = null, bool allowZeroDamage = false)
         {
             if (shape == AttackShape.SingleTarget && string.IsNullOrWhiteSpace(targetId))
                 throw new ArgumentException("攻击目标编号不能为空。", nameof(targetId));
             if (float.IsNaN(damage) || float.IsInfinity(damage) || damage < 0f
-                || (shape != AttackShape.BlackHole && damage == 0f))
+                || (!allowZeroDamage && shape != AttackShape.BlackHole && damage == 0f))
                 throw new ArgumentOutOfRangeException(nameof(damage));
             if (string.IsNullOrWhiteSpace(originDefinitionId))
                 throw new ArgumentException("器官配置编号不能为空。", nameof(originDefinitionId));

@@ -2,6 +2,20 @@
   "version": 1,
   "organs": [
     {
+      "id": "straight_projectile",
+      "name": "直线子弹",
+      "description": "样板：朝最近敌人发射直线子弹，碰敌伤害并消失，撞墙消失。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/straight_projectile.png",
+      "damage": 5,
+      "count": 1,
+      "radius": 0.12,
+      "speed": 8
+    },
+    {
       "id": "fist",
       "name": "拳头",
       "description": "初始器官。按躯干节拍挥出一拳。",
@@ -140,7 +154,9 @@
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1
       },
-      "costs": ["view_radius"]
+      "costs": [
+        "view_radius"
+      ]
     },
     {
       "id": "treads",
@@ -155,7 +171,9 @@
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1
       },
-      "costs": ["turn_speed"]
+      "costs": [
+        "turn_speed"
+      ]
     },
     {
       "id": "collection_net",
@@ -170,7 +188,399 @@
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1.1
       },
-      "costs": ["move_speed"]
+      "costs": [
+        "move_speed"
+      ]
+    },
+    {
+      "id": "orbit_projectile",
+      "name": "环绕子弹",
+      "description": "执行器样板：环绕子弹；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/orbit_projectile.png",
+      "damage": 5,
+      "count": 1,
+      "radius": 0.12,
+      "speed": 6
+    },
+    {
+      "id": "spiral_projectile",
+      "name": "螺旋子弹",
+      "description": "执行器样板：螺旋子弹；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/spiral_projectile.png",
+      "damage": 5,
+      "count": 1,
+      "radius": 0.12,
+      "speed": 3
+    },
+    {
+      "id": "laser",
+      "name": "激光",
+      "description": "执行器样板：激光；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/laser.png",
+      "damage": 8,
+      "count": 1,
+      "radius": 0.12,
+      "speed": 8
+    },
+    {
+      "id": "homing_projectile",
+      "name": "追踪子弹",
+      "description": "执行器样板：追踪子弹；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/homing_projectile.png",
+      "damage": 5,
+      "count": 1,
+      "radius": 0.12,
+      "speed": 5
+    },
+    {
+      "id": "poison_fog",
+      "name": "毒雾",
+      "description": "执行器样板：毒雾；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/poison_fog.png",
+      "damage": 2,
+      "count": 1,
+      "radius": 0.12,
+      "speed": 8
+    },
+    {
+      "id": "vampire_needle",
+      "name": "吸血针",
+      "description": "执行器样板：吸血针；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/vampire_needle.png",
+      "damage": 6,
+      "count": 1,
+      "radius": 0.12,
+      "speed": 8
+    },
+    {
+      "id": "triple_projectile",
+      "name": "三发子弹",
+      "description": "执行器样板：三发子弹；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/triple_projectile.png",
+      "damage": 4,
+      "count": 1,
+      "radius": 0.12,
+      "speed": 8
+    },
+    {
+      "id": "octopus_sucker",
+      "name": "章鱼吸盘",
+      "description": "执行器样板：章鱼吸盘；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/octopus_sucker.png",
+      "damage": 2,
+      "count": 1,
+      "radius": 0.12,
+      "speed": 8
+    },
+    {
+      "id": "missile",
+      "name": "导弹",
+      "description": "执行器样板：导弹；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/missile.png",
+      "damage": 5,
+      "count": 1,
+      "radius": 0.12,
+      "speed": 8
+    },
+    {
+      "id": "charged_laser",
+      "name": "大激光",
+      "description": "执行器样板：大激光；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/charged_laser.png",
+      "damage": 20,
+      "count": 1,
+      "radius": 0.4,
+      "speed": 8
+    },
+    {
+      "id": "spore",
+      "name": "孢子",
+      "description": "执行器样板：孢子；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/spore.png",
+      "damage": 6,
+      "count": 1,
+      "radius": 0.2,
+      "speed": 1.5
+    },
+    {
+      "id": "summon_follower",
+      "name": "跟随召唤物",
+      "description": "执行器样板：跟随召唤物；参数以行为配置资源为准。",
+      "part": "any",
+      "type": "executor",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/summon_follower.png",
+      "damage": 0,
+      "count": 1,
+      "radius": 0.12,
+      "speed": 4
+    },
+    {
+      "id": "trigger_hit",
+      "name": "击中概率触发",
+      "description": "样板：满足条件后发动同管道后续执行器；参数由触发器配置管理。",
+      "part": "any",
+      "type": "trigger",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/trigger_hit.png",
+      "trigger_on": "hit",
+      "trigger_target": "FOLLOWING_SLOTS",
+      "chance": 30
+    },
+    {
+      "id": "trigger_delay",
+      "name": "计时触发",
+      "description": "样板：满足条件后发动同管道后续执行器；参数由触发器配置管理。",
+      "part": "any",
+      "type": "trigger",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/trigger_delay.png",
+      "trigger_on": "started",
+      "trigger_target": "FOLLOWING_SLOTS",
+      "chance": 100
+    },
+    {
+      "id": "trigger_killcount",
+      "name": "击杀计数触发",
+      "description": "样板：满足条件后发动同管道后续执行器；参数由触发器配置管理。",
+      "part": "any",
+      "type": "trigger",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/trigger_killcount.png",
+      "trigger_on": "kill",
+      "trigger_target": "FOLLOWING_SLOTS",
+      "chance": 100
+    },
+    {
+      "id": "trigger_hurt",
+      "name": "受伤触发",
+      "description": "样板：满足条件后发动同管道后续执行器；参数由触发器配置管理。",
+      "part": "any",
+      "type": "trigger",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/trigger_hurt.png",
+      "trigger_on": "hurt",
+      "trigger_target": "FOLLOWING_SLOTS",
+      "chance": 100
+    },
+    {
+      "id": "trigger_heal",
+      "name": "回复触发",
+      "description": "样板：满足条件后发动同管道后续执行器；参数由触发器配置管理。",
+      "part": "any",
+      "type": "trigger",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/trigger_heal.png",
+      "trigger_on": "heal",
+      "trigger_target": "FOLLOWING_SLOTS",
+      "chance": 100
+    },
+    {
+      "id": "trigger_end",
+      "name": "失效触发",
+      "description": "样板：满足条件后发动同管道后续执行器；参数由触发器配置管理。",
+      "part": "any",
+      "type": "trigger",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/trigger_end.png",
+      "trigger_on": "expire",
+      "trigger_target": "FOLLOWING_SLOTS",
+      "chance": 100
+    },
+    {
+      "id": "trigger_debuff",
+      "name": "减益概率触发",
+      "description": "样板：满足条件后发动同管道后续执行器；参数由触发器配置管理。",
+      "part": "any",
+      "type": "trigger",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/trigger_debuff.png",
+      "trigger_on": "debuff",
+      "trigger_target": "FOLLOWING_SLOTS",
+      "chance": 30
+    },
+    {
+      "id": "trigger_critical",
+      "name": "暴击触发",
+      "description": "样板：满足条件后发动同管道后续执行器；参数由触发器配置管理。",
+      "part": "any",
+      "type": "trigger",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/trigger_critical.png",
+      "trigger_on": "critical",
+      "trigger_target": "FOLLOWING_SLOTS",
+      "chance": 100
+    },
+    {
+      "id": "trigger_stationary",
+      "name": "静止充能触发",
+      "description": "样板：满足条件后发动同管道后续执行器；参数由触发器配置管理。",
+      "part": "any",
+      "type": "trigger",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/trigger_stationary.png",
+      "trigger_on": "stationary",
+      "trigger_target": "FOLLOWING_SLOTS",
+      "chance": 100
+    },
+    {
+      "id": "torso_overdrive",
+      "name": "过载躯干",
+      "description": "伤害、触发概率和频率×1.2；最大生命×0.6。",
+      "part": "torso",
+      "type": "torso_special",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/torso_overdrive.png",
+      "modifiers": {
+        "unequipped_capacity_delta": 0,
+        "marrow_gain_mult": 1
+      },
+      "costs": []
+    },
+    {
+      "id": "torso_leech",
+      "name": "共生躯干",
+      "description": "伤害×0.8；所有伤害按实际扣血的5%吸血。",
+      "part": "torso",
+      "type": "torso_special",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/torso_leech.png",
+      "modifiers": {
+        "unequipped_capacity_delta": 0,
+        "marrow_gain_mult": 1
+      },
+      "costs": []
+    },
+    {
+      "id": "torso_ram",
+      "name": "冲锋躯干",
+      "description": "前方±45°伤害×1.6；移动速度×2，转向速度×0.6，移动沿缓慢转向后的朝向。",
+      "part": "torso",
+      "type": "torso_special",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/torso_ram.png",
+      "modifiers": {
+        "unequipped_capacity_delta": 0,
+        "marrow_gain_mult": 1
+      },
+      "costs": []
+    },
+    {
+      "id": "torso_wideview",
+      "name": "远视躯干",
+      "description": "视野范围×1.2。",
+      "part": "torso",
+      "type": "torso_special",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/torso_wideview.png",
+      "modifiers": {
+        "unequipped_capacity_delta": 0,
+        "marrow_gain_mult": 1
+      },
+      "costs": []
+    },
+    {
+      "id": "torso_focused",
+      "name": "聚焦躯干",
+      "description": "视野范围×0.8；伤害×1.2。",
+      "part": "torso",
+      "type": "torso_special",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/torso_focused.png",
+      "modifiers": {
+        "unequipped_capacity_delta": 0,
+        "marrow_gain_mult": 1
+      },
+      "costs": []
+    },
+    {
+      "id": "torso_longguard",
+      "name": "长庇护躯干",
+      "description": "受伤无敌时间×1.5；受到伤害×1.2。",
+      "part": "torso",
+      "type": "torso_special",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/torso_longguard.png",
+      "modifiers": {
+        "unequipped_capacity_delta": 0,
+        "marrow_gain_mult": 1
+      },
+      "costs": []
+    },
+    {
+      "id": "torso_shortguard",
+      "name": "短庇护躯干",
+      "description": "受伤无敌时间×0.5；受到伤害×0.6。",
+      "part": "torso",
+      "type": "torso_special",
+      "rarity": "common",
+      "shop_price": 0,
+      "icon": "placeholder/organs/torso_shortguard.png",
+      "modifiers": {
+        "unequipped_capacity_delta": 0,
+        "marrow_gain_mult": 1
+      },
+      "costs": []
     }
   ]
 }

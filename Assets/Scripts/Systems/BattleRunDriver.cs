@@ -122,7 +122,7 @@ namespace Tideflesh.Systems
                 var map = new Dictionary<string, SpringUp.Organs.OrganDefinition>();
                 foreach (var definition in asset.CreateDefinitions())
                     map[definition.Id] = definition;
-                var skipped = HandPipelineLoadout.Apply(pipeline.GetBody(BodyPart.Hand), Link.Run.Inventory, map);
+                var skipped = PipelineLoadout.Apply(pipeline, Link.Run.Inventory, map);
                 if (skipped > 0)
                     Debug.Log("[ProgramD] 手部有 " + skipped + " 个器官没有管道配置，这些槽留空。");
             }
@@ -212,9 +212,10 @@ namespace Tideflesh.Systems
         {
             var organ = run.Inventory.OrganOf(instanceId);
             GUILayout.BeginHorizontal();
-            GUILayout.Label(organ.name + "（" + PartLabel(organ.part) + "）", _label, GUILayout.Width(220f));
-            if (GUILayout.Button("装备", _button, GUILayout.Width(64f)))
-                TryEquipFirstEmpty(run, instanceId, organ.part);
+            GUILayout.Label(organ.name + (organ.type == "torso_special" ? "（躯干专用）" : "（通用）"), _label, GUILayout.Width(220f));
+            foreach (var targetPart in new[] { "head", "hand", "leg", "torso" })
+                if (organ.CanEquip(targetPart) && GUILayout.Button(PartLabel(targetPart), _button, GUILayout.Width(64f)))
+                    TryEquipFirstEmpty(run, instanceId, targetPart);
             if (GUILayout.Button("出售", _button, GUILayout.Width(64f)))
                 Try(run, () => run.Sell(instanceId));
             if (GUILayout.Button("丢弃", _button, GUILayout.Width(64f)))

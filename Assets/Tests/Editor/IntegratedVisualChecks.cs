@@ -44,11 +44,17 @@ namespace SpringUp.EditorChecks
                     var enemy = Object.Instantiate(Resources.Load<GameObject>("Enemies/Normal"));
                     enemy.SetActive(true);
                     enemy.transform.position = driver.player.transform.position + new Vector3(2, 0, 0);
-                    if (!driver.ChargeAttack.TryAttack()) throw new InvalidOperationException("充能主动攻击失败。");
-                    driver.runStatus.canvas.GetComponentInChildren<ChargeAttackHud>().Refresh(true);
+                    driver.pipeline.GetBody(SpringUp.Organs.BodyPart.Hand).ResetTiming();
+                    driver.pipeline.AdvanceAutomatic(.15f);
                     Capture("battle-1280", 1280, 720);
                     Capture("battle-1920", 1920, 1080);
                     Capture("battle-1024", 1024, 768);
+                    driver.pipeline.TryExecuteSlot(SpringUp.Organs.BodyPart.Hand, 0);
+                    var reportHud = driver.runStatus.canvas.GetComponentInChildren<RunEquipmentHud>();
+                    var reportToggle = reportHud.transform.Find("Combat report toggle").GetComponent<Button>();
+                    reportToggle.onClick.Invoke(); reportHud.SendMessage("Update");
+                    Capture("organ-report-1440", 1440, 900);
+                    reportToggle.onClick.Invoke();
                     driver.director.CompleteCurrentWave();
                     stage++; next = EditorApplication.timeSinceStartup + 1; return;
                 }
@@ -60,7 +66,7 @@ namespace SpringUp.EditorChecks
             }
             catch (Exception ex) { Debug.LogException(ex); Finish(1); }
         }
-        private static void Capture(string name, int width, int height)
+        internal static void Capture(string name, int width, int height)
         {
             var camera = Camera.main;
             var target = new RenderTexture(width, height, 24);

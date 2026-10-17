@@ -67,10 +67,7 @@ namespace SpringUp.EditorChecks
 
         private static OrganConfig Config(HandOrganKind kind, float damage)
         {
-            var config = ScriptableObject.CreateInstance<OrganConfig>();
-            objects.Add(config);
-            SetNumber(config, "kind", (int)kind);
-            SetNumber(config, "damage", damage);
+            var config = OrganTestFactory.Create(kind, objects, damage);
             // 第一步只检查直接伤害；状态效果由第二步的检查覆盖。
             OrganTestFactory.AttachStatus(config, kind, objects, 0f);
             return config;
@@ -78,7 +75,7 @@ namespace SpringUp.EditorChecks
 
         private static void SetNumber(Object target, string name, float value)
         {
-            var serialized = new SerializedObject(target);
+            var serialized = target is OrganConfig config ? OrganTestFactory.Edit(config) : new SerializedObject(target);
             SerializedProperty field = serialized.FindProperty(name);
             if (field.propertyType == SerializedPropertyType.Enum) field.intValue = (int)value;
             else field.floatValue = value;
@@ -114,8 +111,8 @@ namespace SpringUp.EditorChecks
             string[] names = { "Fist", "SteelPipe", "MultiTentacle", "RustKnife", "SlimeGland", "CollapseBody", "TNT" };
             for (int i = 0; i < names.Length; i++)
             {
-                var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/" + names[i] + ".asset");
-                Require(asset != null && (int)asset.Kind == i, "七份样例配置应能加载，且种类正确。");
+                var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>(OrganTestFactory.AssetPath(names[i]));
+                Require(asset != null && asset.TryCreateDefinition(out var identity, out _) && identity.Id == OrganTestFactory.Ids[i], "七份样例配置应能加载，且种类正确。");
                 bool supported = asset.TryCreateDefinition(out _, out string error);
                 Require(supported, "七种手部器官的独立效果都应能读取配置。");
                 if (!supported) Require(!string.IsNullOrEmpty(error), "拒绝时应解释原因。");

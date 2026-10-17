@@ -12,7 +12,7 @@ namespace SpringUp.Organs
             if (organ == null) throw new ArgumentNullException(nameof(organ));
             attack = default;
             OrganDefinition definition = organ.Definition;
-            if (definition.Type != OrganType.Actuator || (definition.Damage <= 0f && definition.Shape != AttackShape.BlackHole)
+            if (definition.Projectile != null || definition.Type != OrganType.Actuator || (definition.Damage <= 0f && definition.Shape != AttackShape.BlackHole)
                 || string.IsNullOrWhiteSpace(targetId))
                 return false;
 

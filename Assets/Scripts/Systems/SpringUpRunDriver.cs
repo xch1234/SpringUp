@@ -26,20 +26,16 @@ namespace Tideflesh.Systems
         public Camera battleCamera;
         public Text runStatus, rewardText, capacityText, errorText;
         public Button nextButton, sellButton, discardButton, restartButton;
-        [Header("主动攻击充能")]
-        [Min(1f), Tooltip("基础充能上限；整轮消耗超过该值时，上限自动提高至整轮消耗。")]
-        public float chargeCapacity = 100f;
-        [Min(0f), Tooltip("战斗中每秒自动恢复的充能。每波开始充满。")]
-        public float chargeRecoveryPerSecond = 20f;
-        public PlayerChargeAttack ChargeAttack { get; private set; }
         public RunController Run { get; private set; }
         public RunLaboratoryEquipment Equipment { get; private set; }
         public IReadOnlyDictionary<string, PipelineDefinition> Definitions => definitions;
         private readonly Dictionary<string, PipelineDefinition> definitions = new Dictionary<string, PipelineDefinition>();
+        public TorsoEquipmentRuntime Torso { get; private set; }
+        public OrganCombatReport CombatReport { get; private set; }
+        private float originalCameraSize;
         private bool restarting;
         private Rect originalViewport;
         private RunEquipmentHud equipmentHud;
-        private ChargeAttackHud chargeHud;
         private const float HudHeight = 44f;
 
         private void Awake()
@@ -49,7 +45,9 @@ namespace Tideflesh.Systems
             laboratoryRoot.SetActive(false);
             capacityText.transform.parent.gameObject.SetActive(false);
             battleCamera = battleCamera != null ? battleCamera : Camera.main;
-            if (battleCamera != null) originalViewport = battleCamera.rect;
+            if (battleCamera != null) { originalViewport = battleCamera.rect; originalCameraSize = battleCamera.orthographicSize; }
+            Torso = player.gameObject.AddComponent<TorsoEquipmentRuntime>(); Torso.Configure(player);
+            combat.Torso = Torso;
             var header = new GameObject("Battle HUD background", typeof(RectTransform), typeof(Image));
             header.transform.SetParent(runStatus.transform.parent, false);
             header.transform.SetAsFirstSibling();
@@ -59,11 +57,12 @@ namespace Tideflesh.Systems
             header.GetComponent<Image>().color = new Color(.08f, .1f, .12f, 1f);
             header.GetComponent<Image>().raycastTarget = false;
             equipmentHud = RunEquipmentHud.Create(runStatus.transform.parent, runStatus.font);
+            CombatReport = gameObject.AddComponent<OrganCombatReport>();
+            CombatReport.Bind(pipeline); combat.Report = CombatReport;
+            equipmentHud.BindReport(CombatReport);
             equipmentHud.gameObject.SetActive(false);
             ConfigureTiming(pipeline);
-            ChargeAttack = gameObject.AddComponent<PlayerChargeAttack>();
-            ChargeAttack.Configure(pipeline, () => Run?.Phase == "combat", chargeCapacity, chargeRecoveryPerSecond);
-            chargeHud = ChargeAttackHud.Create(runStatus.transform.parent, runStatus.font, ChargeAttack);
+            pipeline.AutomaticExecution = true;
             presenter.GetComponentInChildren<LaboratoryCombatDemo>(true).ConfigureTiming = ConfigureTiming;
             pipeline.enabled = false;
         }
@@ -83,6 +82,7 @@ namespace Tideflesh.Systems
         private void LateUpdate()
         {
             if (battleCamera == null || Run == null) return;
+            battleCamera.orthographicSize = originalCameraSize * Torso.Loadout.View;
             float reserved = Mathf.Clamp01(HudHeight * runStatus.canvas.scaleFactor / Mathf.Max(1, Screen.height));
             battleCamera.rect = Run.Phase == "combat"
                 ? new Rect(originalViewport.x, originalViewport.y, originalViewport.width,
@@ -95,17 +95,19 @@ namespace Tideflesh.Systems
             try
             {
                 foreach (var definition in organCatalog.CreateDefinitions()) definitions.Add(definition.Id, definition);
+                CombatReport.SetNames(definitions.Values);
                 var catalog = Catalog.LoadOrgans(organsJson.text);
                 foreach (var definition in definitions.Values)
                 {
-                    if (!catalog.TryGetValue(definition.Id, out var entry) || entry.part != "hand")
+                    if (!catalog.TryGetValue(definition.Id, out var entry) || entry.MountKind != definition.MountKind
+                        || entry.type != (definition.Type == OrganType.Torso ? "torso_special" : definition.Type == OrganType.Trigger ? "trigger" : "executor"))
                         throw new InvalidOperationException("库存图鉴与战斗定义不匹配：" + definition.Id);
                     // JSON 保留经济与掉落数据；运行时的战斗字段统一投影自 A 的资源快照。
                     entry.damage = definition.Damage;
                     entry.radius = definition.Radius;
                     entry.chance = definition.Status != null ? definition.Status.Chance * 100f
                         : definition.Type == OrganType.Trigger ? 100f : 0f;
-                    entry.speed = definition.BlackHole?.PullSpeed ?? 0f;
+                    entry.speed = definition.Projectile?.Speed ?? definition.BlackHole?.PullSpeed ?? 0f;
                     entry.description = new LaboratoryItem("definition", definition).Description;
                     if (definition.Status != null)
                         entry.status = new OrganStatusSpec { id = definition.Status.Kind.ToString().ToLowerInvariant(),
@@ -146,19 +148,26 @@ namespace Tideflesh.Systems
         {
             if (name == "LoadoutChanged")
             {
-                HandPipelineLoadout.Apply(pipeline.GetBody(BodyPart.Hand), Run.Inventory, definitions);
-                ChargeAttack.RefreshLoadout();
+                var torsos = new List<TorsoSettings>();
+                for (int slot = 1; slot <= Inventory.SlotCounts["torso"]; slot++)
+                {
+                    var id = Run.Inventory.EquippedAt("torso", slot);
+                    if (id != null && definitions.TryGetValue(Run.Inventory.OrganOf(id).id, out var definition)) torsos.Add(definition.Torso);
+                }
+                Torso.Apply(torsos, pipeline);
+                PipelineLoadout.Apply(pipeline, Run.Inventory, definitions);
                 Equipment?.Refresh();
             }
             else if (name == "RunStarted")
             {
                 laboratoryRoot.SetActive(false);
+                CombatReport.ResetWave();
+                player.ResetDamageProtection();
                 foreach (SpringUp.Organs.BodyPart part in Enum.GetValues(typeof(SpringUp.Organs.BodyPart)))
                     pipeline.GetBody(part).ResetTiming();
                 director.ConfigureExternal(Run.MaxWave, Run.WaveDuration);
                 if (!director.StartNextWave()) throw new InvalidOperationException("战场未能开始下一波。");
                 pipeline.enabled = true;
-                ChargeAttack.BeginWave();
                 Time.timeScale = 1f;
             }
             else if (name == "WaveEnded") StopCombat();
@@ -175,7 +184,6 @@ namespace Tideflesh.Systems
 
         private void StopCombat()
         {
-            ChargeAttack.CancelRound();
             pipeline.enabled = false;
             combat.Clear();
             pipeline.GetComponent<BattleOrganEffects>()?.Clear();
@@ -223,11 +231,10 @@ namespace Tideflesh.Systems
             if (Run == null) return;
             bool lab = Run.Phase == "lab";
             equipmentHud.gameObject.SetActive(Run.Phase == "combat");
-            chargeHud.Refresh(Run.Phase == "combat");
             capacityText.transform.parent.gameObject.SetActive(lab || Run.Phase == "run_won" || Run.Phase == "run_lost");
             runStatus.text = Run.Phase == "run_won" ? "七波完成" : Run.Phase == "run_lost" ? "本局失败"
                 : "第 " + Run.Wave + " / " + Run.MaxWave + " 波    " + (lab ? "实验室" : Mathf.CeilToInt(director.RemainingTime) + " 秒")
-                    + "    生命 " + Mathf.CeilToInt(player.CurrentHealth) + " / " + player.MaxHealth + "    髓质 " + Run.Marrow;
+                    + "    生命 " + player.CurrentHealth.ToString("0.#") + " / " + player.MaxHealth.ToString("0.#") + "    髓质 " + Run.Marrow;
             int count = Run.Inventory.UnequippedIds().Count, cap = Run.Inventory.UnequippedCapacity();
             capacityText.text = "未装备 " + count + " / " + cap + (count > cap ? "    超出 " + (count - cap) + " 件" : "");
             nextButton.gameObject.SetActive(lab);
@@ -239,7 +246,7 @@ namespace Tideflesh.Systems
         }
         private void OnDestroy()
         {
-            if (battleCamera != null) battleCamera.rect = originalViewport;
+            if (battleCamera != null) { battleCamera.rect = originalViewport; battleCamera.orthographicSize = originalCameraSize; }
             if (director != null) director.WaveCompleted -= WaveCompleted;
             if (player != null) player.Died -= PlayerDied;
             Time.timeScale = 1f;

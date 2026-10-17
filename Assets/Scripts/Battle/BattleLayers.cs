@@ -15,8 +15,8 @@ namespace TideBorne.Battle
     ///
     /// **为什么不改 ProjectSettings**：本工程是多人共用仓库，`ProjectSettings/`
     /// 属于**两边都在改**的文件（远端 main 与本地 main 有 29 个文件双侧修改）。
-    /// 用 `Physics2D.IgnoreLayerCollision` 在构建场景时写一遍，效果一样，
-    /// 但不动任何共享配置文件，也就没有合并风险。
+    /// 用 `Physics2D.IgnoreLayerCollision` 在每次运行加载场景前初始化，
+    /// 不依赖生成器执行过的临时状态，也不写共享物理配置。
     ///
     /// 代价：层名若没有写进 `TagManager.asset`，在 Physics2D 的碰撞矩阵界面上
     /// 只会看到 "Layer 8 / 9" 这种编号。代码里用 <see cref="Player"/> /
@@ -32,6 +32,17 @@ namespace TideBorne.Battle
 
         /// <summary>边界墙层。玩家和敌人都撞它。</summary>
         public const string Wall = "TideBorne_Wall";
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void InitializeCollisionRules()
+        {
+            int player = LayerMask.NameToLayer(Player), enemy = LayerMask.NameToLayer(Enemy), wall = LayerMask.NameToLayer(Wall);
+            if (player < 0 || enemy < 0 || wall < 0) return;
+            Physics2D.IgnoreLayerCollision(player, enemy, true);
+            Physics2D.IgnoreLayerCollision(player, wall, false);
+            Physics2D.IgnoreLayerCollision(enemy, enemy, false);
+            Physics2D.IgnoreLayerCollision(enemy, wall, false);
+        }
 
         /// <summary>
         /// 取层号；层的名字不存在时退回 Default(0) 并告警。

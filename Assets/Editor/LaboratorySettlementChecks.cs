@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using SpringUp.Laboratory;
 using SpringUp.Organs;
+using SpringUp.EditorChecks;
 using UnityEditor;
 using UnityEngine;
 using BodyPart = SpringUp.Organs.BodyPart;
@@ -24,12 +25,17 @@ namespace SpringUp.LaboratoryEditor
             }
             void Step() => demo.Pipeline.GetBody(BodyPart.Hand).Tick(1);
             var definitions = OrganCatalog.LoadDefault().CreateDefinitions();
-            Require(definitions.Count == 7, "真实目录七种配置");
-            foreach (var definition in definitions)
+            Require(definitions.Count == 36, "真实目录七种旧器官、十三种执行器与九种触发器样板");
+            foreach (var definition in definitions.Where(d => !(d.Projectile is PatternActuatorSettings) && d.Trigger == null && d.Torso == null))
             {
                 Empty(); var item = Equip(definition.Id);
                 Require(ReferenceEquals(item.Definition, LaboratoryCombatDemo.Resolve(item)), "显示与结算共用快照");
                 Step();
+                if (definition.Projectile != null)
+                {
+                    Require(demo.targets[0].CurrentHealth == demo.targetHealth, "子弹发射时不提前扣血");
+                    demo.Advance(.1f);
+                }
                 Require(demo.targets[0].CurrentHealth == demo.targetHealth - definition.Damage, "七种器官真实伤害 " + definition.Id);
                 Require(Total() == total, "七种装卸守恒");
             }
@@ -49,26 +55,26 @@ namespace SpringUp.LaboratoryEditor
             demo.Restart(); demo.targets[1].transform.position = new Vector3(100, 0); Step();
             Require(demo.targets[1].CurrentHealth == demo.targetHealth, "真实坐标边界外不受伤");
             // 仅修改内存克隆，不污染真实资源；验证改 A 配置后卡片与结算一起变化。
-            var config = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/Fist.asset"));
+            var config = OrganTestFactory.Clone(AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Actuators/Fist.asset"));
             try
             {
-                var edit = new SerializedObject(config); edit.FindProperty("damage").floatValue = 7; edit.ApplyModifiedPropertiesWithoutUndo();
+                var edit = OrganTestFactory.Edit(config); edit.FindProperty("damage").floatValue = 7; edit.ApplyModifiedPropertiesWithoutUndo();
                 Require(config.TryCreateDefinition(out var changed, out _), "修改配置生成快照");
                 Empty(); var item = new LaboratoryItem("changed_fist", changed); equipment.AddSample(item); total++;
                 equipment.TryEquip(item.InstanceId, LaboratoryPart.Hand, 0, out _); Step();
                 Require(item.Description.Contains("7") && demo.targets[0].CurrentHealth == demo.targetHealth - 7, "配置伤害同步显示与结算");
             }
-            finally { UnityEngine.Object.DestroyImmediate(config); }
-            var tntConfig = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/TNT.asset"));
+            finally { OrganTestFactory.DestroyClone(config); }
+            var tntConfig = OrganTestFactory.Clone(AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Actuators/TNT.asset"));
             try
             {
-                var edit = new SerializedObject(tntConfig); edit.FindProperty("explosionRadius").floatValue = .75f; edit.ApplyModifiedPropertiesWithoutUndo();
+                var edit = OrganTestFactory.Edit(tntConfig); edit.FindProperty("explosionRadius").floatValue = .75f; edit.ApplyModifiedPropertiesWithoutUndo();
                 tntConfig.TryCreateDefinition(out var changed, out _); Empty();
                 var item = new LaboratoryItem("radius_tnt", changed); equipment.AddSample(item); total++;
                 equipment.TryEquip(item.InstanceId, LaboratoryPart.Hand, 0, out _); Step();
                 Require(demo.targets[0].CurrentHealth == demo.targetHealth - damage && demo.targets[1].CurrentHealth == demo.targetHealth, "修改半径：边界包含，边界外排除");
             }
-            finally { UnityEngine.Object.DestroyImmediate(tntConfig); }
+            finally { OrganTestFactory.DestroyClone(tntConfig); }
             Empty(); Equip("rust_knife"); Step();
             var bleed = definitions.Single(d => d.Id == "rust_knife").Status;
             hp = demo.targets[0].CurrentHealth; demo.Advance(bleed.TickInterval);
@@ -138,15 +144,16 @@ namespace SpringUp.LaboratoryEditor
                 array.GetArrayElementAtIndex(1).objectReferenceValue = null; edit.ApplyModifiedPropertiesWithoutUndo();
                 failed = false; try { catalog.CreateDefinitions(); } catch (InvalidOperationException e) { failed = e.Message.Contains("缺失"); }
                 Require(failed, "缺失配置明确拒绝");
-                var config = UnityEngine.Object.Instantiate((OrganConfig)original);
+                var config = OrganTestFactory.Clone((OrganConfig)original);
                 try
                 {
-                    var organEdit = new SerializedObject(config); organEdit.FindProperty("statusEffect").objectReferenceValue = null; organEdit.ApplyModifiedPropertiesWithoutUndo();
+                    UnityEngine.Object.DestroyImmediate(config.Actuator);
+                    var organEdit = new SerializedObject(config); organEdit.FindProperty("actuator").objectReferenceValue = null; organEdit.ApplyModifiedPropertiesWithoutUndo();
                     array.GetArrayElementAtIndex(1).objectReferenceValue = config; edit.ApplyModifiedPropertiesWithoutUndo();
-                    failed = false; try { catalog.CreateDefinitions(); } catch (InvalidOperationException e) { failed = e.Message.Contains("状态配置"); }
-                    Require(failed, "状态关联错误明确拒绝");
+                    failed = false; try { catalog.CreateDefinitions(); } catch (InvalidOperationException e) { failed = e.Message.Contains("行为配置"); }
+                    Require(failed, "缺失行为关联明确拒绝");
                 }
-                finally { UnityEngine.Object.DestroyImmediate(config); }
+                finally { OrganTestFactory.DestroyClone(config); }
             }
             finally { UnityEngine.Object.DestroyImmediate(catalog); }
         }

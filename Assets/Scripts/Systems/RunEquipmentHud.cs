@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using SpringUp.Laboratory;
+using SpringUp.Organs;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,6 +11,19 @@ namespace Tideflesh.Systems
     {
         private readonly List<(LaboratoryPart part, int index, Text text, Image background)> slots = new();
         private RunLaboratoryEquipment equipment;
+        private OrganCombatReport report;
+        private Text reportText;
+        private int reportRevision = -1;
+        public void BindReport(OrganCombatReport value) { report = value; reportRevision = -1; }
+        private void Update()
+        {
+            if (report == null) return;
+            foreach (var slot in slots)
+                slot.background.color = (int)slot.part < 3 && report.IsFlashing((BodyPart)(int)slot.part, slot.index)
+                    ? new Color(1f, .72f, .2f) : equipment?.GetSlot(slot.part, slot.index) == null ? EmptyColor : EquippedColor;
+            if (reportText.gameObject.activeInHierarchy && reportRevision != report.Revision)
+            { reportRevision = report.Revision; reportText.text = report.Describe(); }
+        }
         private static readonly Color EmptyColor = new(.14f, .18f, .21f, .94f);
         private static readonly Color EquippedColor = new(.16f, .36f, .32f, .98f);
 
@@ -26,7 +40,7 @@ namespace Tideflesh.Systems
             background.raycastTarget = false;
             var hud = root.GetComponent<RunEquipmentHud>();
             Label(root.transform, "Title", font, "当前装备", 12, 8, 456, 26, 20);
-            var hint = Label(root.transform, "Hint", font, "战斗中锁定 · 仅休息期间可在实验室修改", 12, 36, 456, 24, 16);
+            var hint = Label(root.transform, "Hint", font, "器官自动攻击 · 仅休息期间可修改装备", 12, 36, 456, 24, 16);
             hint.color = new Color(.72f, .79f, .8f);
             string[] parts = { "head", "hand", "leg", "torso" };
             for (int p = 0; p < parts.Length; p++)
@@ -46,6 +60,22 @@ namespace Tideflesh.Systems
                     hud.slots.Add(((LaboratoryPart)p, s, text, image));
                 }
             }
+            var toggle = new GameObject("Combat report toggle", typeof(RectTransform), typeof(Image), typeof(Button));
+            toggle.transform.SetParent(root.transform, false);
+            Place((RectTransform)toggle.transform, 290, 8, 178, 26);
+            toggle.GetComponent<Image>().color = EquippedColor;
+            Label(toggle.transform, "Label", font, "伤害 / 触发记录", 4, 0, 170, 26, 16);
+            var panel = new GameObject("Combat report", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(root.transform, false);
+            Place((RectTransform)panel.transform, 0, 284, 480, 210);
+            panel.GetComponent<Image>().color = new Color(.08f, .1f, .12f, .96f);
+            panel.GetComponent<Image>().raycastTarget = false;
+            hud.reportText = Label(panel.transform, "Report", font, "等待器官发动", 12, 8, 456, 194, 16);
+            hud.reportText.alignment = TextAnchor.UpperLeft;
+            panel.SetActive(false);
+            var button = toggle.GetComponent<Button>();
+            button.navigation = new Navigation { mode = Navigation.Mode.None };
+            button.onClick.AddListener(() => panel.SetActive(!panel.activeSelf));
             return hud;
         }
 

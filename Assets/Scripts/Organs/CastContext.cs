@@ -29,6 +29,8 @@ namespace SpringUp.Organs
             triggeredInstances = parent.triggeredInstances;
         }
 
+        public bool CanEnterTrigger(string instanceId) => Depth < MaxChainDepth && !triggeredInstances.Contains(instanceId);
+
         public bool TryEnterTrigger(string instanceId, out CastContext child, out TriggerBlockReason reason)
         {
             if (string.IsNullOrWhiteSpace(instanceId))

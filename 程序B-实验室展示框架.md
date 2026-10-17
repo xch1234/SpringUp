@@ -1,72 +1,42 @@
-# 程序 B：真实配置装配与结算预览
+# 程序 B：实验室使用与接线
 
-> 2026-10-12 整合更新：`SpringUpDemo.unity` 的实验室已接 D 的正式库存，支持装卸、原子替换、出售、丢弃、容量检查与下一波。预览使用不受暂停影响的时间，和真实战斗共用定义与库存实例 ID。模拟玩家位置改名为 `playerPosition`，旧 `explosionCenter` 通过 FormerlySerializedAs 自动迁移；TNT/黑洞使用目标位置快照。以下样例库存说明仅适用于独立 LaboratoryDemo。详见 [ABCD整合记录](ABCD整合记录.md)。
+更新：2026-10-16。
 
-更新：2026-10-10；当前集成分支 `main_temp`。入口为 `Assets/Scenes/LaboratoryDemo.unity`，或 `Tools > SpringUp > Open Laboratory Scene`，然后 Play。
+## 两种入口
 
-## 操作
+**SpringUpDemo 的休息期实验室**使用本局正式库存。装卸、替换、出售、丢弃会影响下一波；背包容量符合要求后才能出战。战斗中不能改装备。
 
-左侧保留头、手、腿三条六槽和躯干槽。选择背包物品及匹配槽位后安装／替换；只选已装备槽位可拆下。再次点击取消选择。卡片显示库存实例短编号，选中后显示名称、类型、实例短编号和来自真实配置的数值说明。同种器官的完整库存 InstanceId 独立，DefinitionId 相同。
+**LaboratoryDemo**使用临时样例库存，便于随时预览所有 36 种配置。`LaboratoryDemoBootstrap` 为定义创建独立实例，并提供装配占位用于 UI 检查；退出 Play 不保存。这里不是正式掉落或经济流程。
 
-初始手部第 1 槽拳头、第 4 槽多肢触手。临时库存每种手部器官共两件（含初始装备），另有头、腿、躯干各三件明确的装配占位，不产生战斗效果。退出 Play 后恢复，未实现正式库存与存档。
+## 怎样操作
 
-成功安装、替换、拆下、躯干缩容或手动“重新开始”会清空整套预览并按当前装备重建。仅选择／取消选择不重置、不暂停。替换退回、拆下及缩容退回继续使用原装备事务。
+1. 选择背包器官，再选择头、手、腿任一普通槽位；躯干器官选躯干槽。
+2. 点击安装或替换；替换出的器官回到背包。选择已装备槽位可拆下。
+3. 查看右侧说明、两个目标与效果预览。改变装备或点击重新开始会重置预览；仅改变选择不会重置。
+4. 新触发器可以借助“受伤 -5”“回复 +5”“移动：开/关”“暴击：必定/关”模拟条件；这些按钮不影响实战人物。
 
-## 唯一配置来源
+预览在休息暂停时仍继续运行；它使用独立目标和时间，不会误伤真实战场敌人。概率效果不保证每次出现。
 
-`Assets/Resources/OrganCatalog.asset` 显式引用 `Assets/Data/Organs/Hand/` 的七份原资源；没有第二份伤害、概率、范围或时间配置。`OrganCatalog.CreateDefinitions()` 调用 A 的 `OrganConfig.TryCreateDefinition()`，启动时校验七份引用、重复 ID 和状态关联。缺失或错配在 Console 和右侧显示错误，停止预览，不回退假数据。
+## 参数与真实数据来源
 
-`LaboratoryDemoBootstrap` 将同一份只读 OrganDefinition 快照交给卡片和战斗。停止 Play 后修改 A 的资源并保存，再 Play，显示与结算同时更新；运行中的旧快照不热更新。目录可供其他模块查询，运行时不使用 AssetDatabase。状态仍引用 `Assets/Data/Statuses/` 的 Stun、Bleed、Slow。
+`OrganCatalog.asset` 提供共享战斗定义，背包记录独立 InstanceId。同一种器官的多件实例共用 DefinitionId；修改装备不会复制第二套伤害参数。
 
-| 器官 | 预览方式 |
-| --- | --- |
-| 拳头 | 按配置单目标伤害 |
-| 钢管 | 直接伤害；按真实概率施加眩晕，文字显示剩余时间 |
-| 锈刀 | 直接伤害；按真实概率施加流血，按间隔真实扣血并显示剩余时间 |
-| 粘液腺 | 直接伤害；按真实概率叠加减速，显示层数、实际减速比例和下次减层时间 |
-| 多肢触手 | 击杀时追加执行本部位，日志显示来源槽位、追加执行及命中；同链每实例最多一次，深度上限仍为 A 的规则 |
-| 坍缩体 | 创建真实 BlackHoleBehaviour，按配置到期；显示剩余／总持续时间、半径、范围内存活目标；不展示位移 |
-| TNT | 用 AttackResolver 根据真实世界坐标及爆炸中心判定；整批命中结算后才处理击杀追加 |
+在 `LaboratoryCombatDemo` Inspector 可调目标血量、两个目标的位置、玩家模拟位置和死亡补充延迟。目标死亡后以新身份补充，不额外发奖励。器官参数修改位置见 [调参手册](Docs/开发改动总览与调参手册.md)。
 
-概率没有为展示调高。仅装触手不会造成伤害；只有黑洞也不扣血。状态可能需要多次攻击才成功施加。
+## 脚本入口
 
-## 两个固定目标
+- `LaboratoryPresenter.cs`：选择、按钮、卡片和预览刷新。
+- `OrganCardView.cs`：单张器官卡片。
+- `TemporaryEquipment.cs`：独立预览的样例库存和事务。
+- `RunLaboratoryEquipment.cs`：把同一界面接到正式 RunController 库存。
+- `LaboratoryCombatDemo.cs` / `EffectPreviewGraphic.cs`：预览逻辑和二维效果。
 
-默认值集中在 `LaboratoryCombatDemo`（场景 Combat 物体）Inspector：
+## 效果预览示例
 
-| 参数 | 默认值 |
-| --- | --- |
-| Target Health | A、B 均为 30；与装备无关 |
-| First Position / Second Position | 世界坐标 (0.75, 0)、(1.75, 0)，间距 1 |
-| Player Position | (0, 0)，只用于索敌距离起点；与效果中心独立 |
-| Replenish Delay | 死亡后 1.5 秒 |
+![多种执行器的二维预览](Docs/Images/all_actuator_preview.png)
 
-画面方块是两个世界目标的 UI 投影，不以 Canvas 像素坐标结算。目标实际 Transform 固定在以上位置。默认 TNT 半径可覆盖两者；将 A 的 TNT 半径改为 0.75 时只命中作为中心的 A，B 距 A 为 1，因此不受伤。目标血量、位置、存活／死亡和补充倒计时可见。
+## 检查边界
 
-每次死亡只通知一次，清除状态及延迟伤害来源；延迟后以新 TargetId 满血补充，不广播击杀、不发奖励。存活目标、管道节拍与正常游标不重置。全部死亡时允许短暂空场，单目标攻击不伪造命中，范围攻击允许命中 0 个。新身份拒绝命中旧目标编号的攻击。
+`Tools → SpringUp → Check Laboratory UI` 检查资源接线、装配和显示；`LaboratoryPlayChecks` 检查实际预览更新。完整整合回归入口见 [工程配置操作单](工程配置操作单.md)。
 
-下方“当前目标状态”独立常驻；“最近事件”最多六条。黑洞可以按实例并存，同实例再次生成替换旧黑洞。减速比例由 A 的 SlowMultiplier 读取，不混入眩晕的零速度。
-
-## 接入与边界
-
-- `TemporaryEquipment` 保持库存身份和守恒；`LaboratoryItem.Definition` 保存共享快照。
-- `LaboratoryCombatDemo.InventoryOrigins` 将独立战斗实例映射回原库存 InstanceId；事件来源同时标识部位和槽位。预览重建不修改库存身份。
-- 复用 A 的 OrganPipelineController、AttackResolver、DemoTarget、StatusEffectRuntime、BlackHoleBehaviour 和 CastContext。B 只负责接线、目标生命周期及 UI，不复制伤害或状态算法，不调用 OrganDemoSetup。
-- Play 中目标放入独立临时 Unity 场景，关闭时清理并卸载；只对两个私有目标结算，不订阅／发布 C 的全局战场事件，不写正式库存或奖励。
-- 流血保留原上下文；范围命中先完成整批扣血，再发布原攻击的死亡信号；状态批次也先结算，再处理追加。原链防重复与深度限制有效。
-- 不展示普通移动、眩晕移动变化、黑洞位移、范围圈或粒子。这是简化装备效果和结算预览，不是完整战场模拟，也不代表 Event → Event 已实现。
-- 本次不接正式掉落、商店、存档、下一波、C 战场或休整区木桩。
-
-## 验证
-
-检查入口：`Tools > SpringUp > Check Laboratory UI`（先停止 Play、关闭实验室场景），含 `LaboratorySettlementChecks` 与原 `TemporaryEquipmentChecks`；A 完整入口为 `Tools > SpringUp > Run All Organ Checks`。真实 Play 自动入口为 `SpringUp.LaboratoryEditor.LaboratoryPlayChecks.Run`，批处理不加 `-quit`，结束自动退出。
-
-本轮使用 Unity 6000.5.11f1，在 `D:/gamejam/2026TapTap/LaboratoryStage2Validation` 的源码快照中，以本地 uGUI/Input System 和所需内建模块运行。未修改主工程依赖。这不等于完整包环境、URP、正式项目打包或物理鼠标人工验收通过。
-
-- A 完整 51 组通过，含 49 对有序器官组合、延迟流血原链、深度上限、范围多目标击杀与黑洞生命周期。
-- B 行为检查覆盖配置伤害／半径修改同步、七种装卸、重复实例映射、真实范围边界、状态扣血与到期／减层、黑洞文字到期、死亡一次、补充新身份及无旧状态、空场恢复、补充不触发链、流血链防环、选择不重置、手动重启、重复初始化、占位隔离和数量守恒。原 500 次随机事务检查保留。
-- 多分辨率截图、文字高度检查及真实 Play 最终结果见交付清单。
-
-A 的 `OrganConsolidationChecks.CheckAssets` 原来断言 Scenes 根目录只有一个场景，本轮缩小为检查 A 的 OrganDemo 主场景存在，保留 A 归档检查；B/C 场景均保留，没有通过删场景绕过检查。
-
-正式中文字体、热重载、跨平台、完整依赖打包及正式流程接线仍待后续验收。
+预览不是完整战场模拟；墙体、移动、受击与相机仍需在 SpringUpDemo 试玩。最新剩余工作以 [试玩验收清单](Docs/待确认与试玩验收清单.md) 为准。旧的第二阶段交付清单已删除。

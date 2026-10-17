@@ -60,15 +60,14 @@ namespace SpringUp.EditorChecks
         }
         private static void Set(Object obj, string name, float value)
         {
-            var data = new SerializedObject(obj); var field = data.FindProperty(name);
+            var data = obj is OrganConfig config ? OrganTestFactory.Edit(config) : new SerializedObject(obj); var field = data.FindProperty(name);
             if (field.propertyType == SerializedPropertyType.Enum) field.intValue = (int)value;
             else field.floatValue = value;
             data.ApplyModifiedPropertiesWithoutUndo();
         }
         private static OrganConfig Config(HandOrganKind kind = HandOrganKind.CollapseBody)
         {
-            var config = ScriptableObject.CreateInstance<OrganConfig>(); objects.Add(config);
-            Set(config, "kind", (int)kind); Set(config, "damage", 5f);
+            var config = OrganTestFactory.Create(kind, objects, 5f);
             return config;
         }
         private static DemoTarget Target(string name, float x, float health = 100f)
@@ -91,7 +90,7 @@ namespace SpringUp.EditorChecks
 
         private static void CheckConfig()
         {
-            var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/CollapseBody.asset");
+            var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Actuators/CollapseBody.asset");
             Require(asset != null && asset.TryCreateDefinition(out _, out _), "坍缩体资源应可读取。");
             var config = Config();
             Require(config.TryCreateDefinition(out OrganDefinition first, out _) && first.Damage == 0f

@@ -25,7 +25,15 @@ namespace TideBorne.Battle
         [SerializeField] private float currentHealth = 20f;
 
         private bool _isDead;
-        public float OrganSpeedMultiplier { get; set; } = 1f;
+        private float statusSpeedMultiplier = 1f;
+        private readonly Dictionary<string, float> attachedSlows = new Dictionary<string, float>();
+        public float OrganSpeedMultiplier
+        {
+            get { float value = statusSpeedMultiplier; foreach (float slow in attachedSlows.Values) value *= slow; return value; }
+            set { statusSpeedMultiplier = value; }
+        }
+        public void SetAttachedSlow(string source, float multiplier) => attachedSlows[source] = Mathf.Clamp01(multiplier);
+        public void RemoveAttachedSlow(string source) => attachedSlows.Remove(source);
 
         // Id 是敌人种类配置编号；TargetId 标识本次出生，池化再次启用后必须失效。
         public string TargetId { get; private set; }
@@ -110,6 +118,7 @@ namespace TideBorne.Battle
 
         private void OnEnable()
         {
+            attachedSlows.Clear();
             TargetId = System.Guid.NewGuid().ToString("N");
             // 池化复用：重新激活时恢复满血，否则第二个"敌人"会带着上次的残血出现。
             _isDead = false;

@@ -75,6 +75,9 @@ namespace TideBorne.Battle
         [Tooltip("挂在此处的组件会在每次取值时向属性表提交修改。为空即表示无修改。")]
         [SerializeField] private MonoBehaviour[] modifierSourceComponents = new MonoBehaviour[0];
 
+        private readonly List<IStatModifierSource> runtimeSources = new List<IStatModifierSource>();
+        public void AddRuntimeSource(IStatModifierSource source) { if (source != null && !runtimeSources.Contains(source)) { runtimeSources.Add(source); InvalidateModifiers(); } }
+        public void RemoveRuntimeSource(IStatModifierSource source) { if (runtimeSources.Remove(source)) InvalidateModifiers(); }
         private readonly StatModifierCollector _collector = new StatModifierCollector();
         private readonly List<IStatModifierSource> _sources = new List<IStatModifierSource>();
 
@@ -222,6 +225,7 @@ namespace TideBorne.Battle
                 }
             }
 
+            foreach (var source in runtimeSources) if (!_sources.Contains(source)) _sources.Add(source);
             for (var i = 0; i < _sources.Count; i++)
                 _collector.AddSource(_sources[i]);
 

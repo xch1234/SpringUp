@@ -13,7 +13,7 @@ public class ProgramDTests
     public void LoadOrgans_IndexesMvpIds()
     {
         var catalog = Catalog.LoadOrgans(File.ReadAllText(OrgansPath));
-        Assert.AreEqual(11, catalog.Count);
+        Assert.AreEqual(40, catalog.Count);
         Assert.AreEqual(5, catalog["fist"].damage);
         Assert.AreEqual(8, catalog["steel_pipe"].damage);
         Assert.AreEqual(4, catalog["rust_knife"].damage);
@@ -75,11 +75,11 @@ public class ProgramDTests
     }
 
     [Test]
-    public void EquipWrongPart_Fails()
+    public void EquipOrdinaryOrganInTorso_Fails()
     {
         var inv = NewInventory();
         var iid = inv.Spawn("fist");
-        Assert.Throws<InventoryException>(() => inv.Equip(iid, "head", 1));
+        Assert.Throws<InventoryException>(() => inv.Equip(iid, "torso", 1));
     }
 
     [Test]

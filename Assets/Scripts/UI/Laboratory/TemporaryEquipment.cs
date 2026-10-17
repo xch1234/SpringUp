@@ -5,30 +5,53 @@ using System.Collections.Generic;
 namespace SpringUp.Laboratory
 {
     // B 的界面数据投影，不是正式 JSON 配置，也不替代 A 的 OrganDefinition。
-    // A 暂无躯干类型；正式接入时必须显式映射部位和类型，
+    // 与 A 接线时必须显式映射部位和类型，
     // 不得按枚举数值直接转换成 SpringUp.Organs 中的类型。
     public enum LaboratoryPart { Head, Hand, Leg, Torso }
     public enum LaboratoryOrganKind { Actuator, Trigger, TorsoSpecial }
     // 这里只描述样例规则，实际攻击和触发执行由 A 的管道负责。
     // None 表示缺少规则信息，不等同于策划中不触发其他器官的 NONE。
-    public enum LaboratoryTriggerCondition { None, Kill }
-    public enum LaboratoryTriggerTarget { None, SelfSlots }
+    public enum LaboratoryTriggerCondition { None, Kill, Hit, Started, Hurt, Heal, Ended, Debuff, Critical, Stationary }
+    public enum LaboratoryTriggerTarget { None, SelfSlots, FollowingSlots }
 
     public sealed class LaboratoryItem
     {
         // 正式接入时保留库存实例编号和配置编号，刷新界面不能重建身份。
         public OrganDefinition Definition { get; }
         public LaboratoryItem(string instanceId, OrganDefinition definition)
-            : this(instanceId, definition.Id, definition.DisplayName, LaboratoryPart.Hand,
-                definition.Type == OrganType.Trigger ? LaboratoryOrganKind.Trigger : LaboratoryOrganKind.Actuator,
-                Describe(definition), definition.Type == OrganType.Trigger ? LaboratoryTriggerCondition.Kill : LaboratoryTriggerCondition.None,
-                definition.Type == OrganType.Trigger ? LaboratoryTriggerTarget.SelfSlots : LaboratoryTriggerTarget.None)
+            : this(instanceId, definition.Id, definition.DisplayName, definition.Type == OrganType.Torso ? LaboratoryPart.Torso : LaboratoryPart.Hand,
+                definition.Type == OrganType.Torso ? LaboratoryOrganKind.TorsoSpecial : definition.Type == OrganType.Trigger ? LaboratoryOrganKind.Trigger : LaboratoryOrganKind.Actuator,
+                Describe(definition), definition.Type == OrganType.Trigger ? (LaboratoryTriggerCondition)((int)definition.TriggerOn + 1) : LaboratoryTriggerCondition.None,
+                definition.Type == OrganType.Trigger ? (definition.TriggerTarget == TriggerTargetKind.SelfSlots ? LaboratoryTriggerTarget.SelfSlots : LaboratoryTriggerTarget.FollowingSlots) : LaboratoryTriggerTarget.None)
         { Definition = definition; }
         private static string Describe(OrganDefinition d)
-            => (d.Type == OrganType.Trigger ? "触发追加不额外消耗充能。" : $"主动攻击消耗 {d.ChargeCost:g} 充能。") + DescribeEffect(d);
+            => d.Torso != null ? d.Torso.Description : (d.Type == OrganType.Trigger ? "满足条件后追加发动。" : "按管道节拍自动发动。") + DescribeEffect(d);
 
         private static string DescribeEffect(OrganDefinition d)
         {
+            if (d.Trigger != null) return d.Trigger.Description
+                + (d.TriggerTarget == TriggerTargetKind.SelfSlots ? "发动同管道全部执行器；" : "发动同管道后续执行器；")
+                + "同链每实例一次，深度上限 4。";
+            if (d.Projectile is PatternActuatorSettings p)
+            {
+                string common = $"{d.DisplayName}；单次/单跳伤害 {d.Damage:g}。";
+                switch (p.Pattern)
+                {
+                    case ActuatorPattern.Orbit: return common + $"绕自身，半径 {p.OrbitRadius:g}，角速度 {p.AngularSpeed:g}°/s，持续 {p.Lifetime:g}s。";
+                    case ActuatorPattern.Spiral: return common + $"前进速度 {p.Speed:g}，旋转半径 {p.OrbitRadius:g}，角速度 {p.AngularSpeed:g}°/s。";
+                    case ActuatorPattern.Laser: return common + $"单次穿透，长 {p.Range:g}，宽 {2*p.HitRadius:g}，墙体阻挡。";
+                    case ActuatorPattern.ChargedLaser: return common + $"锁定方向蓄力 {p.ChargeTime:g}s，长 {p.Range:g}，宽 {2*p.HitRadius:g}。";
+                    case ActuatorPattern.Homing: return common + $"转向 {p.AngularSpeed:g}°/s；失去原目标后直飞。";
+                    case ActuatorPattern.Fog: return common + $"在自身位置留雾，半径 {p.AreaRadius:g}，每 {p.Interval:g}s 一跳，持续 {p.Lifetime:g}s。";
+                    case ActuatorPattern.Vampire: return common + $"直线针，按实际直接伤害的 {p.LifeSteal*100:g}% 回血。";
+                    case ActuatorPattern.Triple: return common + $"三发，总夹角 {p.SpreadAngle:g}°，每颗独立命中。";
+                    case ActuatorPattern.Sucker: return common + $"碰敌附着，每 {p.Interval:g}s 伤害，速度倍率 {p.SlowMultiplier:g}，总寿命 {p.Lifetime:g}s。";
+                    case ActuatorPattern.Missile: return common + $"命中再爆炸 {p.ExplosionDamage:g}，半径 {p.AreaRadius:g}；直接伤害与爆炸叠加。";
+                    case ActuatorPattern.Spore: return common + $"漂浮 {p.DriftDuration:g}s 后停留，总寿命 {p.Lifetime:g}s，碰敌消失。";
+                    case ActuatorPattern.Summon: return $"跟随召唤物，生命 {p.Health:g}，每秒自然损失 {p.HealthDecay:g}，跟随速度 {p.Speed:g}；暂不攻击。";
+                }
+            }
+            if (d.Projectile != null) return $"直线子弹，命中伤害 {d.Damage:g}，速度 {d.Projectile.Speed:g}，寿命 {d.Projectile.Lifetime:g}s；碰敌消失，实战撞墙消失。";
             if (d.Type == OrganType.Trigger) return "击杀追加执行本部位；同链每实例最多一次，深度上限 4。";
             if (d.BlackHole != null) return $"黑洞半径 {d.Radius:g}，持续 {d.BlackHole.Duration:g}s，吸引速度 {d.BlackHole.PullSpeed:g}；预览不展示位移。";
             string text = d.Shape == AttackShape.Explosion ? $"范围伤害 {d.Damage:g}，半径 {d.Radius:g}。" : $"单目标伤害 {d.Damage:g}。";
@@ -43,6 +66,11 @@ namespace SpringUp.Laboratory
         public string DefinitionId { get; }
         public string Name { get; }
         public LaboratoryPart Part { get; }
+        public OrganMountKind MountKind => OrganKind == LaboratoryOrganKind.TorsoSpecial
+            ? OrganMountKind.Torso : OrganMountKind.Pipeline;
+        public string MountLabel => MountKind == OrganMountKind.Torso ? "躯干专用" : "通用";
+        public bool CanEquip(LaboratoryPart targetPart) => Enum.IsDefined(typeof(LaboratoryPart), targetPart)
+            && OrganEquipmentRules.CanEquip(MountKind, targetPart.ToString().ToLowerInvariant());
         public LaboratoryOrganKind OrganKind { get; }
         public LaboratoryTriggerCondition TriggerCondition { get; }
         public LaboratoryTriggerTarget TriggerTarget { get; }
@@ -117,7 +145,7 @@ namespace SpringUp.Laboratory
             int from = inventory.FindIndex(x => x.InstanceId == instanceId);
             if (from < 0) { error = "该器官已不在背包中，请重新选择。"; return false; }
             LaboratoryItem item = inventory[from];
-            if (item.Part != part) { error = "器官与目标部位不匹配。"; return false; }
+            if (!item.CanEquip(part)) { error = "普通器官只能装入头、手、腿；特殊器官仅限躯干。"; return false; }
             LaboratoryItem old = slots[(int)part][index];
             slots[(int)part][index] = item;
             if (old == null) inventory.RemoveAt(from); else inventory[from] = old;
