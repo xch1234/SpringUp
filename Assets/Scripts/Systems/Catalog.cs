@@ -111,7 +111,7 @@ namespace Tideflesh.Systems
         static readonly HashSet<string> TriggerOn = new() { "hit", "kill", "hurt", "interval", "expire", "started", "heal", "debuff", "critical", "stationary" };
         static readonly HashSet<string> TriggerTargets = new()
         {
-            "SELF_SLOTS", "PART:head", "PART:hand", "PART:leg", "ALL_EMITTERS", "NONE", "FOLLOWING_SLOTS"
+            "SELF_SLOTS", "PART:head", "PART:hand", "PART:leg", "ALL_EMITTERS", "NONE", "FOLLOWING_SLOTS", "NEXT_SLOT"
         };
 
         public static Dictionary<string, OrganDefinition> LoadOrgans(string json)

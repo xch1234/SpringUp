@@ -15,6 +15,7 @@ MonoBehaviour:
   organId: laser
   displayName: 激光
   damage: 8
+  targetingRange: 6
   chargeCost: 20
   pattern: 2
   speed: 8

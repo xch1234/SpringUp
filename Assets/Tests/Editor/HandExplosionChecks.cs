@@ -101,7 +101,11 @@ namespace SpringUp.EditorChecks
             var demo = Go("TNT check").AddComponent<HandOrganDemo>();
             var data = new SerializedObject(demo);
             data.FindProperty("slots").GetArrayElementAtIndex(0).objectReferenceValue = config;
-            if (trigger) data.FindProperty("slots").GetArrayElementAtIndex(3).objectReferenceValue = Config(true);
+            if (trigger)
+            {
+                data.FindProperty("slots").GetArrayElementAtIndex(1).objectReferenceValue = Config(true);
+                data.FindProperty("slots").GetArrayElementAtIndex(2).objectReferenceValue = config;
+            }
             SerializedProperty array = data.FindProperty("targets"); array.arraySize = targets.Length;
             for (int i = 0; i < targets.Length; i++) array.GetArrayElementAtIndex(i).objectReferenceValue = targets[i];
             data.ApplyModifiedPropertiesWithoutUndo();
@@ -228,7 +232,7 @@ namespace SpringUp.EditorChecks
             Require(outside.CurrentHealth == 100f && disabled.CurrentHealth == 100f,
                 "场景扫描仍应排除范围外或被停用的敌人。");
             DemoTarget spawned = Target("spawned_later", 1f);
-            Hand(demo).Tick(2f); // 下一拍经过触手，再下一拍执行 TNT。
+            Hand(demo).Tick(1f); // 下一拍只自动执行前级 TNT。
             Require(spawned.CurrentHealth == 90f, "运行后新加入场景的敌人也应受伤。");
             demo.StopDemo();
             Require(demo.TryStartDemo(out _), "重新连接应安全。");

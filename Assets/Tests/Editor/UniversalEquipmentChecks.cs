@@ -83,7 +83,7 @@ namespace SpringUp.EditorChecks
         }
 
         [Test]
-        public void Trigger_ReplaysItsActualBody()
+        public void Trigger_ExecutesAdjacentSuccessorInItsActualBody()
         {
             foreach (var part in new[] { BodyPart.Head, BodyPart.Hand, BodyPart.Leg })
             {
@@ -94,15 +94,16 @@ namespace SpringUp.EditorChecks
                     pipeline.TargetSelector = () => "target";
                     pipeline.GetBody(part).SetSlot(0, new Instance(new Definition("fist", "拳头", OrganType.Actuator, 5)));
                     pipeline.GetBody(part).SetSlot(1, new Instance(new Definition("tentacle", "触手", OrganType.Trigger)));
+                    pipeline.GetBody(part).SetSlot(2, new Instance(new Definition("next", "next", OrganType.Actuator, 5)));
                     int attacks = 0, slots = 0;
                     pipeline.AttackProduced += _ => attacks++;
                     pipeline.TriggeredSlotExecuted += (body, slot, organ, chain) =>
                     { Assert.AreEqual(part, body.Part); slots++; };
-                    var cause = new CastEvent("target", 5, "fist", "source", new CastContext());
+                    var cause = new CastEvent("target", 5, "fist", pipeline.GetBody(part).GetSlot(0).InstanceId, new CastContext());
                     pipeline.PublishSignal(new TriggerSignal(TriggerOn.Kill, cause));
                     pipeline.PublishSignal(new TriggerSignal(TriggerOn.Kill, cause));
                     Assert.AreEqual(1, attacks);
-                    Assert.AreEqual(2, slots);
+                    Assert.AreEqual(1, slots);
                 }
                 finally { Object.DestroyImmediate(go); }
             }
@@ -139,7 +140,7 @@ namespace SpringUp.EditorChecks
             checks.Inventory_AllParts_IdentityAndTorsoRestrictions();
             checks.Pipeline_CrossPartDuplicatesAreRejectedById();
             checks.Loadout_MovesFromLegToHead_AndPreservesRuntimeInstance();
-            checks.Trigger_ReplaysItsActualBody();
+            checks.Trigger_ExecutesAdjacentSuccessorInItsActualBody();
             checks.FormalEquipment_CombatBlocked_LabAllowsCrossPart();
             SpringUp.LaboratoryEditor.TemporaryEquipmentChecks.Run();
             OrganPipelineStep1Checks.Run();

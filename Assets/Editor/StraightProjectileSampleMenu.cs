@@ -49,7 +49,7 @@ namespace SpringUp.EditorChecks
             foreach (var definition in definitions.Values)
                 if (definition.Trigger != null) run.Inventory.Spawn(definition.Id);
             refresh();
-            Debug.Log("已添加 10 种触发器（含多肢触手）；FollowingSlots 发动后续执行器，SelfSlots 发动整条管道。计时/失效还需要前级执行器。出战前须满足背包容量限制。");
+            Debug.Log("已添加 10 种触发器（含多肢触手）；全部只发动紧邻后一个执行器，后者不自动攻击。攻击条件只监听紧邻前一个器官。出战前须满足背包容量限制。");
         }
         [MenuItem("Tools/SpringUp/样板/休息期添加全部执行器")]
         public static void GiveAll()

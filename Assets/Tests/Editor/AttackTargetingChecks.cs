@@ -68,10 +68,12 @@ namespace SpringUp.EditorChecks
                 throw new InvalidOperationException("请先停止 Play。");
             CheckGeometry();
             CheckEffectCenters();
+            CheckRangeConfigs();
             var scene = EditorSceneManager.NewPreviewScene();
             try
             {
                 CheckPipeline(scene);
+                CheckOrganRanges(scene);
                 CheckDelayedPosition(scene);
             }
             finally { EditorSceneManager.ClosePreviewScene(scene); }
@@ -92,6 +94,99 @@ namespace SpringUp.EditorChecks
             Require(AttackTargeting.SelectNearest(targets, Vector2.zero, 0) == null, "无合格目标返回空。");
             Require(AttackTargeting.SelectNearest(targets, Vector2.zero, float.NaN) == null, "非法范围不能攻击。");
             Require(AttackTargeting.SelectNearest(targets, new Vector2(float.PositiveInfinity, 0), 3) == null, "非法原点不能攻击。");
+        }
+
+        private static void CheckRangeConfigs()
+        {
+            var guids = AssetDatabase.FindAssets("t:OrganActuatorConfig", new[] { "Assets/Data/Organs/Actuators" });
+            Require(guids.Length == 19, "All 19 actuator templates are covered.");
+            foreach (var guid in guids)
+            {
+                var config = AssetDatabase.LoadAssetAtPath<OrganActuatorConfig>(AssetDatabase.GUIDToAssetPath(guid));
+                Require(config.TryCreateDefinition(out var definition, out var error), error);
+                var serialized = new SerializedObject(config);
+                Require(definition.TargetingRange == serialized.FindProperty("targetingRange").floatValue,
+                    config.name + " preserves its configured targeting range.");
+            }
+            var scratch = ScriptableObject.CreateInstance<DirectActuatorConfig>();
+            try
+            {
+                var edit = new SerializedObject(scratch);
+                edit.FindProperty("targetingRange").floatValue = 12;
+                edit.ApplyModifiedPropertiesWithoutUndo();
+                Require(scratch.TryCreateDefinition(out var snapshot, out _), "Valid range accepted.");
+                foreach (float invalid in new[] { 0f, -1f, float.NaN, float.PositiveInfinity })
+                {
+                    edit.FindProperty("targetingRange").floatValue = invalid;
+                    edit.ApplyModifiedPropertiesWithoutUndo();
+                    Require(!scratch.TryCreateDefinition(out _, out _), "Invalid range rejected.");
+                }
+                Require(snapshot.TargetingRange == 12, "Existing definition remains an immutable snapshot.");
+            }
+            finally { Object.DestroyImmediate(scratch); }
+        }
+
+        private static void CheckOrganRanges(Scene scene)
+        {
+            var pipeline = Go(scene, "per organ range").AddComponent<OrganPipelineController>();
+            var hand = pipeline.GetBody(BodyPart.Hand);
+            var melee = new OrganDefinition("melee", "melee", OrganType.Actuator, 5, targetingRange: 4);
+            var ranged = new OrganDefinition("ranged", "ranged", OrganType.Actuator, 5, targetingRange: 12);
+            var current = new AttackTarget("enemy", new Vector2(8, 0), true);
+            bool moveAfterSelection = false;
+            float selectedRange = 0, validatedRange = 0;
+            pipeline.TargetSelector = () => throw new InvalidOperationException("Legacy selection must not run.");
+            pipeline.TargetValidator = _ => false;
+            pipeline.TargetSnapshotProvider = _ => null;
+            pipeline.TargetSelectorInRange = range =>
+            {
+                selectedRange = range;
+                string id = AttackTargeting.SelectNearest(new[] { current }, Vector2.zero, range);
+                if (moveAfterSelection) current = new AttackTarget("enemy", new Vector2(20, 0), true);
+                return id;
+            };
+            pipeline.TargetSnapshotInRange = (id, range) =>
+            {
+                validatedRange = range;
+                return current.Id == id && AttackTargeting.IsInRange(current, Vector2.zero, range)
+                    ? current : (AttackTarget?)null;
+            };
+            hand.SetSlot(0, new OrganInstance(melee));
+            Require(!pipeline.TryExecuteSlot(BodyPart.Hand, 0) && selectedRange == 4, "Melee cannot target at 8.");
+            hand.SetSlot(0, new OrganInstance(ranged));
+            Require(pipeline.TryExecuteSlot(BodyPart.Hand, 0) && selectedRange == 12 && validatedRange == 12,
+                "Ranged attack reaches 8 despite rejecting legacy callbacks.");
+            current = new AttackTarget("enemy", new Vector2(12, 0), true);
+            Require(pipeline.TryExecuteSlot(BodyPart.Hand, 0), "Range boundary included.");
+            moveAfterSelection = true;
+            Require(!pipeline.TryExecuteSlot(BodyPart.Hand, 0), "Target moving out before snapshot is rejected.");
+            moveAfterSelection = false;
+            current = new AttackTarget("enemy", Vector2.one, false);
+            Require(!pipeline.TryExecuteSlot(BodyPart.Hand, 0), "Dead targets rejected.");
+
+            // The bound successor reacquires using its own range, not the predecessor's range.
+            hand.SetSlot(0, new OrganInstance(melee));
+            hand.SetSlot(1, new OrganInstance(new OrganDefinition("trigger", "trigger", OrganType.Trigger, triggerOn: TriggerOn.Kill)));
+            hand.SetSlot(2, new OrganInstance(ranged));
+            current = new AttackTarget("enemy", new Vector2(8, 0), true);
+            int emitted = 0;
+            pipeline.AttackProduced += _ => emitted++;
+            var cause = new CastEvent("killed", 5, "melee", hand.GetSlot(0).InstanceId);
+            pipeline.PublishSignal(new TriggerSignal(TriggerOn.Kill, cause, Vector2.one));
+            Require(emitted == 1 && selectedRange == 12 && validatedRange == 12, "Triggered successor uses its own range.");
+
+            hand.SetSlot(1, null); hand.SetSlot(2, null);
+            pipeline.OriginProvider = () => Vector2.zero;
+            int effects = 0;
+            pipeline.ActuatorProduced += _ => effects++;
+            current = new AttackTarget("enemy", new Vector2(20, 0), true);
+            foreach (var pattern in new[] { ActuatorPattern.Orbit, ActuatorPattern.Fog, ActuatorPattern.Summon })
+            {
+                hand.SetSlot(0, new OrganInstance(new OrganDefinition("self", "self", OrganType.Actuator, 5,
+                    projectile: new PatternActuatorSettings(pattern), targetingRange: 4)));
+                Require(pipeline.TryExecuteSlot(BodyPart.Hand, 0), "Targetless pattern still executes: " + pattern);
+            }
+            Require(effects == 3, "All three targetless patterns execute.");
         }
 
         private static void CheckEffectCenters()
@@ -132,12 +227,14 @@ namespace SpringUp.EditorChecks
                     for (int i = 0; i < 6; i++) equipment.TryUnequip(LaboratoryPart.Hand, i, out _);
                     var item = equipment.Inventory.First(x => x.DefinitionId == id);
                     Require(equipment.TryEquip(item.InstanceId, LaboratoryPart.Hand, 0, out _), "预览安装 " + id);
-                    demo.attackRange = 0.5f;
+                    foreach (var target in demo.targets)
+                        target.transform.position = demo.playerPosition + Vector2.right * (item.Definition.TargetingRange + 1);
+                    demo.attackRange = 0.5f; // Legacy scene limit must not clip the organ range.
                     int emitted = 0;
                     demo.Pipeline.AttackProduced += _ => emitted++;
                     demo.Pipeline.GetBody(BodyPart.Hand).Tick(1);
                     Require(emitted == 0, "预览范围外不发动 " + id);
-                    demo.attackRange = 3;
+                    demo.targets[0].transform.position = demo.playerPosition + Vector2.right * item.Definition.TargetingRange;
                     demo.Pipeline.GetBody(BodyPart.Hand).Tick(1);
                     Require(emitted == 1, "预览进入范围发动一次 " + id);
                 }
@@ -191,9 +288,10 @@ namespace SpringUp.EditorChecks
             // 正常节拍无目标时继续走槽，但不积攒攻击；击杀追加的范围效果保留因果身份。
             hand.SetSlot(1, new OrganInstance(new OrganDefinition("tentacle", "触手", BodyPart.Hand,
                 OrganType.Trigger, triggerOn: TriggerOn.Kill, triggerTarget: TriggerTargetKind.SelfSlots)));
+            hand.SetSlot(2, new OrganInstance(hand.GetSlot(0).Definition));
             targetId = null;
             int beforeChain = count;
-            var cause = new CastEvent("killed_enemy", 5, "fist", "fist_instance");
+            var cause = new CastEvent("killed_enemy", 5, "fist", hand.GetSlot(0).InstanceId);
             pipeline.PublishSignal(new TriggerSignal(TriggerOn.Kill, cause, Vector2.zero));
             Require(count == beforeChain + 1 && last.TargetId == "killed_enemy" && last.ChainId == cause.ChainId,
                 "已经成立的击杀链可沿用死亡目标身份发动范围效果。");
@@ -220,10 +318,11 @@ namespace SpringUp.EditorChecks
                 OrganType.Actuator, 10, shape: AttackShape.Explosion, radius: 1)));
             hand.SetSlot(1, new OrganInstance(new OrganDefinition("tentacle", "触手", BodyPart.Hand,
                 OrganType.Trigger, triggerOn: TriggerOn.Kill)));
+            hand.SetSlot(2, new OrganInstance(hand.GetSlot(0).Definition));
             var target = Go(scene, "bleeding target").AddComponent<DemoTarget>();
             target.InitializeForDemo("bleeding", 2);
             var statuses = new StatusEffectRuntime();
-            var cause = new CastEvent(target.TargetId, 1, "knife", "knife_instance", status:
+            var cause = new CastEvent(target.TargetId, 1, "knife", hand.GetSlot(0).InstanceId, status:
                 new StatusEffectData(StatusEffectKind.Bleed, 1, 3, tickDamage: 1), effectCenter: Vector2.one);
             target.TryApplyAttack(cause);
             statuses.TryApply(cause, 0);
@@ -263,6 +362,8 @@ namespace SpringUp.EditorChecks
             health.FindProperty("currentHealth").floatValue = 0;
             health.ApplyModifiedPropertiesWithoutUndo();
             Require(targeting.SelectTarget() == null, "只剩死亡/范围外目标时无目标。");
+            Require(targeting.SelectTargetInRange(12) == far.TargetId && targeting.SnapshotInRange(far.TargetId, 12).HasValue,
+                "Battle adapter accepts per-organ range beyond legacy 3.");
             far.transform.position = Vector3.zero;
             targeting.AttackRange = -1;
             Require(targeting.SelectTarget() == null, "负范围不能攻击。");
@@ -275,11 +376,11 @@ namespace SpringUp.EditorChecks
             }
             finally { SceneManager.UnloadSceneAsync(other); }
             var pipeline = targeting.GetComponent<OrganPipelineController>();
-            Require(pipeline.TargetSelector != null && pipeline.TargetValidator != null, "自动绑定目标入口。");
+            Require(pipeline.TargetSelector != null && pipeline.TargetValidator != null && pipeline.TargetSelectorInRange != null && pipeline.TargetSnapshotInRange != null, "自动绑定目标入口。");
             targeting.enabled = false;
-            Require(pipeline.TargetSelector == null && pipeline.TargetValidator == null, "停用必须解绑。");
+            Require(pipeline.TargetSelector == null && pipeline.TargetValidator == null && pipeline.TargetSelectorInRange == null && pipeline.TargetSnapshotInRange == null, "停用必须解绑。");
             targeting.enabled = true;
-            Require(pipeline.TargetSelector != null && pipeline.TargetValidator != null, "重新启用正常绑定。");
+            Require(pipeline.TargetSelector != null && pipeline.TargetValidator != null && pipeline.TargetSelectorInRange != null && pipeline.TargetSnapshotInRange != null, "重新启用正常绑定。");
         }
     }
 }

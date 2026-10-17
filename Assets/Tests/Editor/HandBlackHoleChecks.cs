@@ -171,8 +171,8 @@ namespace SpringUp.EditorChecks
             var enemy = Target("kill", 1f, 5f);
             var data = new SerializedObject(demo);
             data.FindProperty("slots").GetArrayElementAtIndex(0).objectReferenceValue = Config(HandOrganKind.Fist);
-            data.FindProperty("slots").GetArrayElementAtIndex(1).objectReferenceValue = config;
-            data.FindProperty("slots").GetArrayElementAtIndex(3).objectReferenceValue = Config(HandOrganKind.MultiTentacle);
+            data.FindProperty("slots").GetArrayElementAtIndex(2).objectReferenceValue = config;
+            data.FindProperty("slots").GetArrayElementAtIndex(1).objectReferenceValue = Config(HandOrganKind.MultiTentacle);
             data.FindProperty("targets").arraySize = 1;
             data.FindProperty("targets").GetArrayElementAtIndex(0).objectReferenceValue = enemy;
             data.ApplyModifiedPropertiesWithoutUndo(); Require(demo.TryStartDemo(out _), "组合应能启动。");

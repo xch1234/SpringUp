@@ -10,7 +10,7 @@ namespace SpringUp.EditorChecks
         {
             serializedObject.Update();
             void Field(string name) => EditorGUILayout.PropertyField(serializedObject.FindProperty(name));
-            Field("organId"); Field("displayName"); Field("condition"); Field("triggerTarget");
+            Field("organId"); Field("displayName"); Field("condition");
             switch ((TriggerOn)serializedObject.FindProperty("condition").enumValueIndex)
             {
                 case TriggerOn.Hit: case TriggerOn.Debuff: Field("probability"); break;
@@ -20,8 +20,7 @@ namespace SpringUp.EditorChecks
             }
             serializedObject.ApplyModifiedProperties();
             if (((OrganTriggerConfig)target).TryCreateDefinition(out var definition, out var error))
-                EditorGUILayout.HelpBox(definition.Trigger.Description + (definition.TriggerTarget == TriggerTargetKind.SelfSlots
-                    ? " 追加发动自身整条管道的执行器。" : " 追加发动同管道后续执行器。"), MessageType.Info);
+                EditorGUILayout.HelpBox(definition.Trigger.Description + " 只发动紧邻后一个执行器；该执行器不参与自动循环。攻击条件只监听紧邻前一个器官。", MessageType.Info);
             else EditorGUILayout.HelpBox(error, MessageType.Error);
         }
     }

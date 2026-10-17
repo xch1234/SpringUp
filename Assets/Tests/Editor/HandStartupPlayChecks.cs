@@ -118,8 +118,8 @@ namespace SpringUp.EditorChecks
             var demo = new GameObject(name).AddComponent<HandOrganDemo>();
             demo.transform.position = new Vector3(originX, 0f, 0f);
             string[] configs = twoTentacles
-                ? new[] { "Fist", "RustKnife", "SlimeGland", "TNT", "MultiTentacle", "MultiTentacle" }
-                : new[] { "CollapseBody", "SteelPipe", "RustKnife", "SlimeGland", "TNT", "MultiTentacle" };
+                ? new[] { "Fist", "MultiTentacle", "TNT", "MultiTentacle", "RustKnife", "SlimeGland" }
+                : new[] { "CollapseBody", "SteelPipe", "RustKnife", "MultiTentacle", "TNT", "SlimeGland" };
             var data = new SerializedObject(demo);
             for (int i = 0; i < configs.Length; i++)
             {
@@ -137,7 +137,7 @@ namespace SpringUp.EditorChecks
             for (int i = 0; i < 3; i++)
             {
                 var target = new GameObject(name + "Target" + i).AddComponent<DemoTarget>();
-                target.InitializeForDemo(name + "_" + i, i == 0 ? (twoTentacles ? 5f : 10f) : 80f);
+                target.InitializeForDemo(name + "_" + i, twoTentacles && i < 2 ? 5f : i == 0 ? 6f : 80f);
                 // Outside target must be beyond the target-centred black hole (radius 3), not just beyond the player.
                 target.transform.position = new Vector3(originX + (i == 0 ? 1.5f : i == 2 ? 7f : twoTentacles ? 1f : 2.5f), 0f, 0f);
                 var combat = target.gameObject.AddComponent<DemoCombatTarget>();
@@ -313,15 +313,16 @@ namespace SpringUp.EditorChecks
                 Require(GameObject.Find("BlackHoleFixture").GetComponent<DemoBlackHoleField>().ActiveCount == 0,
                     "黑洞应在真实 Play 中按配置到期消失。");
                 var combo = GameObject.Find("ComboFixture").GetComponent<HandOrganDemo>();
-                Require(combo.TriggerCount == 1 && combo.ExplosionCount == 2
+                Require(combo.TriggerCount == 1 && combo.ExplosionCount == 1
                     && !GameObject.Find("ComboFixtureTarget0").GetComponent<DemoTarget>().IsAlive
                     && GameObject.Find("ComboFixtureTarget1").GetComponent<DemoTarget>().CurrentHealth < 80f
                     && GameObject.Find("ComboFixtureTarget1").transform.position.x < -38f
                     && GameObject.Find("ComboFixtureTarget2").GetComponent<DemoTarget>().CurrentHealth == 80f,
                     "真实 Play 六槽组合应聚怪、击杀、追加一次，范围外敌人不受伤。");
                 var chainCombo = GameObject.Find("ComboChainFixture").GetComponent<HandOrganDemo>();
-                Require(chainCombo.TriggerCount == 2 && chainCombo.ExplosionCount >= 3
-                    && GameObject.Find("ComboChainFixtureTarget1").GetComponent<DemoTarget>().IsAlive
+                Require(chainCombo.TriggerCount == 2 && chainCombo.ExplosionCount == 1
+                    && !GameObject.Find("ComboChainFixtureTarget0").GetComponent<DemoTarget>().IsAlive
+                    && !GameObject.Find("ComboChainFixtureTarget1").GetComponent<DemoTarget>().IsAlive
                     && GameObject.Find("ComboChainFixtureTarget2").GetComponent<DemoTarget>().CurrentHealth == 80f,
                     "真实 Play 两个触手应分别追加一次，之后正常节拍继续。");
                 var unified = GameObject.Find("UnifiedFixture").GetComponent<HandOrganDemo>();

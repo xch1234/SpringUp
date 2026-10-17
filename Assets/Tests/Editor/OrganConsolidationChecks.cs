@@ -116,7 +116,7 @@ namespace SpringUp.EditorChecks
                 for (int i = 0; i < 6; i++) if (hand.GetSlot(i) != null) count++;
                 Require(count == counts[mode], "预设槽位数量不正确。");
                 if (mode == (int)OrganDemoPreset.DoubleTentacle)
-                    Require(hand.GetSlot(4).InstanceId != hand.GetSlot(5).InstanceId, "相同触手配置必须安装成独立实例。");
+                    Require(hand.GetSlot(1).InstanceId != hand.GetSlot(3).InstanceId, "相同触手配置必须安装成独立实例。");
                 if (mode == (int)OrganDemoPreset.Explosion)
                 {
                     hand.Tick(1f);

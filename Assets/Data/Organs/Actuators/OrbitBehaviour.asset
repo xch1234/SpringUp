@@ -15,6 +15,7 @@ MonoBehaviour:
   organId: orbit_projectile
   displayName: 环绕子弹
   damage: 5
+  targetingRange: 6
   chargeCost: 20
   pattern: 0
   speed: 6

@@ -15,6 +15,7 @@ MonoBehaviour:
   organId: triple_projectile
   displayName: 三发子弹
   damage: 4
+  targetingRange: 10
   chargeCost: 20
   pattern: 6
   speed: 8

@@ -10,7 +10,7 @@ namespace SpringUp.EditorChecks
         {
             serializedObject.Update();
             void Field(string name) => EditorGUILayout.PropertyField(serializedObject.FindProperty(name));
-            Field("organId"); Field("displayName"); Field("shape");
+            Field("organId"); Field("displayName"); Field("targetingRange"); Field("shape");
             var shape = (AttackShape)serializedObject.FindProperty("shape").enumValueIndex;
             if (shape == AttackShape.BlackHole)
             {

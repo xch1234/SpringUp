@@ -17,7 +17,7 @@ namespace SpringUp.Organs
         {
             if (Damage <= 0f) throw new ArgumentOutOfRangeException(nameof(Damage));
             return new OrganDefinition(OrganId, DisplayName, OrganType.Actuator, Damage,
-                chargeCost: ChargeCost, projectile: new StraightProjectileSettings(speed, hitRadius, lifetime));
+                chargeCost: ChargeCost, projectile: new StraightProjectileSettings(speed, hitRadius, lifetime), targetingRange: TargetingRange);
         }
     }
 

@@ -15,8 +15,9 @@ namespace SpringUp.Organs
     }
     public enum AttackShape { SingleTarget, Explosion, BlackHole }
 
-    // 第三步只实现击杀与同部位重触发，其余条件以后再加入。
+    // Attack conditions listen to the adjacent predecessor; owner conditions use player events.
     public enum TriggerOn { Kill, Hit, Started, Hurt, Heal, Ended, Debuff, Critical, Stationary }
-    public enum TriggerTargetKind { SelfSlots, FollowingSlots }
+    // Keep legacy numeric values for serialized assets; runtime normalizes them to NextSlot.
+    public enum TriggerTargetKind { SelfSlots, FollowingSlots, NextSlot }
     public enum TriggerBlockReason { None, AlreadyTriggered, DepthLimit }
 }

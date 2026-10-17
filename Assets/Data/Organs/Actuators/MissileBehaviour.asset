@@ -15,6 +15,7 @@ MonoBehaviour:
   organId: missile
   displayName: 导弹
   damage: 5
+  targetingRange: 12
   chargeCost: 20
   pattern: 8
   speed: 8

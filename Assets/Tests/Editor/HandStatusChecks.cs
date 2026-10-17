@@ -193,7 +193,8 @@ namespace SpringUp.EditorChecks
             var demo = Go("status demo").AddComponent<HandOrganDemo>();
             var settings = new SerializedObject(demo);
             settings.FindProperty("slots").GetArrayElementAtIndex(0).objectReferenceValue = Config(HandOrganKind.RustKnife);
-            settings.FindProperty("slots").GetArrayElementAtIndex(3).objectReferenceValue = Config(HandOrganKind.MultiTentacle);
+            settings.FindProperty("slots").GetArrayElementAtIndex(1).objectReferenceValue = Config(HandOrganKind.MultiTentacle);
+            settings.FindProperty("slots").GetArrayElementAtIndex(2).objectReferenceValue = Config(HandOrganKind.RustKnife);
             var targets = settings.FindProperty("targets"); targets.arraySize = 2;
             targets.GetArrayElementAtIndex(0).objectReferenceValue = a;
             targets.GetArrayElementAtIndex(1).objectReferenceValue = b;

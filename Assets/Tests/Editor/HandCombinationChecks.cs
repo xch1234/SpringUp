@@ -96,7 +96,7 @@ namespace SpringUp.EditorChecks
             Require(Combat(b).Statuses.SlowStacks == 0 && Combat(b).Statuses.BleedRemaining == 0f,
                 "单目标状态不能误传给旁边敌人。");
             Hand(demo).Tick(1f);
-            Require(demo.TriggerCount == 0 && Hand(demo).LastExecutedSlot == 5, "正常走到触手槽不等于击杀触发。");
+            Require(demo.TriggerCount == 0 && Hand(demo).LastExecutedSlot == 0, "正常循环跳过触发器，回到第一槽。");
             demo.StopDemo();
             Require(demo.GetComponent<DemoBlackHoleField>().ActiveCount == 0 && Combat(a).Statuses.SlowStacks == 0
                 && Combat(a).Statuses.BleedRemaining == 0f && Combat(a).Statuses.StunRemaining == 0f,
@@ -106,8 +106,8 @@ namespace SpringUp.EditorChecks
         private static void CheckBleedKill()
         {
             var a = Target("bleed_victim", 0f, 2f); var b = Target("survivor", 1f);
-            var demo = Demo(new[] { HandOrganKind.RustKnife, HandOrganKind.CollapseBody,
-                HandOrganKind.Tnt, HandOrganKind.MultiTentacle }, a, b);
+            var demo = Demo(new[] { HandOrganKind.RustKnife, HandOrganKind.MultiTentacle,
+                HandOrganKind.Tnt, HandOrganKind.CollapseBody }, a, b);
             CastEvent original = default;
             var appended = new List<CastEvent>();
             demo.GetComponent<OrganPipelineController>().AttackProduced += attack =>
@@ -115,10 +115,10 @@ namespace SpringUp.EditorChecks
             Hand(demo).Tick(1f);
             Require(a.CurrentHealth == 1f && demo.TriggerCount == 0, "直接伤害没有击杀时不能提前触发。");
             Combat(a).Advance(1f);
-            Require(!a.IsAlive && demo.TriggerCount == 1 && b.CurrentHealth == 94f
-                && demo.GetComponent<DemoBlackHoleField>().ActiveCount == 1 && demo.ExplosionCount == 1,
-                "流血延迟击杀应追加锈刀、黑洞和 TNT。");
-            Require(appended.Count == 3, "额外执行次数应准确。");
+            Require(!a.IsAlive && demo.TriggerCount == 1 && b.CurrentHealth == 95f
+                && demo.GetComponent<DemoBlackHoleField>().ActiveCount == 0 && demo.ExplosionCount == 1,
+                "流血延迟击杀只追加绑定的 TNT。");
+            Require(appended.Count == 1, "额外执行次数应准确。");
             foreach (var attack in appended)
                 Require(attack.ChainId == original.ChainId && attack.ChainDepth == 1, "延迟击杀必须保留原攻击链。");
             Require(Hand(demo).LastExecutedSlot == 0, "追加执行不能移动正常游标。");
@@ -126,25 +126,20 @@ namespace SpringUp.EditorChecks
 
         private static void CheckTwoTentacles()
         {
-            var a = Target("first", 0f, 5f); var b = Target("second", 1f, 80f); var c = Target("last", 4.5f);
-            var demo = Demo(new[] { HandOrganKind.Fist, HandOrganKind.RustKnife, HandOrganKind.SlimeGland,
-                HandOrganKind.Tnt, HandOrganKind.MultiTentacle, HandOrganKind.MultiTentacle }, a, b, c);
+            var a = Target("first", 0f, 5f); var b = Target("second", 1f, 1f); var c = Target("last", 1.5f);
+            var demo = Demo(new[] { HandOrganKind.Fist, HandOrganKind.MultiTentacle, HandOrganKind.RustKnife,
+                HandOrganKind.MultiTentacle, HandOrganKind.Tnt, HandOrganKind.SlimeGland }, a, b, c);
+            var attacks = new List<CastEvent>();
+            demo.GetComponent<OrganPipelineController>().AttackProduced += attacks.Add;
             Hand(demo).Tick(1f);
-            Require(demo.TriggerCount == 2 && demo.ExplosionCount == 2 && b.CurrentHealth == 56f
-                && Combat(b).Statuses.SlowStacks == 2 && c.CurrentHealth == 100f,
-                "两个触手是独立实例，各追加一次；同链不能无限循环。");
-            // B 保留追加锈刀的流血，再让它在下一跳被该流血击杀。
-            b.TryApplyAttack(new CastEvent(b.TargetId, 55f, "check", "check"));
-            Combat(b).Advance(1f);
-            Require(!b.IsAlive && demo.TriggerCount == 2 && c.CurrentHealth == 100f,
-                "同一旧链的延迟击杀不能让已经发动过的两个触手再发动。");
+            Require(!a.IsAlive && !b.IsAlive && c.CurrentHealth == 95f
+                && demo.TriggerCount == 2 && demo.ExplosionCount == 1,
+                "前级拳头击杀触发锈刀，锈刀击杀再触发 TNT。");
+            Require(attacks.Count == 3 && attacks[0].ChainId == attacks[2].ChainId
+                && attacks[2].ChainDepth == 2, "两次相邻绑定保留同一因果链。");
             Hand(demo).Tick(1f);
-            Require(c.CurrentHealth == 100f && Hand(demo).LastExecutedSlot == 1,
-                "新节拍继续走槽，但剩余敌人在索敌范围外，不能攻击。");
-            c.transform.position = new Vector3(2f, 0f, 0f);
-            Hand(demo).Tick(1f);
-            Require(c.CurrentHealth == 99f && Hand(demo).LastExecutedSlot == 2,
-                "敌人进入范围后，下一节拍从当前槽继续攻击，不补发错过的攻击。");
+            Require(c.CurrentHealth == 94f && Hand(demo).LastExecutedSlot == 5,
+                "正常循环越过两组条件槽，继续第六槽。");
         }
 
         private static void CheckOrderedPairs()
@@ -155,15 +150,24 @@ namespace SpringUp.EditorChecks
                 {
                     var target = Target("pair");
                     var demo = Demo(new[] { first, second }, target);
-                    float expectedDamage = Hand(demo).GetSlot(0).Definition.Damage + Hand(demo).GetSlot(1).Definition.Damage;
-                    Hand(demo).Tick(2f);
+                    var hand = Hand(demo);
+                    var automatic = new List<int>();
+                    for (int i = 0; i < 2; i++) if (hand.IsAutomaticSlot(i)) automatic.Add(i);
+                    float expectedDamage = 0; int slows = 0;
+                    var holes = new HashSet<string>();
+                    for (int tick = 0; tick < 2 && automatic.Count > 0; tick++)
+                    {
+                        var organ = hand.GetSlot(automatic[tick % automatic.Count]);
+                        expectedDamage += organ.Definition.Shape == AttackShape.BlackHole ? 0 : organ.Definition.Damage;
+                        if (organ.Definition.Shape == AttackShape.BlackHole) holes.Add(organ.InstanceId);
+                        if (organ.Definition.Id == "slime_gland") slows++;
+                    }
+                    hand.Tick(2f);
                     Require(target.CurrentHealth == 100f - expectedDamage && demo.TriggerCount == 0,
-                        $"{first} + {second} 的两拍不能漏执行或重复扣血。");
-                    int holes = (first == HandOrganKind.CollapseBody ? 1 : 0) + (second == HandOrganKind.CollapseBody ? 1 : 0);
-                    Require((demo.GetComponent<DemoBlackHoleField>()?.ActiveCount ?? 0) == holes,
-                        "重复黑洞配置必须生成独立器官实例。");
-                    int slows = (first == HandOrganKind.SlimeGland ? 1 : 0) + (second == HandOrganKind.SlimeGland ? 1 : 0);
-                    Require(Combat(target).Statuses.SlowStacks == slows, "同种减速应正确叠层。");
+                        $"{first} + {second} 应只执行非绑定的普通槽。");
+                    Require((demo.GetComponent<DemoBlackHoleField>()?.ActiveCount ?? 0) == holes.Count,
+                        "同实例黑洞刷新，独立实例分别保留。");
+                    Require(Combat(target).Statuses.SlowStacks == slows, "自动槽减速次数正确。");
                     Cleanup(); // 下组不能受到本组留下的黑洞、状态或订阅影响。
                 }
         }
@@ -173,7 +177,7 @@ namespace SpringUp.EditorChecks
             var enemy = Target("unlisted", 1f);
             var demo = Demo(new[] { HandOrganKind.CollapseBody, HandOrganKind.SteelPipe, HandOrganKind.RustKnife,
                 HandOrganKind.SlimeGland, HandOrganKind.Tnt, HandOrganKind.MultiTentacle });
-            Hand(demo).Tick(6f);
+            Hand(demo).Tick(5f);
             Require(enemy.CurrentHealth == 91f && demo.ExplosionCount == 1 && demo.TriggerCount == 0,
                 "范围演示从当前场景找到目标后，所有执行器共用该索敌入口。");
             var field = demo.GetComponent<DemoBlackHoleField>();
@@ -182,7 +186,7 @@ namespace SpringUp.EditorChecks
                 "零时间不能推进攻击、状态或黑洞。");
             demo.StopDemo(); Require(field.ActiveCount == 0, "清理后不能留有黑洞。");
             Require(demo.TryStartDemo(out _) && demo.TryStartDemo(out _), "重复启动应安全。");
-            Hand(demo).Tick(6f);
+            Hand(demo).Tick(5f);
             Require(enemy.CurrentHealth == 82f && demo.ExplosionCount == 1 && field.ActiveCount == 1,
                 "重新连接不能双倍扣血或重复订阅。");
         }

@@ -22,7 +22,7 @@ namespace SpringUp.Laboratory
         [Min(.1f)] public float replenishDelay = 1.5f;
         public Vector2 firstPosition = new Vector2(.75f, 0), secondPosition = new Vector2(1.75f, 0);
         [FormerlySerializedAs("explosionCenter")] public Vector2 playerPosition = Vector2.zero;
-        [Min(0f)] public float attackRange = AttackTargeting.DefaultRange;
+        [HideInInspector] public float attackRange = AttackTargeting.DefaultRange;
         public OrganPipelineController Pipeline { get; private set; }
         public Action<OrganPipelineController> ConfigureTiming { get; set; }
         public int UnsupportedCount { get; private set; }
@@ -193,6 +193,8 @@ namespace SpringUp.Laboratory
             Pipeline.TargetSelector = SelectTarget;
             Pipeline.TargetValidator = ValidateTarget;
             Pipeline.TargetSnapshotProvider = Snapshot;
+            Pipeline.TargetSelectorInRange = SelectTargetInRange;
+            Pipeline.TargetSnapshotInRange = SnapshotInRange;
             Pipeline.OriginProvider = () => playerPosition;
             Pipeline.MovingProvider = () => PreviewMoving;
             actuators.Started += ExecutionStarted; actuators.Ended += ExecutionEnded;
@@ -202,24 +204,28 @@ namespace SpringUp.Laboratory
             Record("等待节拍；仅攻击索敌范围内最近的存活目标。");
             Render();
         }
-        private string SelectTarget()
+        private string SelectTarget() => SelectTargetInRange(attackRange);
+
+        private string SelectTargetInRange(float range)
         {
             var snapshot = new List<AttackTarget>();
             foreach (var target in targets)
                 if (target != null)
                     snapshot.Add(new AttackTarget(target.TargetId, target.transform.position, target.IsAlive));
-            return AttackTargeting.SelectNearest(snapshot, playerPosition, attackRange);
+            return AttackTargeting.SelectNearest(snapshot, playerPosition, range);
         }
         private bool ValidateTarget(string id)
             => Snapshot(id).HasValue;
 
-        private AttackTarget? Snapshot(string id)
+        private AttackTarget? Snapshot(string id) => SnapshotInRange(id, attackRange);
+
+        private AttackTarget? SnapshotInRange(string id, float range)
         {
             foreach (var target in targets)
                 if (target != null && target.TargetId == id)
                 {
                     var snapshot = new AttackTarget(id, target.transform.position, target.IsAlive);
-                    if (AttackTargeting.IsInRange(snapshot, playerPosition, attackRange)) return snapshot;
+                    if (AttackTargeting.IsInRange(snapshot, playerPosition, range)) return snapshot;
                 }
             return null;
         }
@@ -281,7 +287,7 @@ namespace SpringUp.Laboratory
         private void Trigger(BodyRuntime body, int slot, OrganInstance organ, CastContext context)
         {
             TriggerCount++; Record($"条件触发：{origins[organ.InstanceId]} → "
-                + (organ.Definition.TriggerTarget == TriggerTargetKind.SelfSlots ? "同管道全部执行器" : "后续执行器"));
+                + "紧邻后一个执行器");
         }
         private void Blocked(BodyRuntime body, int slot, OrganInstance organ, CastContext context, TriggerBlockReason reason)
             => Record($"{origins[organ.InstanceId]}：" + (reason == TriggerBlockReason.DepthLimit ? "达到链深上限" : "同链已发动"));
@@ -365,7 +371,7 @@ namespace SpringUp.Laboratory
                         if (t == null || (t.Condition != TriggerOn.Kill && t.Condition != TriggerOn.Stationary)) continue;
                         progress.Add($"{part}{slot+1}: {Pipeline.TriggerProgress(part, slot):0.#}/{(t.Condition == TriggerOn.Kill ? t.KillThreshold : t.ChargeThreshold):g}");
                     }
-                rulesText.text = progress.Count == 0 ? "触发后续槽位；计时/失效需放在前级执行器后方。" : string.Join(" · ", progress.Take(3)) + (progress.Count > 3 ? " …" : "");
+                rulesText.text = progress.Count == 0 ? "只触发紧邻后一个器官（不自动攻击）；攻击条件监听紧邻前级。" : string.Join(" · ", progress.Take(3)) + (progress.Count > 3 ? " …" : "");
             }
             var lines = new List<string> { $"当前目标状态 · 有效装备 {supported} / 占位 {UnsupportedCount}" };
             for (int i = 0; i < 2; i++)
@@ -503,6 +509,8 @@ namespace SpringUp.Laboratory
             foreach (var view in projectileMarkers) if (view != null) view.gameObject.SetActive(false);
             if (Pipeline == null) return;
             Pipeline.enabled = false; Pipeline.TargetSelector = null;
+            Pipeline.TargetValidator = null; Pipeline.TargetSnapshotProvider = null;
+            Pipeline.TargetSelectorInRange = null; Pipeline.TargetSnapshotInRange = null;
             Pipeline.AttackProduced -= Attack; Pipeline.SlotExecuted -= Step;
             Pipeline.ActuatorProduced -= ExecuteActuator;
             Pipeline.TriggerActivated -= Trigger; Pipeline.TriggeredSlotExecuted -= ExtraStep; Pipeline.TriggerBlocked -= Blocked;
