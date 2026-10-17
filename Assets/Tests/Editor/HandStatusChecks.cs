@@ -61,12 +61,7 @@ namespace SpringUp.EditorChecks
 
         private static OrganConfig Config(HandOrganKind kind, float chance = 100f)
         {
-            var config = ScriptableObject.CreateInstance<OrganConfig>();
-            objects.Add(config);
-            var data = new SerializedObject(config);
-            data.FindProperty("kind").intValue = (int)kind;
-            data.FindProperty("damage").floatValue = 1f;
-            data.ApplyModifiedPropertiesWithoutUndo();
+            var config = OrganTestFactory.Create(kind, objects, 1f);
             OrganTestFactory.AttachStatus(config, kind, objects, chance, 3f);
             return config;
         }
@@ -86,7 +81,7 @@ namespace SpringUp.EditorChecks
         {
             OrganConfig config = Config(HandOrganKind.RustKnife, 30f);
             Require(config.TryCreateDefinition(out OrganDefinition old, out _), "锈刀配置应可读取。");
-            var edit = new SerializedObject(config.StatusEffect);
+            var edit = new SerializedObject(OrganTestFactory.Status(config));
             edit.FindProperty("tickDamage").floatValue = 7f;
             edit.ApplyModifiedPropertiesWithoutUndo();
             Require(config.TryCreateDefinition(out OrganDefinition changed, out _), "修改后可读取。");

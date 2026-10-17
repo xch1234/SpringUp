@@ -13,7 +13,8 @@ namespace SpringUp.EditorChecks
             if (string.IsNullOrWhiteSpace(output)) output = "Builds/SpringUpDemo/SpringUpDemo.exe";
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {
-                scenes = new[] { SpringUpDemoBuilder.ScenePath },
+                scenes = new[] { FlowSceneBuilder.BootstrapPath, SpringUp.Flow.FlowApplication.MenuPath,
+                    SpringUp.Flow.FlowApplication.BattlePath, SpringUp.Flow.FlowApplication.RestPath },
                 locationPathName = output,
                 target = BuildTarget.StandaloneWindows64,
                 options = BuildOptions.None

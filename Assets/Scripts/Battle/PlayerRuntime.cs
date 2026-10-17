@@ -41,6 +41,21 @@ namespace TideBorne.Battle
         /// </summary>
         public event System.Action<float> PlayerDamaged;
         public event System.Action Died;
+        [SerializeField, Min(0)] private float baseInvulnerabilityDuration = .3f;
+        public float InvulnerabilityMultiplier { get; set; } = 1;
+        private float invulnerableUntil;
+        public float InvulnerabilityRemaining => Mathf.Max(0, invulnerableUntil - Time.time);
+        public void ResetDamageProtection() => invulnerableUntil = 0;
+        public void RefreshStats() => PublishSnapshotIfChanged(false);
+        public float ReceiveAttack(float amount)
+        {
+            if (Time.time < invulnerableUntil || currentHealth <= 0) return 0;
+            float applied = CalculateIncomingDamage(amount);
+            if (applied <= 0 || float.IsNaN(applied) || float.IsInfinity(applied)) return 0;
+            invulnerableUntil = Time.time + Mathf.Max(0, baseInvulnerabilityDuration * InvulnerabilityMultiplier);
+            return TakeDamage(applied);
+        }
+        public event System.Action<float, SpringUp.Organs.CastEvent?> PlayerHealed;
 
         /// <summary>当前血量。</summary>
         public float CurrentHealth { get { return currentHealth; } }
@@ -122,19 +137,22 @@ namespace TideBorne.Battle
 
             var applied = Mathf.Min(amount, currentHealth);
             currentHealth -= applied;
+            PlayerDamaged?.Invoke(applied);
             if (currentHealth <= 0f) Died?.Invoke();
             return applied;
         }
 
         /// <summary>回血，会被当前血量上限夹住。</summary>
-        public float Heal(float amount)
+        public float Heal(float amount, SpringUp.Organs.CastEvent? cause = null)
         {
-            if (amount <= 0f)
+            if (amount <= 0f || currentHealth <= 0f || float.IsNaN(amount) || float.IsInfinity(amount))
                 return 0f;
 
             var before = currentHealth;
             currentHealth = Mathf.Min(currentHealth + amount, MaxHealth);
-            return currentHealth - before;
+            float actual = currentHealth - before;
+            if (actual > 0) PlayerHealed?.Invoke(actual, cause);
+            return actual;
         }
 
         /// <summary>把当前血量设为上限。开局与调试用。</summary>
@@ -191,17 +209,7 @@ namespace TideBorne.Battle
         /// </summary>
         private void OnPlayerHurt(EnemyEvents.PlayerHurtInfo info)
         {
-            var applied = CalculateIncomingDamage(info.damage);
-            if (applied <= 0f)
-                return;
-
-            var actual = TakeDamage(applied);
-            if (actual <= 0f)
-                return;
-
-            var handler = PlayerDamaged;
-            if (handler != null)
-                handler(actual);
+            ReceiveAttack(info.damage);
         }
 
         /// <summary>把敌人的攻击力换算成实际扣血：先乘受伤倍率，再减固定减伤。</summary>

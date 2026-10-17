@@ -19,14 +19,15 @@ namespace Tideflesh.Systems
             var catalog = Catalog.LoadOrgans(organsJson);
             foreach (var definition in definitions.Values)
             {
-                if (!catalog.TryGetValue(definition.Id, out var entry) || entry.part != "hand")
+                if (!catalog.TryGetValue(definition.Id, out var entry) || entry.MountKind != definition.MountKind
+                    || entry.type != (definition.Type == OrganType.Torso ? "torso_special" : definition.Type == OrganType.Trigger ? "trigger" : "executor"))
                     throw new InvalidOperationException("库存图鉴与战斗定义不匹配：" + definition.Id);
                 // JSON 保留经济与掉落数据；运行时的战斗字段统一投影自 A 的资源快照。
                 entry.damage = definition.Damage;
                 entry.radius = definition.Radius;
                 entry.chance = definition.Status != null ? definition.Status.Chance * 100f
                     : definition.Type == OrganType.Trigger ? 100f : 0f;
-                entry.speed = definition.BlackHole?.PullSpeed ?? 0f;
+                entry.speed = definition.Projectile?.Speed ?? definition.BlackHole?.PullSpeed ?? 0f;
                 entry.description = new LaboratoryItem("definition", definition).Description;
                 if (definition.Status != null)
                     entry.status = new OrganStatusSpec { id = definition.Status.Kind.ToString().ToLowerInvariant(),
@@ -39,12 +40,16 @@ namespace Tideflesh.Systems
             foreach (var wave in waves)
             {
                 wave.guaranteed_drops = wave.guaranteed_drops.Select(id => id == "spider_nest" ? "tnt" : id).ToArray();
-                foreach (var id in wave.guaranteed_drops.Concat(wave.optional_drops))
+                wave.optional_drops = wave.optional_drops.Select(id => id == "spider_nest" ? "tnt" : id).ToArray();
+                if (wave.random_drop_pool != null)
+                    wave.random_drop_pool = wave.random_drop_pool.Select(id => id == "spider_nest" ? "tnt" : id).ToArray();
+                foreach (var id in wave.guaranteed_drops.Concat(wave.optional_drops)
+                    .Concat(wave.random_drop_pool ?? Array.Empty<string>()))
                     if (!definitions.ContainsKey(id)) throw new InvalidOperationException("奖励缺少战斗定义：" + id);
             }
             Organs = catalog;
             Waves = waves;
         }
-        public RunController CreateRun() => new RunController(Organs, Waves, null);
+        public RunController CreateRun() => new RunController(Organs, Waves, null, null, Definitions.Keys);
     }
 }

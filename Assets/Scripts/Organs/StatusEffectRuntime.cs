@@ -20,12 +20,12 @@ namespace SpringUp.Organs
         public float SlowMultiplier => slow == null ? 1f : Math.Max(0f, 1f - SlowStacks * slow.SlowPerStack);
 
         // 概率只在成功的直接命中后判定。roll 由接入方提供，便于检查 0% 和 100%。
-        public bool TryApply(CastEvent attack, float roll)
+        public bool TryApply(CastEvent attack, float roll, float probabilityMultiplier = 1)
         {
             if (float.IsNaN(roll) || roll < 0f || roll > 1f) throw new ArgumentOutOfRangeException(nameof(roll));
             StatusEffectData effect = attack.Status;
             if (effect == null || attack.Context == null || effect.Chance <= 0f
-                || (effect.Chance < 1f && roll >= effect.Chance)) return false;
+                || (effect.Chance * probabilityMultiplier < 1f && roll >= effect.Chance * probabilityMultiplier)) return false;
             switch (effect.Kind)
             {
                 case StatusEffectKind.Stun:

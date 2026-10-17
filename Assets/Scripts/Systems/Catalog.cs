@@ -39,6 +39,9 @@ namespace Tideflesh.Systems
         public string name;
         public string description;
         public string part;
+        public SpringUp.Organs.OrganMountKind MountKind => type == "torso_special"
+            ? SpringUp.Organs.OrganMountKind.Torso : SpringUp.Organs.OrganMountKind.Pipeline;
+        public bool CanEquip(string targetPart) => SpringUp.Organs.OrganEquipmentRules.CanEquip(MountKind, targetPart);
         public string type;
         public string rarity;
         public int shop_price;
@@ -79,6 +82,11 @@ namespace Tideflesh.Systems
         public int duration_sec;
         public string[] guaranteed_drops;
         public string[] optional_drops;
+        // When present, RunController draws random drops from this pool instead of
+        // replaying guaranteed_drops/optional_drops. The old fields remain a
+        // compatibility fallback for older wave data and tests.
+        public string[] random_drop_pool;
+        public int random_drop_count;
         public int marrow_reward;
     }
 
@@ -97,13 +105,13 @@ namespace Tideflesh.Systems
 
     public static class Catalog
     {
-        static readonly HashSet<string> Parts = new() { "head", "hand", "leg", "torso" };
+        static readonly HashSet<string> Parts = new() { "head", "hand", "leg", "torso", "any" };
         static readonly HashSet<string> Types = new() { "trigger", "executor", "torso_special" };
         static readonly HashSet<string> Rarities = new() { "common", "rare", "mechanical", "story" };
-        static readonly HashSet<string> TriggerOn = new() { "hit", "kill", "hurt", "interval", "expire" };
+        static readonly HashSet<string> TriggerOn = new() { "hit", "kill", "hurt", "interval", "expire", "started", "heal", "debuff", "critical", "stationary" };
         static readonly HashSet<string> TriggerTargets = new()
         {
-            "SELF_SLOTS", "PART:head", "PART:hand", "PART:leg", "ALL_EMITTERS", "NONE"
+            "SELF_SLOTS", "PART:head", "PART:hand", "PART:leg", "ALL_EMITTERS", "NONE", "FOLLOWING_SLOTS"
         };
 
         public static Dictionary<string, OrganDefinition> LoadOrgans(string json)
@@ -141,6 +149,13 @@ namespace Tideflesh.Systems
                     RequireDrop(dropId, catalog);
                 foreach (var dropId in wave.optional_drops)
                     RequireDrop(dropId, catalog);
+                if (wave.random_drop_pool != null)
+                {
+                    if (wave.random_drop_count < 0)
+                        throw new CatalogException("<unknown>", "random_drop_count cannot be negative");
+                    foreach (var dropId in wave.random_drop_pool)
+                        RequireDrop(dropId, catalog);
+                }
             }
             return new List<WaveDefinition>(file.waves);
         }
@@ -170,6 +185,8 @@ namespace Tideflesh.Systems
                 throw new CatalogException(organId, "invalid rarity");
             if (organ.type == "torso_special" && organ.part != "torso")
                 throw new CatalogException(organId, "torso_special part must be torso");
+            if (organ.type != "torso_special" && organ.part == "torso")
+                throw new CatalogException(organId, "only torso_special can use torso");
             if (organ.type == "trigger")
             {
                 Require(organ.trigger_on, organId, "trigger_on");

@@ -57,34 +57,33 @@ namespace SpringUp.EditorChecks
             var go = new GameObject(name) { hideFlags = HideFlags.HideAndDontSave }; objects.Add(go);
             SceneManager.MoveGameObjectToScene(go, scene); return go;
         }
-        private static OrganConfig Asset(int index) => AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/" + names[index] + ".asset");
+        private static OrganConfig Asset(int index) => AssetDatabase.LoadAssetAtPath<OrganConfig>(OrganTestFactory.AssetPath(names[index]));
         private static void CheckAssets()
         {
-            Require(AssetDatabase.FindAssets("t:OrganConfig", new[] { "Assets/Data" }).Length == 7, "Data 中只应有七份器官资源。");
+            Require(AssetDatabase.FindAssets("t:OrganConfig", new[] { "Assets/Data/Organs/Actuators" }).Length == 19, "十九份执行器入口。六个直接效果与十三个弹体/区域效果。");
             Require(AssetDatabase.FindAssets("t:StatusEffectConfig", new[] { "Assets/Data/Statuses" }).Length == 3, "应有三份独立状态资源。");
             for (int i = 0; i < names.Length; i++)
             {
                 OrganConfig config = Asset(i);
-                Require(config != null && (int)config.Kind == i && config.TryCreateDefinition(out _, out _), "器官资源或状态引用失效：" + names[i]);
-                if (config.StatusEffect != null) Require(AssetDatabase.GetAssetPath(config.StatusEffect).StartsWith("Assets/Data/Statuses/"), "状态必须引用独立目录。");
+                Require(config != null && config.TryCreateDefinition(out var identity, out _) && identity.Id == OrganTestFactory.Ids[i] && config.TryCreateDefinition(out _, out _), "器官资源或状态引用失效：" + names[i]);
+                if (OrganTestFactory.Status(config) != null) Require(AssetDatabase.GetAssetPath(OrganTestFactory.Status(config)).StartsWith("Assets/Data/Statuses/"), "状态必须引用独立目录。");
             }
             Require(!AssetDatabase.IsValidFolder("Assets/Data/HandCombo") && !AssetDatabase.IsValidFolder("Assets/Data/HandOrgans"), "旧重复目录应已移除。");
             Require(Directory.GetFiles(Path.Combine(Application.dataPath, "Scenes"), "OrganDemo.unity").Length == 1
                 && AssetDatabase.LoadAssetAtPath<SceneAsset>("Assets/Scenes/OrganDemo.unity") != null, "A 的统一场景 OrganDemo 必须存在；B/C 场景不在此断言范围。");
-            Require(AssetDatabase.LoadAssetAtPath<SceneAsset>("Assets/Scenes/Tests/HandStatusDemo.unity") != null, "旧场景应归档保留。");
         }
         private static void CheckStatusReferences()
         {
             var config = OrganTestFactory.CreateCombo(HandOrganKind.RustKnife, objects);
             Require(config.TryCreateDefinition(out var original, out _), "独立流血配置应可生成快照。");
-            var edit = new SerializedObject(config.StatusEffect); edit.FindProperty("tickDamage").floatValue = 7f; edit.ApplyModifiedPropertiesWithoutUndo();
+            var edit = new SerializedObject(OrganTestFactory.Status(config)); edit.FindProperty("tickDamage").floatValue = 7f; edit.ApplyModifiedPropertiesWithoutUndo();
             Require(config.TryCreateDefinition(out var changed, out _) && original.Status.TickDamage == 1f && changed.Status.TickDamage == 7f,
                 "修改状态资源不能改写已产生的攻击快照。");
-            var organ = new SerializedObject(config); organ.FindProperty("statusEffect").objectReferenceValue = null; organ.ApplyModifiedPropertiesWithoutUndo();
-            Require(!config.TryCreateDefinition(out _, out string missing) && !string.IsNullOrWhiteSpace(missing), "缺失状态应有明确提示。");
+            var organ = OrganTestFactory.Edit(config); organ.FindProperty("statusEffect").objectReferenceValue = null; organ.ApplyModifiedPropertiesWithoutUndo();
+            Require(config.TryCreateDefinition(out var noStatus, out _) && noStatus.Status == null, "状态可选，清空后保留直接伤害。");
             var steel = OrganTestFactory.CreateCombo(HandOrganKind.SteelPipe, objects);
-            organ.Update(); organ.FindProperty("statusEffect").objectReferenceValue = steel.StatusEffect; organ.ApplyModifiedPropertiesWithoutUndo();
-            Require(!config.TryCreateDefinition(out _, out _), "锈刀错误关联眩晕资料卡应拒绝。");
+            organ.Update(); organ.FindProperty("statusEffect").objectReferenceValue = OrganTestFactory.Status(steel); organ.ApplyModifiedPropertiesWithoutUndo();
+            Require(config.TryCreateDefinition(out var replaced, out _) && replaced.Status.Kind == StatusEffectKind.Stun, "直接执行器可使用选择的有效状态配置。");
         }
         private static OrganDemoSetup Setup(out DemoTarget[] enemies)
         {
@@ -121,7 +120,8 @@ namespace SpringUp.EditorChecks
                 if (mode == (int)OrganDemoPreset.Explosion)
                 {
                     hand.Tick(1f);
-                    Require(enemies[0].CurrentHealth == Mathf.Max(0f, 100f - Asset(6).Damage), "统一入口 TNT 没有按唯一资源扣血。");
+                    Require(Asset(6).TryCreateDefinition(out var tnt, out _)
+                        && enemies[0].CurrentHealth == Mathf.Max(0f, 100f - tnt.Damage), "统一入口 TNT 没有按唯一资源扣血。");
                 }
                 if (mode == (int)OrganDemoPreset.BlackHole)
                 {

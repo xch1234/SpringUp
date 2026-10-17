@@ -32,6 +32,7 @@ namespace Tideflesh.Systems
             pipeline.TargetSelector = SelectTarget;
             pipeline.TargetValidator = ValidateTarget;
             pipeline.TargetSnapshotProvider = Snapshot;
+            pipeline.OriginProvider = OriginPosition;
         }
 
         private void OnDisable()
@@ -40,6 +41,7 @@ namespace Tideflesh.Systems
             if (pipeline.TargetSelector == SelectTarget) pipeline.TargetSelector = null;
             if (pipeline.TargetValidator == ValidateTarget) pipeline.TargetValidator = null;
             if (pipeline.TargetSnapshotProvider == Snapshot) pipeline.TargetSnapshotProvider = null;
+            if (pipeline.OriginProvider == OriginPosition) pipeline.OriginProvider = null;
         }
 
         public string SelectTarget()
@@ -70,6 +72,7 @@ namespace Tideflesh.Systems
         }
 
         private Transform Origin() => attackOrigin != null ? attackOrigin : PlayerLocator.Player;
+        private Vector2? OriginPosition() => Origin() != null ? (Vector2?)Origin().position : null;
         private static bool Eligible(EnemyRuntime enemy, Transform origin)
             => enemy != null && enemy.isActiveAndEnabled && enemy.IsAlive
                 && enemy.gameObject.scene == origin.gameObject.scene;

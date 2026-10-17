@@ -80,13 +80,13 @@ namespace SpringUp.EditorChecks
         }
         private static OrganConfig Config(bool trigger = false, float damage = 10f, float radius = 2f)
         {
-            var config = ScriptableObject.CreateInstance<OrganConfig>();
-            objects.Add(config);
-            var data = new SerializedObject(config);
-            data.FindProperty("kind").intValue = (int)(trigger ? HandOrganKind.MultiTentacle : HandOrganKind.Tnt);
-            data.FindProperty("damage").floatValue = damage;
-            data.FindProperty("explosionRadius").floatValue = radius;
-            data.ApplyModifiedPropertiesWithoutUndo();
+            var config = OrganTestFactory.Create(trigger ? HandOrganKind.MultiTentacle : HandOrganKind.Tnt, objects, damage);
+            if (!trigger)
+            {
+                var data = OrganTestFactory.Edit(config);
+                data.FindProperty("explosionRadius").floatValue = radius;
+                data.ApplyModifiedPropertiesWithoutUndo();
+            }
             return config;
         }
         private static DemoTarget Target(string id, float x, float health = 100f)
@@ -114,11 +114,11 @@ namespace SpringUp.EditorChecks
 
         private static void CheckConfig()
         {
-            var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/TNT.asset");
+            var asset = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Actuators/TNT.asset");
             Require(asset != null && asset.TryCreateDefinition(out _, out _), "TNT 资源应可加载。");
             OrganConfig config = Config();
             Require(config.TryCreateDefinition(out OrganDefinition original, out _), "TNT 配置应可读取。");
-            var edit = new SerializedObject(config);
+            var edit = OrganTestFactory.Edit(config);
             edit.FindProperty("explosionRadius").floatValue = 4f;
             edit.ApplyModifiedPropertiesWithoutUndo();
             config.TryCreateDefinition(out OrganDefinition changed, out _);
@@ -236,9 +236,7 @@ namespace SpringUp.EditorChecks
             Require(spawned.CurrentHealth == 80f, "重新启动不能产生重复伤害。");
             demo.StopDemo();
             // 单目标执行器仍不能伤到旁边未选中的敌人。
-            OrganConfig single = Config();
-            var data = new SerializedObject(single); data.FindProperty("kind").intValue = (int)HandOrganKind.Fist;
-            data.ApplyModifiedPropertiesWithoutUndo();
+            OrganConfig single = OrganTestFactory.Create(HandOrganKind.Fist, objects, 10);
             var fist = Demo(single, false, aim);
             Hand(fist).Tick(1f);
             Require(spawned.CurrentHealth == 80f, "拳头仍是单目标攻击。");

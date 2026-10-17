@@ -1,5 +1,7 @@
 # MVP Numbers Implementation Plan
 
+> 历史/设计参考：不是当前操作步骤。旧场景、示例脚本和数值表可能已删除，勿按旧计划重新创建；当前入口与实现见 [调参手册](../../开发改动总览与调参手册.md)。
+
 > 2026-10-11：图鉴 id 已改成程序 A 用的 `rust_knife` 和 `multi_tentacle`。下文里的旧 id 不要写回去。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

@@ -46,6 +46,7 @@ namespace Tideflesh.Systems
 
         readonly Dictionary<string, OrganDefinition> _catalog;
         readonly Dictionary<int, WaveDefinition> _waves;
+        readonly HashSet<string> _activeOrganIds;
         readonly int _maxWave;
         readonly Emit _emit;
         readonly Func<double> _nextUnit;
@@ -69,9 +70,11 @@ namespace Tideflesh.Systems
             Dictionary<string, OrganDefinition> catalog,
             List<WaveDefinition> waves,
             Emit emit,
-            Func<double> nextUnit = null)
+            Func<double> nextUnit = null,
+            IEnumerable<string> activeOrganIds = null)
         {
             _catalog = catalog;
+            _activeOrganIds = new HashSet<string>(activeOrganIds ?? catalog.Keys);
             _waves = new Dictionary<int, WaveDefinition>();
             foreach (var w in waves)
                 _waves[w.wave] = w;
@@ -111,11 +114,7 @@ namespace Tideflesh.Systems
             WaveFinished?.Invoke(Wave);
             _emit?.Invoke("WaveEnded", new WaveEndedPayload { Wave = Wave, Reason = "timer" });
             var cfg = _waves[Wave];
-            var drops = new List<string>();
-            if (cfg.guaranteed_drops != null)
-                drops.AddRange(cfg.guaranteed_drops);
-            if (cfg.optional_drops != null)
-                drops.AddRange(cfg.optional_drops);
+            var drops = ResolveDrops(cfg);
             var spawned = new List<string>();
             foreach (var oid in drops)
                 spawned.Add(Inventory.Spawn(oid));
@@ -236,6 +235,43 @@ namespace Tideflesh.Systems
         }
 
         public ShopResult TryUpgradeTorso(string nodeId) => new() { Ok = false, Reason = "not_open" };
+
+        List<string> ResolveDrops(WaveDefinition cfg)
+        {
+            if (cfg.random_drop_pool == null || cfg.random_drop_pool.Length == 0)
+            {
+                var fixedDrops = new List<string>();
+                if (cfg.guaranteed_drops != null) fixedDrops.AddRange(cfg.guaranteed_drops);
+                if (cfg.optional_drops != null) fixedDrops.AddRange(cfg.optional_drops);
+                return fixedDrops;
+            }
+
+            var pool = new List<string>();
+            foreach (var id in cfg.random_drop_pool)
+            {
+                if (string.IsNullOrEmpty(id) || !_catalog.ContainsKey(id) || !_activeOrganIds.Contains(id)) continue;
+                if (!pool.Contains(id)) pool.Add(id);
+            }
+            var count = cfg.random_drop_count > 0 ? cfg.random_drop_count : 1;
+            var result = new List<string>();
+            while (pool.Count > 0 && result.Count < count)
+            {
+                var index = RandomIndex(pool.Count);
+                result.Add(pool[index]);
+                pool.RemoveAt(index);
+            }
+            return result;
+        }
+
+        int RandomIndex(int count)
+        {
+            if (count <= 1) return 0;
+            var unit = _nextUnit();
+            if (double.IsNaN(unit) || double.IsNegativeInfinity(unit)) unit = 0;
+            if (double.IsPositiveInfinity(unit) || unit >= 1) unit = 0.999999999999;
+            if (unit < 0) unit = 0;
+            return Math.Min(count - 1, (int)(unit * count));
+        }
 
         void RequireLab()
         {

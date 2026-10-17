@@ -60,9 +60,7 @@ namespace SpringUp.Organs
             Disconnect();
             controller = GetComponent<OrganPipelineController>();
             error = null;
-            if (GetComponent<OrganPipelineDemo>() != null)
-                error = "请先移除同物体上的 OrganPipelineDemo，只保留一个测试入口。";
-            else if (controller == null || !controller.isActiveAndEnabled)
+            if (controller == null || !controller.isActiveAndEnabled)
                 error = "请启用 OrganPipelineController。";
             else if (controller.TargetSelector != null || controller.TargetValidator != null || controller.TargetSnapshotProvider != null)
                 error = "管道已有其他目标选择器，请使用独立的测试物体。";

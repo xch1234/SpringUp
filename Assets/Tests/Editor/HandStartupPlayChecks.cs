@@ -69,7 +69,7 @@ namespace SpringUp.EditorChecks
             if (demoFirst) UnityEditorInternal.ComponentUtility.MoveComponentUp(demo);
             var settings = new SerializedObject(demo);
             settings.FindProperty("slots").GetArrayElementAtIndex(0).objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/Fist.asset");
+                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Actuators/Fist.asset");
             SerializedProperty targets = settings.FindProperty("targets");
             targets.arraySize = 1;
             targets.GetArrayElementAtIndex(0).objectReferenceValue = target;
@@ -83,7 +83,7 @@ namespace SpringUp.EditorChecks
             demo.gameObject.AddComponent<DemoExplosionView>();
             var data = new SerializedObject(demo);
             data.FindProperty("slots").GetArrayElementAtIndex(0).objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/TNT.asset");
+                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Actuators/TNT.asset");
             SerializedProperty targets = data.FindProperty("targets"); targets.arraySize = 1;
             for (int i = 0; i < 3; i++)
             {
@@ -101,7 +101,7 @@ namespace SpringUp.EditorChecks
             demo.transform.position = new Vector3(-20f, 0f, 0f);
             var data = new SerializedObject(demo);
             data.FindProperty("slots").GetArrayElementAtIndex(0).objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/CollapseBody.asset");
+                AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Actuators/CollapseBody.asset");
             data.ApplyModifiedPropertiesWithoutUndo();
             var target = new GameObject("BlackHoleTarget").AddComponent<DemoTarget>();
             target.InitializeForDemo("black_hole_target", 100f);
@@ -123,11 +123,13 @@ namespace SpringUp.EditorChecks
             var data = new SerializedObject(demo);
             for (int i = 0; i < configs.Length; i++)
             {
-                var template = AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/" + configs[i] + ".asset");
+                var template = AssetDatabase.LoadAssetAtPath<OrganConfig>(OrganTestFactory.AssetPath(configs[i]));
                 var owned = new System.Collections.Generic.List<UnityEngine.Object>();
-                OrganConfig config = OrganTestFactory.CreateCombo(template.Kind, owned);
+                if (!template.TryCreateDefinition(out var definition, out string error)) throw new InvalidOperationException(error);
+                OrganConfig config = OrganTestFactory.CreateCombo((HandOrganKind)Array.IndexOf(OrganTestFactory.Ids, definition.Id), owned);
                 string prefix = SessionState.GetString(DataKey, "") + "/" + name + i;
-                if (config.StatusEffect != null) AssetDatabase.CreateAsset(config.StatusEffect, prefix + "Status.asset");
+                if (OrganTestFactory.Status(config) != null) AssetDatabase.CreateAsset(OrganTestFactory.Status(config), prefix + "Status.asset");
+                AssetDatabase.CreateAsset(config.Actuator != null ? (UnityEngine.Object)config.Actuator : config.Trigger, prefix + "Behaviour.asset");
                 AssetDatabase.CreateAsset(config, prefix + ".asset");
                 data.FindProperty("slots").GetArrayElementAtIndex(i).objectReferenceValue = config;
             }
@@ -136,7 +138,8 @@ namespace SpringUp.EditorChecks
             {
                 var target = new GameObject(name + "Target" + i).AddComponent<DemoTarget>();
                 target.InitializeForDemo(name + "_" + i, i == 0 ? (twoTentacles ? 5f : 10f) : 80f);
-                target.transform.position = new Vector3(originX + (i == 0 ? 1.5f : i == 2 ? 4.5f : twoTentacles ? 1f : 2.5f), 0f, 0f);
+                // Outside target must be beyond the target-centred black hole (radius 3), not just beyond the player.
+                target.transform.position = new Vector3(originX + (i == 0 ? 1.5f : i == 2 ? 7f : twoTentacles ? 1f : 2.5f), 0f, 0f);
                 var combat = target.gameObject.AddComponent<DemoCombatTarget>();
                 var movement = new SerializedObject(combat); movement.FindProperty("moveSpeed").floatValue = 0f;
                 movement.ApplyModifiedPropertiesWithoutUndo();
@@ -154,7 +157,7 @@ namespace SpringUp.EditorChecks
             string[] names = { "Fist", "SteelPipe", "MultiTentacle", "RustKnife", "SlimeGland", "CollapseBody", "TNT" };
             for (int i = 0; i < names.Length; i++)
                 data.FindProperty("organs").GetArrayElementAtIndex(i).objectReferenceValue =
-                    AssetDatabase.LoadAssetAtPath<OrganConfig>("Assets/Data/Organs/Hand/" + names[i] + ".asset");
+                    AssetDatabase.LoadAssetAtPath<OrganConfig>(OrganTestFactory.AssetPath(names[i]));
             for (int i = 0; i < 3; i++)
                 data.FindProperty("enemies").GetArrayElementAtIndex(i).objectReferenceValue =
                     new GameObject("UnifiedTarget" + i).AddComponent<DemoTarget>();
@@ -188,6 +191,8 @@ namespace SpringUp.EditorChecks
             if (!entered || !EditorApplication.isPlaying || Time.timeSinceLevelLoad < 2f) return;
             try
             {
+                // Includes a single status application that expires while its pipeline stays disabled.
+                BattleCombatChecks.RunPlay();
                 foreach (string name in new[] { "DemoFirst", "ControllerFirst" })
                 {
                     HandOrganDemo demo = GameObject.Find(name).GetComponent<HandOrganDemo>();
@@ -209,7 +214,7 @@ namespace SpringUp.EditorChecks
                 for (int i = 0; i < 3; i++)
                     Require(GameObject.Find("ExplosionTarget" + i).GetComponent<DemoTarget>().CurrentHealth
                         == (i == 0 ? 1000f : 1000f - explosionDemo.ExplosionCount * explosionDamage),
-                        "真实 Update 应以演示物体为中心：列表中的远处敌人不受伤，角色附近的名单外敌人各受一次伤害。");
+                        "真实 Update 应以最近目标为中心：列表中的远处敌人不受伤，近处的名单外敌人各受一次伤害。");
                 explosionDemo.enabled = false;
                 var holeDemo = GameObject.Find("BlackHoleFixture").GetComponent<HandOrganDemo>();
                 var holeField = holeDemo.GetComponent<DemoBlackHoleField>();
@@ -222,11 +227,15 @@ namespace SpringUp.EditorChecks
                 holeField.Clear();
                 GameObject.Find("BlackHoleTarget").transform.position = new Vector3(-18f, 0f, 0f);
                 holeController.GetBody(BodyPart.Hand).Tick(1f);
+                Require(holeField.ActiveCount == 1, "单次发动应留下一个独立计时的黑洞。");
+                // Current rules place the hole at the selected target's original position (-18), not the player (-20).
+                // Move the target away after spawning so real LateUpdate must pull it back without another cast.
+                GameObject.Find("BlackHoleTarget").transform.position = new Vector3(-16f, 0f, 0f);
                 var definition = holeController.GetBody(BodyPart.Hand).GetSlot(0).Definition;
                 blackHoleStartTime = Time.time;
                 blackHoleDuration = definition.BlackHole.Duration;
                 blackHoleExpectedX = definition.Radius >= 2f
-                    ? -18f - Mathf.Min(2f, definition.BlackHole.PullSpeed * blackHoleDuration) : -18f;
+                    ? -16f - Mathf.Min(2f, definition.BlackHole.PullSpeed * blackHoleDuration) : -16f;
                 // 下一帧检查重新启用；不能假装手动 TryStartDemo 就等于生命周期成功。
                 EditorApplication.update -= CheckProgress;
                 EditorApplication.update += CheckReenabled;

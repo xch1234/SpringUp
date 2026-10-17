@@ -3,22 +3,22 @@
 ## 运行入口
 
 Unity 6000.5.11f1 打开 Assets/Scenes/Flow/Bootstrap.unity，或菜单 Tools > SpringUp > Flow > Open Bootstrap，然后 Play。
-Bootstrap 是常规 Build Settings 中的新构建首场景；既有 SpringUpBuild.WindowsBatch 仍专门构建旧 Demo。它始终加载，MainMenu / Battle / Rest 用 Additive 装载；稳定状态恰好一个内容场景。
+Bootstrap 是常规 Build Settings 中的新构建首场景；SpringUpBuild.WindowsBatch 也已改为构建四个 Flow 场景。它始终加载，MainMenu / Battle / Rest 用 Additive 装载；稳定状态恰好一个内容场景。
 不要单独 Play 内容场景，其 World 默认关闭，必须由入口注入依赖后启用。
 场景和 Window.prefab 随仓库提供；Generate Missing Scenes 仅生成缺失文件，不覆盖现有场景。
 
 新局 → 战斗 → 休整 → 下一波；第七波胜利或玩家死亡进入结算窗口。Esc 打开暂停。
-WASD / 方向键移动，Shift 疾跑，F 攻击（设置中可重绑定）。
-休整有黄色木桩、背包、固定测试商品商店、重置木桩、下一波入口。
+WASD / 方向键移动，Shift 疾跑，器官自动攻击，无玩家攻击充能或攻击改键。
+休整有黄色木桩、背包、4 个商品的随机商店、重置木桩、下一波入口。
 战斗角落有提前完成波次、模拟死亡、验证换装锁定的开发按钮。
 
 ## 职责与生命周期
 
 - RunConfiguration：从序列化 TextAsset 和 OrganCatalog 装配并校验配置，供新流程和旧 SpringUpRunDriver 共用。沿用现有 Demo 的蜘蛛巢奖励替换 TNT 规则。
 - RunController / Inventory：唯一波次、装备、背包、货币真相源。新代码使用 RunPhase 和明确参数事件；旧 Phase / Emit 接口为 Demo 保留。
-- RunSession：纯 C# 会话，持有 RunController、生命与阶段间充能快照，不持有场景对象。新局创建新会话，放弃时释放；没有存档。
+- RunSession：纯 C# 会话，持有 RunController、生命快照，不持有场景对象。新局创建新会话，放弃时释放；没有存档。
 - FlowApplication：Bootstrap 的流程入口、受保护的异步加载、全局窗口协调。场景通过根节点的 FlowContent 定位，不全局搜索玩家/管道。
-- FlowContent：序列化地图、玩家、波次、攻击管道引用。Initialize 接收依赖，Begin 开始玩法，Stop 保存生命/充能并解绑事件。新流程没有实验室预览依赖。
+- FlowContent：序列化地图、玩家、波次、攻击管道引用。Initialize 接收依赖，Begin 开始玩法，Stop 保存生命并解绑事件；同时接入 A 的自动管道、躯干属性、装备 HUD 和伤害报告。新流程没有实验室预览依赖。
 - PauseService：可幂等释放的暂停凭证。暂停与游戏阶段分离，窗口和加载分别持有凭证；最后一个凭证释放后才恢复时间。
 - FlowWindow / Window.prefab：简单布局和控件。UI 调用 RunController 交易/换装接口，不直接扣钱或写库存。窗口栈只允许最上层交互，关闭时恢复焦点。
 
@@ -29,16 +29,16 @@ Bootstrap 只持有当前内容引用；退出场景先清理窗口与场景订�
 
 ## 状态规则
 
-生命跨地图保存；休整禁用自动生命恢复，不隐式回血。充能以正常速率恢复，攻击正常扣费；每波战斗进入时充满。
-切换、换装、重置木桩时取消待执行攻击，按原 PlayerChargeAttack 规则退还尚未执行部分的费用；清理状态效果、黑洞、攻击表现和弹丸。
+生命跨地图保存；先应用躯干生命上限，再恢复生命快照。休整禁用自动生命恢复，不隐式回血；器官吸血仍按实际伤害结算。战斗与休整地图都会自动执行三条器官管道。
+切换、换装、重置木桩时取消旧攻击，清理状态效果、黑洞、攻击表现、触发进度和弹丸。普通暂停冻结剩余持续时间，关闭窗口后继续。
 进入新地图不复制冷却/临时效果/执行进度。换装成功立即更新休整管道并重置进度，下一波从同一库存装配。
 战斗拒绝换装、出售、丢弃及购买。奖励可以造成背包超限；超限不得进入下一波，购买必须有空位且货币充足。
 木桩复用 EnemyRuntime / BattleOrganCombat，默认 TrainingTarget 保底 1 HP，不发死亡事件，不奖励、不推进波次。
 未来可击杀测试目标可以关闭 TrainingTarget，并使用独立测试目标生成/重置入口；不要把目标击杀接到 RunController 的波次奖励上。
 
-Esc 顺序：取消重绑定 → 关闭最上层设置/提示/确认 → 关闭背包/商店 → 关闭或打开暂停。
+Esc 顺序：关闭最上层设置/提示/确认 → 关闭背包/商店 → 关闭或打开暂停。
 结算/加载失败窗口不被 Esc 隐藏；使用其明确出口。返回主菜单需放弃确认。
-暂停既冻结时间，也通过 PlayerMotor.InputAllowed 和 PlayerChargeAttack 的权限委托屏蔽直接键盘操作，UI 不受影响。
+暂停既冻结时间，也通过 PlayerMotor.InputAllowed 屏蔽移动，并由 FlowContent 控制管道 AutomaticExecution，UI 不受影响。
 
 ## 扩展
 
@@ -50,8 +50,8 @@ Esc 顺序：取消重绑定 → 关闭最上层设置/提示/确认 → 关闭�
 ## 占位与限制
 
 背包复用 SpringUpDemo 的实验室布局、物品卡片和部位槽位，支持选择物品与槽位后安装/替换、拆卸、出售及丢弃；背包溢出后可以滚动。不含拖拽。新窗口不携带实验室战斗预览或演示库存，关闭背包后在休整地图测试真实构筑。
-商店只有固定 rust_knife 商品，TryPurchase 是正式业务边界；旧 TryBuy 保留旧 Demo 的 not_open 兼容行为。
-设置仅攻击重绑定；无音量、存档、继续游戏、随机商品或刷新。
+商店每次打开提供 4 个商品，锈刀固定保留，其余从已接入且有价格的器官中随机补充；TryPurchase 是正式业务边界，旧 TryBuy 保留旧 Demo 的 not_open 兼容行为。每波掉落也从 `random_drop_pool` 抽取，旧固定掉落字段仅作兼容回退。
+设置目前显示操作说明；无音量、存档或继续游戏。
 休整沿用灰盒场地，是可移动可攻击地图。结算是窗口。
 键盘焦点使用基础 Unity 导航；滚动列表键盘焦点自动滚入视区尚未实现。
 失败重试会重建目标地图，不回滚已经合法结算的波次/奖励，也不再次结算奖励。
@@ -70,18 +70,18 @@ Assets/Scenes/SpringUpDemo.unity、LaboratoryDemo.unity、Battle_Greybox.unity �
 - SpringUp.LaboratoryEditor.LaboratoryPlayChecks.Run：旧实验室 Play Mode 回归。
 - SceneFlowChecks 中故意请求 Missing.unity，验证加载错误可恢复；该异常日志是预期故障注入。
 
-手工验收：从 Bootstrap 开局，移动/攻击，Esc→设置→重绑定→Esc 逐层退出；提前结算，打开背包换刀，关闭后攻击木桩，再进入下一波核对构筑。
+手工验收：从 Bootstrap 开局，移动并观察自动攻击，Esc→设置→Esc 逐层退出；提前结算，打开背包换刀，关闭后攻击木桩，再进入下一波核对构筑。
 暂停状态点返回主菜单，先取消再确认，重新开局核对生命、金币、波次。测试长背包列表滚动、鼠标点击、不同窗口尺寸与焦点表现。
 另打开两个旧 Demo 核对可视化表现。自动 batchmode 检查不能替代画面、音频及最终交互手感验收。
 
-实际运行结果与全量测试的已知失败见 [GameFlowValidation.md](GameFlowValidation.md)。
+最新整合验证见 [main 与 A 整合记录](2026-10-17-main与A整合记录.md)；合并前的历史验证见 [GameFlowValidation.md](GameFlowValidation.md)。
 
 ## 地图平铺与编辑视图
 
-Battle_Greybox、新流程 Battle 和 Rest 共用 `Assets/Prefabs/Flow/ArenaTiles.prefab`。
+Battle_Greybox、SpringUpDemo、新流程 Battle 和 Rest 共用 `Assets/Prefabs/Flow/ArenaTiles.prefab`。
 地图仍为 72×72 世界单位，40×40 格，每格 1.8×1.8：4 个角各使用一次，四条边各重复 38 次，中心重复 38×38 次。
 480×480 源图保持方形像素比例，统一缩放；没有将中心或边缘拉伸成大块。使用与原战场一致的 URP Unlit 材质。
-旧 SpringUpDemo 原有纯色地图和 LaboratoryDemo 场景布局不变。
+SpringUpDemo 已同步新版平铺地图，LaboratoryDemo 场景布局保持原样。
 
 屏幕空间 Canvas 在 Scene 视图中的边框不代表世界碰撞。无需移动战场或改刷怪、相机坐标：
 `Tools > SpringUp > Scene View > Hide UI for Map Editing` 隐藏 Scene 视图中的 Canvas 和 EventSystem，

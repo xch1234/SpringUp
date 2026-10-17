@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using SpringUp.Organs;
 using TideBorne.Battle;
 using Tideflesh.Systems;
@@ -19,7 +20,12 @@ namespace SpringUp.Flow
         public BattleOrganCombat combat;
         public BattleOrganEffects effects;
         public EnemyRuntime dummy;
-        public PlayerChargeAttack Attack { get; private set; }
+        public TorsoEquipmentRuntime Torso { get; private set; }
+        public OrganCombatReport CombatReport { get; private set; }
+        public RunLaboratoryEquipment Equipment { get; private set; }
+        RunEquipmentHud equipmentHud;
+        Camera battleCamera;
+        float baseCameraSize;
         [SerializeField] Transform merchant;
         public Transform Merchant => merchant;
         FlowApplication app;
@@ -31,27 +37,34 @@ namespace SpringUp.Flow
             if (kind == ContentKind.MainMenu) { initialized = true; return; }
             if (session == null || player == null || pipeline == null)
                 throw new InvalidOperationException("Incomplete content dependencies");
+            pipeline.AutomaticExecution = false;
             world.SetActive(true);
             PlayerLocator.Bind(player.transform);
             player.GetComponent<PlayerMotor>().InputAllowed = () => app.WorldInputAllowed;
             player.SetHealthRegeneration(kind == ContentKind.Battle);
-            if (session.Health.HasValue) player.RestoreHealth(session.Health.Value);
-            else player.ResetHealthToMax();
             pipeline.StepIntervalProvider = part => player.GetStepInterval((int)part);
             pipeline.CycleDurationProvider = part => player.GetCycleDuration((int)part);
             pipeline.GetComponent<BattleOrganTargeting>().AttackOrigin = player.transform;
-            Attack = pipeline.gameObject.AddComponent<PlayerChargeAttack>();
-            Attack.Configure(pipeline, () => app.WorldInputAllowed, 100, 20);
+            Torso = player.gameObject.AddComponent<TorsoEquipmentRuntime>(); Torso.Configure(player);
+            combat.Torso = Torso;
+            CombatReport = pipeline.gameObject.AddComponent<OrganCombatReport>();
+            CombatReport.Bind(pipeline); CombatReport.SetNames(app.Configuration.Definitions.Values);
+            combat.Report = CombatReport;
+            Equipment = new RunLaboratoryEquipment(session.Run, app.Configuration.Definitions);
+            equipmentHud = RunEquipmentHud.Create(app.uiRoot, app.hud.font);
+            equipmentHud.Bind(Equipment); equipmentHud.BindReport(CombatReport);
+            battleCamera = world.GetComponentInChildren<Camera>(true);
+            if (battleCamera != null) baseCameraSize = battleCamera.orthographicSize;
             if (kind == ContentKind.Rest) EnsureMerchant();
             initialized = true;
             session.Run.LoadoutChanged += LoadoutChanged;
             player.Died += Died;
             if (director != null) director.WaveCompleted += Completed;
             ApplyLoadout();
-            if (kind == ContentKind.Battle) Attack.BeginWave();
-            else Attack.RestoreCharge(session.Charge);
+            // Apply max-health modifiers before restoring a snapshot from the previous scene.
+            if (session.Health.HasValue) player.RestoreHealth(session.Health.Value);
+            else player.ResetHealthToMax();
             if (dummy != null) { dummy.TrainingTarget = true; dummy.ResetTrainingTarget(); }
-            initialized = true;
         }
         // Created by the shared scene entry, so regenerated Rest scenes retain the interaction.
         public void EnsureMerchant()
@@ -72,7 +85,14 @@ namespace SpringUp.Flow
         }
         void Update()
         {
+            if (initialized && pipeline != null) pipeline.AutomaticExecution = app.WorldInputAllowed;
             if (kind == ContentKind.Rest && Keyboard.current?.eKey.wasPressedThisFrame == true) app?.TryOpenShop();
+        }
+        void LateUpdate()
+        {
+            if (battleCamera != null && Torso != null)
+                battleCamera.orthographicSize = baseCameraSize * Torso.Loadout.View;
+            if (equipmentHud != null) equipmentHud.gameObject.SetActive(initialized && !app.HasModal && !app.IsTransitioning);
         }
         public void Begin()
         {
@@ -97,13 +117,21 @@ namespace SpringUp.Flow
         void ApplyLoadout()
         {
             ClearAttacks();
-            HandPipelineLoadout.Apply(pipeline.GetBody(BodyPart.Hand), session.Run.Inventory, app.Configuration.Definitions);
+            var torsos = new List<TorsoSettings>();
+            for (int slot = 1; slot <= Inventory.SlotCounts["torso"]; slot++)
+            {
+                var id = session.Run.Inventory.EquippedAt("torso", slot);
+                if (id != null && app.Configuration.Definitions.TryGetValue(session.Run.Inventory.OrganOf(id).id, out var definition))
+                    torsos.Add(definition.Torso);
+            }
+            Torso.Apply(torsos, pipeline);
+            PipelineLoadout.Apply(pipeline, session.Run.Inventory, app.Configuration.Definitions);
             foreach (BodyPart part in Enum.GetValues(typeof(BodyPart))) pipeline.GetBody(part).ResetTiming();
-            Attack.RefreshLoadout();
+            Equipment.Refresh();
         }
         void ClearAttacks()
         {
-            Attack?.CancelRound(); combat?.Clear(); effects?.Clear();
+            pipeline?.ResetTriggers(); combat?.Clear(); effects?.Clear();
             foreach (var root in gameObject.scene.GetRootGameObjects())
                 foreach (var projectile in root.GetComponentsInChildren<Projectile>(true))
                     Destroy(projectile.gameObject);
@@ -119,11 +147,12 @@ namespace SpringUp.Flow
         {
             if (!initialized) { if (world != null) world.SetActive(false); return; }
             initialized = false;
+            if (pipeline != null) pipeline.AutomaticExecution = false;
+            if (equipmentHud != null) { equipmentHud.gameObject.SetActive(false); Destroy(equipmentHud.gameObject); }
             if (session != null && player != null)
             {
                 ClearAttacks();
                 session.Health = player.CurrentHealth;
-                session.Charge = Attack != null ? Attack.Charge : session.Charge;
                 session.Run.LoadoutChanged -= LoadoutChanged;
                 player.Died -= Died;
                 player.GetComponent<PlayerMotor>().InputAllowed = null;

@@ -9,6 +9,7 @@ namespace SpringUp.Organs
         public const float MinimumStepInterval = 0.05f;
 
         private readonly OrganInstance[] slots = new OrganInstance[SlotCount];
+        private readonly Func<string, bool> occupiedInOtherBody;
         private int cursor;
         private int occupiedCount;
         private double elapsed;
@@ -46,6 +47,7 @@ namespace SpringUp.Organs
 
         // 参数依次为：部位管道、槽位下标、器官实例。
         public event Action<BodyRuntime, int, OrganInstance> SlotExecuted;
+        public event Action LoadoutChanged;
 
         public float StepInterval
         {
@@ -58,11 +60,12 @@ namespace SpringUp.Organs
             }
         }
 
-        public BodyRuntime(BodyPart part, float interval)
+        public BodyRuntime(BodyPart part, float interval, Func<string, bool> occupiedInOtherBody = null)
         {
             if (!Enum.IsDefined(typeof(BodyPart), part))
                 throw new ArgumentOutOfRangeException(nameof(part));
             Part = part;
+            this.occupiedInOtherBody = occupiedInOtherBody;
             StepInterval = interval;
         }
 
@@ -77,17 +80,21 @@ namespace SpringUp.Organs
             ValidateIndex(index);
             if (organ != null)
             {
-                if (organ.Definition.Part != Part)
+                if (!OrganEquipmentRules.CanEquip(organ.Definition.MountKind, Part.ToString().ToLowerInvariant()))
                     throw new ArgumentException("这个器官不能安装到该部位。", nameof(organ));
+                if (occupiedInOtherBody?.Invoke(organ.InstanceId) == true)
+                    throw new ArgumentException("同一个器官实例不能占用多个部位。", nameof(organ));
                 for (int i = 0; i < SlotCount; i++)
-                    if (i != index && ReferenceEquals(slots[i], organ))
+                    if (i != index && slots[i]?.InstanceId == organ.InstanceId)
                         throw new ArgumentException("同一个器官实例不能占用两个槽。", nameof(organ));
             }
 
+            bool changed = slots[index] != organ;
             if (slots[index] != null) occupiedCount--;
             slots[index] = organ;
             if (organ != null) occupiedCount++;
             if (occupiedCount == 0) { elapsed = 0; cycleInitialized = false; }
+            if (changed) LoadoutChanged?.Invoke();
             // 装卸器官时保留游标位置。
         }
 

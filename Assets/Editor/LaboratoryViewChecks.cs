@@ -27,7 +27,7 @@ namespace SpringUp.LaboratoryEditor
                 var presenter = scene.GetRootGameObjects().SelectMany(x => x.GetComponentsInChildren<LaboratoryPresenter>()).Single();
                 var demo = presenter.GetComponentInChildren<LaboratoryCombatDemo>();
                 Require(presenter.GetComponentsInChildren<Outline>().Length == 0, "左侧不含装备高亮组件。");
-                Require(presenter.GetComponentsInChildren<OrganPipelineDemo>().Length == 0, "不挂载自动装入固定装备的演示组件。");
+                Require(presenter.GetComponentsInChildren<HandOrganDemo>().Length == 0, "实验室使用自己的预览，不挂载独立器官演示组件。");
                 foreach (var card in presenter.GetComponentsInChildren<OrganCardView>())
                     Require(PrefabUtility.IsPartOfPrefabInstance(card), "保存的卡片保持 Prefab 关联。");
                 presenter.InitializeView(); demo.Initialize();

@@ -8,7 +8,7 @@ namespace TideBorne.Battle
     ///
     /// 本项目只启用新 Input System（<c>ProjectSettings.asset</c> 的 <c>activeInputHandler: 1</c>），
     /// 因此不使用旧的 <c>Input.GetAxis</c>——它在当前设置下会在运行时抛异常。
-    /// 输入引用来自 <c>Assets/InputSystem_Actions.inputactions</c> 的 Player 动作表：
+    /// 输入引用来自 <c>Assets/Settings/InputSystem_Actions.inputactions</c> 的 Player 动作表：
     /// <c>Move</c>（Value / Vector2）与 <c>Sprint</c>（Button）。
     /// </summary>
     [DisallowMultipleComponent]
@@ -115,6 +115,9 @@ namespace TideBorne.Battle
             _sprintHeld = ReadSprintHeld();
         }
 
+        public bool DirectionalSteering { get; set; }
+        public Vector2 FacingDirection => transform.right;
+
         private void FixedUpdate()
         {
             var direction = _moveInput;
@@ -126,9 +129,9 @@ namespace TideBorne.Battle
                 speed *= sprintMultiplier;
 
             // Rigidbody2D.linearVelocity 是 Unity 6 的写法；旧版本叫 velocity。
-            _body.linearVelocity = ConstrainToWalls(direction * speed, Time.fixedDeltaTime);
+            _body.linearVelocity = direction * speed;
 
-            if (faceMoveDirection && direction.sqrMagnitude > 0.0001f)
+            if ((faceMoveDirection || DirectionalSteering) && direction.sqrMagnitude > 0.0001f)
             {
                 var targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
                 var currentAngle = _body.rotation;
@@ -144,7 +147,16 @@ namespace TideBorne.Battle
                     : Mathf.MoveTowardsAngle(currentAngle, targetAngle, maxStep * Time.fixedDeltaTime);
 
                 _body.MoveRotation(nextAngle);
+                if (DirectionalSteering)
+                {
+                    float radians = nextAngle * Mathf.Deg2Rad;
+                    _body.linearVelocity = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)) * (direction.magnitude * speed);
+                }
             }
+            // Kinematic velocity is not stopped by static walls automatically.
+            // Sweep the actual colliders and retain tangential movement along the wall.
+            if (_body.bodyType == RigidbodyType2D.Kinematic)
+                _body.linearVelocity = ConstrainToWalls(_body.linearVelocity, Time.fixedDeltaTime);
         }
 
         // Kinematic bodies do not resolve static-wall contacts. Sweep the actual player shape

@@ -20,7 +20,8 @@ namespace TideBorne.EditorTools
         private const string ScenePath = SceneFolder + "/Battle_Greybox.unity";
         private const string MarkerPath = SceneFolder + "/Battle_Greybox.generated.txt";
         private const string SquareSpriteAssetPath = "Assets/Art/Textures/white_16.png";
-        private const string InputActionsPath = "Assets/InputSystem_Actions.inputactions";
+        private const string BackgroundTileFolder = "Assets/Art/bk1440-s";
+        private const string InputActionsPath = "Assets/Settings/InputSystem_Actions.inputactions";
         private const string MoveActionName = "Move";
         private const string SprintActionName = "Sprint";
 
@@ -527,7 +528,7 @@ namespace TideBorne.EditorTools
             // **Kinematic 而不是 Dynamic**：即使碰撞矩阵已经关掉了玩家↔敌人，
             // Dynamic 刚体仍会去推别的刚体（木桩就是这么被推着走的）。
             // Kinematic 不参与动力学求解，谁也推不动它，它也不推别人；
-            // 但它**照常与静态碰撞体（墙）产生阻挡**，所以"被墙挡住"仍然成立。
+            // 静态墙体的阻挡由 PlayerMotor 的刚体扫掠处理；不能依赖 Kinematic 自动停止。
             body.bodyType = RigidbodyType2D.Kinematic;
 
             player.AddComponent<PlayerStatsBase>();

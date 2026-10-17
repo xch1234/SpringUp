@@ -6,7 +6,6 @@ namespace SpringUp.Flow
     {
         public RunController Run { get; }
         public float? Health { get; set; }
-        public float Charge { get; set; }
         public RunSession(RunConfiguration configuration)
         {
             Run = configuration.CreateRun();

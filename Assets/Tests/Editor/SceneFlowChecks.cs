@@ -63,7 +63,7 @@ namespace SpringUp.EditorChecks
         static int stage;
         static bool shortcutsChecked;
         static double next, deadline;
-        static float health, charge;
+        static float health;
         static string knife;
         static Keyboard keyboard;
         static Vector3 position;
@@ -128,7 +128,8 @@ namespace SpringUp.EditorChecks
                         }
                         ArenaBoundaryChecks.Run(content);
                         Require(run.Wave == 1 && content.director.CurrentWave == 1, "One initial wave");
-                        Require(content.Attack.Charge == content.Attack.Capacity, "Battle charge filled");
+                        Require(content.pipeline.AutomaticExecution, "Automatic organ attacks enabled");
+                        FlowPresentationChecks.CaptureFlowUI(app, "battle-equipment-merged.png");
                         Require(!run.TryPurchase("fist").Ok, "Battle purchase rejected");
                         bool rejected = false;
                         try { run.Unequip("hand", 1); } catch (RunException) { rejected = true; }
@@ -145,8 +146,7 @@ namespace SpringUp.EditorChecks
                         var target = new GameObject("Battle attack verification"); target.SetActive(false);
                         target.transform.position = content.player.transform.position + Vector3.right;
                         target.AddComponent<EnemyData>(); target.AddComponent<EnemyRuntime>(); target.SetActive(true);
-                        Require(content.Attack.TryAttack(), "Battle attack before transition");
-                        Require(content.Attack.Charge < content.Attack.Capacity, "Battle charge spent");
+                        Require(content.pipeline.TryExecuteSlot(BodyPart.Hand, 0), "Battle organ connected before transition");
                         content.player.TakeDamage(17); health = content.player.CurrentHealth;
                         content.director.CompleteCurrentWave();
                         reward = run.Marrow; content.director.CompleteCurrentWave();
@@ -174,32 +174,37 @@ namespace SpringUp.EditorChecks
                         ArenaBoundaryChecks.Run(content);
                         Require(content.kind == ContentKind.Rest && content.player.CurrentHealth == health, "Health preserved entering rest");
                         Require(content.director == null && EnemyRuntime.ActiveCount == 1, "Only training dummy in rest, count=" + EnemyRuntime.ActiveCount);
-                        Require(content.Attack.Charge < content.Attack.Capacity, "Rest does not refill charge");
-                        charge = content.Attack.Charge;
-                        Require(content.Attack.TryAttack(), "Rest uses real charge attack");
-                        Require(content.dummy.CurrentHealth < content.dummy.MaxHealth && content.Attack.Charge < charge, "Real damage and charge spend");
+                        if (content.dummy.CurrentHealth == content.dummy.MaxHealth) return;
+                        Require(content.pipeline.AutomaticExecution, "Rest automatically tests the equipped build");
                         app.OpenWindow(WindowKind.Inventory);
-                        Require(Time.timeScale == 0 && !app.WorldInputAllowed && !content.Attack.TryAttack(), "Inventory pauses and gates attack");
-                        knife = run.Inventory.UnequippedIds().Single(id => run.Inventory.OrganOf(id).id == "rust_knife");
+                        Require(Time.timeScale == 0 && !app.WorldInputAllowed, "Inventory pauses world execution");
+                        knife = run.Inventory.UnequippedIds().FirstOrDefault(id => run.Inventory.OrganOf(id).id == "rust_knife");
+                        if (knife == null) { run.Inventory.Spawn("rust_knife"); knife = run.Inventory.UnequippedIds().Single(id => run.Inventory.OrganOf(id).id == "rust_knife"); }
                         var lab = Object.FindFirstObjectByType<FlowLaboratoryWindow>();
                         Require(lab != null && lab.presenter.source == null, "Real laboratory view without demo bootstrap");
+                        int beforeSample = run.Inventory.Instances.Count;
+                        StraightProjectileSampleMenu.Give();
+                        Require(run.Inventory.Instances.Count == beforeSample + 1, "Sample menu supports new rest scene");
+                        Require(lab.presenter.inventoryRoot.childCount == run.Inventory.UnequippedIds().Count, "Open inventory refreshes after sample menu");
+                        run.Discard(run.Inventory.UnequippedIds().Last(id => run.Inventory.OrganOf(id).id == "straight_projectile"));
                         FlowPresentationChecks.CaptureFlowUI(app, "inventory-zh.png");
                         Require(Object.FindFirstObjectByType<SpringUp.Laboratory.LaboratoryCombatDemo>() == null, "No internal combat preview");
                         lab.presenter.SelectInventory(knife); lab.presenter.SelectSlot(1, 0);
                         Require(lab.presenter.installButton.interactable, "Select item and slot enables installation");
                         lab.presenter.installButton.onClick.Invoke();
                         Require(lab.presenter.inventoryRoot.childCount == run.Inventory.UnequippedIds().Count, "Inventory refreshes after equip");
-                        Require(!content.Attack.IsAttacking && content.combat.ActiveBlackHoles == 0, "Equipment clears old execution");
+                        Require(content.combat.ActiveBlackHoles == 0 && content.combat.Actuators.Active.Count == 0, "Equipment clears old execution");
                         Require(content.pipeline.GetBody(BodyPart.Hand).GetSlot(0).InstanceId == knife, "Rest pipeline updated immediately");
                         app.CloseTop();
                         content.dummy.TakeDamage(100000, "test", content.dummy.Position);
                         Require(content.dummy.IsAlive && run.Marrow == reward && run.Stage == RunPhase.Rest, "Dummy cannot reward or end wave");
                         content.ResetDummy();
                         Require(content.dummy.CurrentHealth == content.dummy.MaxHealth, "Reset training target");
-                        // A newly equipped loadout still respects the previous round cooldown.
-                        content.Attack.BeginWave();
-                        Require(content.Attack.TryAttack(), "Changed build attacks");
+                        // Direct invocation checks the new loadout; later stages verify real automatic Update.
+                        Require(content.pipeline.TryExecuteSlot(BodyPart.Hand, 0), "Changed build attacks");
                         Require(Mathf.Approximately(content.dummy.MaxHealth - content.dummy.CurrentHealth, app.Configuration.Definitions["rust_knife"].Damage), "Changed build damage");
+                        CheckMergedOrgans(app);
+                        health = content.player.CurrentHealth;
                         app.OpenWindow(WindowKind.Pause); app.OpenWindow(WindowKind.Settings);
                         app.HandleEscape(); Require(Time.timeScale == 0, "Closing nested settings preserves pause");
                         app.HandleEscape(); Require(Time.timeScale == 1 && app.WorldInputAllowed, "Closing pause restores input");
@@ -217,7 +222,9 @@ namespace SpringUp.EditorChecks
                         content.player.transform.position = content.Merchant.position;
                         Require(app.TryOpenShop(), "Merchant shop entry");
                         var buttons = app.uiRoot.GetComponentsInChildren<UnityEngine.UI.Button>();
-                        var buy = buttons.Single(b => b.name.StartsWith("购买 "));
+                        var buyButtons = buttons.Where(b => b.name.StartsWith("购买 ")).ToArray();
+                        Require(buyButtons.Length == 4, "Shop exposes four rotating offers");
+                        var buy = buttons.Single(b => b.name.StartsWith("购买 " + app.Configuration.Organs["rust_knife"].name));
                         int marrowBefore = run.Marrow, inventoryBefore = run.Inventory.Instances.Count;
                         buy.onClick.Invoke();
                         int listPrice = app.Configuration.Organs["rust_knife"].shop_price;
@@ -255,16 +262,13 @@ namespace SpringUp.EditorChecks
                         pausedProjectile.gameObject.SetActive(false); Object.Destroy(pausedProjectile.gameObject);
                         app.CloseTop(); InputSystem.QueueStateEvent(keyboard, new KeyboardState());
                         app.OpenWindow(WindowKind.Pause); app.OpenWindow(WindowKind.Settings);
-                        content.Attack.ToggleRebind();
                         app.CloseTop();
-                        Require(!content.Attack.IsRebinding && Time.timeScale == 0, "Closing settings cancels its binding capture");
+                        Require(Time.timeScale == 0, "Closing nested settings preserves pause");
                         app.OpenWindow(WindowKind.Settings);
-                        content.Attack.ToggleRebind();
                         InputSystem.QueueStateEvent(keyboard, new KeyboardState(UnityEngine.InputSystem.Key.Escape));
                         stage++; next = EditorApplication.timeSinceStartup + .2; break;
                     case 5:
-                        Require(!content.Attack.IsRebinding && Time.timeScale == 0, "Esc cancels binding only");
-                        app.HandleEscape(); Require(Time.timeScale == 0, "Settings closes before pause");
+                        Require(Time.timeScale == 0, "Esc closes settings before pause");
                         app.HandleEscape(); Require(Time.timeScale == 1, "Pause closes next");
                         InputSystem.RemoveDevice(keyboard); keyboard = null;
                         while (run.Inventory.UnequippedWithinCap()) run.Inventory.Spawn("fist");
@@ -275,7 +279,11 @@ namespace SpringUp.EditorChecks
                         Require(run.Wave == 2 && content.director.CurrentWave == 2, "Repeated next request starts only wave 2");
                         Require(content.player.CurrentHealth == health, "Health preserved into next battle");
                         Require(content.pipeline.GetBody(BodyPart.Hand).GetSlot(0).InstanceId == knife, "Equipment carried to battle");
-                        Require(content.Attack.Charge == content.Attack.Capacity, "Next wave fills charge");
+                        Require(content.pipeline.GetBody(BodyPart.Head).GetSlot(0).Definition.Id == "straight_projectile"
+                            && content.pipeline.GetBody(BodyPart.Leg).GetSlot(0).Definition.Id == "poison_fog", "Head and leg equipment carried across scenes");
+                        Require(Mathf.Approximately(content.Torso.Loadout.MaxHealth, .6f)
+                            && Mathf.Approximately(content.Torso.Loadout.View, 1.2f), "Torso modifiers restored in next scene");
+                        Require(content.pipeline.AutomaticExecution, "Next wave resumes automatic attacks");
                         stage++; goto case 7;
                     case 7:
                         if (run.Stage == RunPhase.Won)
@@ -303,11 +311,11 @@ namespace SpringUp.EditorChecks
                         keyTargetObject.SetActive(true);
                         stage = 18; next = EditorApplication.timeSinceStartup + .3; break;
                     case 18:
-                        InputSystem.QueueStateEvent(keyboard, new KeyboardState(content.Attack.AttackKey));
-                        stage = 19; next = EditorApplication.timeSinceStartup + .4; break;
+                        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                        stage = 19; next = EditorApplication.timeSinceStartup + 2.5; break;
                     case 19:
-                        Require(keyboardTarget.CurrentHealth < keyboardTarget.MaxHealth && content.Attack.Charge < content.Attack.Capacity,
-                            "Real keyboard attack deals damage and spends charge");
+                        Require(keyboardTarget != null && keyboardTarget.CurrentHealth < keyboardTarget.MaxHealth,
+                            "No attack key pressed: real automatic Update deals damage");
                         InputSystem.RemoveDevice(keyboard); keyboard = null; keyboardTarget.RemoveFromBattlefield();
                         content.player.TakeDamage(content.player.MaxHealth);
                         Require(run.Stage == RunPhase.Lost && Time.timeScale == 0, "Defeat settlement");
@@ -343,6 +351,31 @@ namespace SpringUp.EditorChecks
                 }
             }
             catch (Exception error) { Debug.LogException(error); Finish(1); }
+        }
+        static void CheckMergedOrgans(FlowApplication app)
+        {
+            var content = app.Content; var run = app.Session.Run;
+            Require(app.Configuration.Definitions.Count == 36, "All A organ definitions available in Bootstrap");
+            void Equip(string id, string part, int slot) { var instance = run.Inventory.Spawn(id); run.Equip(instance, part, slot); }
+            Equip("straight_projectile", "head", 1);
+            Equip("poison_fog", "leg", 1);
+            float beforeMax = content.player.MaxHealth;
+            Equip("torso_overdrive", "torso", 1);
+            Require(Mathf.Approximately(content.player.MaxHealth, beforeMax * .6f), "Torso applies immediately without attacking");
+            Equip("torso_wideview", "torso", 2);
+            Require(content.pipeline.TryExecuteSlot(BodyPart.Head, 0), "Projectile starts in additive scene");
+            Require(content.pipeline.TryExecuteSlot(BodyPart.Leg, 0), "Self-area effect starts in additive scene");
+            Require(content.combat.Actuators.Active.Count == 2, "Both effects connect to the current scene runner");
+            Require(content.CombatReport != null && content.Equipment.GetSlot(SpringUp.Laboratory.LaboratoryPart.Leg, 0) != null,
+                "HUD and report share current inventory");
+            var old = content.combat.Actuators.Active.ToArray();
+            Equip("multi_tentacle", "head", 2);
+            Require(old.All(e => e.IsFinished) && content.combat.Actuators.Active.Count == 0, "Rest equipment change cancels old effects");
+            float lost = content.dummy.TakeDamage(100000, "actual-loss-check", content.dummy.Position);
+            Require(content.dummy.CurrentHealth == 1 && lost <= content.dummy.MaxHealth - 1, "Training dummy reports actual loss");
+            Require(content.dummy.TakeDamage(10, "actual-loss-check", content.dummy.Position) == 0, "No phantom damage at immortal floor");
+            content.ResetDummy();
+            Debug.Log("[Main + A Integration] PASS: 36 configs, cross-part loadout, immediate torso, effect cancellation, HUD/report and actual dummy damage.");
         }
         static void Finish(int code)
         {

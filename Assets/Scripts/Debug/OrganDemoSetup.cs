@@ -23,7 +23,7 @@ namespace SpringUp.Organs
     {
         [SerializeField, Tooltip("停止 Play 后选择。手动模式使用 HandOrganDemo 的 Slots 和场景已有设置。")]
         private OrganDemoPreset preset;
-        [SerializeField, Tooltip("七种器官各一份，来自 Data/Organs/Hand。")]
+        [SerializeField, Tooltip("七种器官各一份，来自 Actuators 与 Triggers。")]
         private OrganConfig[] organs = new OrganConfig[7];
         [SerializeField, Tooltip("三个演示敌人，依次为 A、B、C。")]
         private DemoTarget[] enemies = new DemoTarget[3];
@@ -43,34 +43,34 @@ namespace SpringUp.Organs
             error = null;
             if (!Enum.IsDefined(typeof(OrganDemoPreset), preset)) { error = "演示模式无效。"; return false; }
             if (preset == OrganDemoPreset.Manual) return true;
-            var library = new Dictionary<HandOrganKind, OrganConfig>();
+            var library = new Dictionary<string, OrganConfig>();
             if (organs != null)
                 foreach (OrganConfig organ in organs)
                 {
-                    if (organ == null || library.ContainsKey(organ.Kind)) { error = "器官目录存在空项或重复种类。"; return false; }
-                    library.Add(organ.Kind, organ);
+                    if (organ == null || !organ.TryCreateDefinition(out var definition, out _) || library.ContainsKey(definition.Id)) { error = "器官目录存在空项或重复种类。"; return false; }
+                    library.Add(definition.Id, organ);
                 }
-            foreach (HandOrganKind kind in Enum.GetValues(typeof(HandOrganKind)))
+            foreach (string kind in new[] { "fist", "steel_pipe", "multi_tentacle", "rust_knife", "slime_gland", "collapse_body", "tnt" })
                 if (!library.ContainsKey(kind)) { error = "缺少器官配置：" + kind; return false; }
             if (enemies == null || enemies.Length != 3 || enemies[0] == null || enemies[1] == null || enemies[2] == null
                 || enemies[0] == enemies[1] || enemies[0] == enemies[2] || enemies[1] == enemies[2])
             { error = "请指定三个不同的演示敌人。"; return false; }
 
-            HandOrganKind[] kinds;
+            string[] kinds;
             switch (preset)
             {
                 case OrganDemoPreset.DoubleTentacle:
-                    kinds = new[] { HandOrganKind.Fist, HandOrganKind.RustKnife, HandOrganKind.SlimeGland,
-                        HandOrganKind.Tnt, HandOrganKind.MultiTentacle, HandOrganKind.MultiTentacle }; break;
-                case OrganDemoPreset.Fist: kinds = new[] { HandOrganKind.Fist }; break;
+                    kinds = new[] { "fist", "rust_knife", "slime_gland",
+                        "tnt", "multi_tentacle", "multi_tentacle" }; break;
+                case OrganDemoPreset.Fist: kinds = new[] { "fist" }; break;
                 case OrganDemoPreset.Statuses:
-                    kinds = new[] { HandOrganKind.SteelPipe, HandOrganKind.RustKnife, HandOrganKind.SlimeGland,
-                        HandOrganKind.SlimeGland, HandOrganKind.SlimeGland }; break;
-                case OrganDemoPreset.Explosion: kinds = new[] { HandOrganKind.Tnt }; break;
-                case OrganDemoPreset.BlackHole: kinds = new[] { HandOrganKind.CollapseBody }; break;
+                    kinds = new[] { "steel_pipe", "rust_knife", "slime_gland",
+                        "slime_gland", "slime_gland" }; break;
+                case OrganDemoPreset.Explosion: kinds = new[] { "tnt" }; break;
+                case OrganDemoPreset.BlackHole: kinds = new[] { "collapse_body" }; break;
                 default:
-                    kinds = new[] { HandOrganKind.CollapseBody, HandOrganKind.SteelPipe, HandOrganKind.RustKnife,
-                        HandOrganKind.SlimeGland, HandOrganKind.Tnt, HandOrganKind.MultiTentacle }; break;
+                    kinds = new[] { "collapse_body", "steel_pipe", "rust_knife",
+                        "slime_gland", "tnt", "multi_tentacle" }; break;
             }
             var slots = new OrganConfig[BodyRuntime.SlotCount];
             for (int i = 0; i < kinds.Length; i++) slots[i] = library[kinds[i]];
@@ -83,7 +83,7 @@ namespace SpringUp.Organs
             {
                 float health = preset == OrganDemoPreset.Explosion || preset == OrganDemoPreset.BlackHole ? 100f
                     : preset == OrganDemoPreset.Statuses ? 500f : i == 0 ? 60f : 200f;
-                if (preset == OrganDemoPreset.DoubleTentacle && i == 0) health = Mathf.Max(1f, library[HandOrganKind.Fist].Damage);
+                if (preset == OrganDemoPreset.DoubleTentacle && i == 0 && library["fist"].TryCreateDefinition(out var fist, out _)) health = Mathf.Max(1f, fist.Damage);
                 if (preset == OrganDemoPreset.Fist) health = i == 0 ? 20f : 40f;
                 enemies[i].transform.position = transform.position + Vector3.right * offsets[i];
                 enemies[i].InitializeForDemo("target_" + (char)('a' + i), health);

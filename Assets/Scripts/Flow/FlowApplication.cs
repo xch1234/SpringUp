@@ -39,11 +39,12 @@ namespace SpringUp.Flow
             && Content.kind != ContentKind.MainMenu && Session != null
             && (Session.Run.Stage == RunPhase.Combat || Session.Run.Stage == RunPhase.Rest);
         readonly List<WindowEntry> windows = new();
+        static readonly System.Random ShopRandom = new();
+        const int ShopOfferCount = 4;
         Scene contentScene;
         string retryPath;
         bool quitting;
         Font uiFont;
-        Text bindingStatus;
         public bool HasModal => windows.Count > 0;
         sealed class WindowEntry
         {
@@ -81,17 +82,12 @@ namespace SpringUp.Flow
             if (Pause == null) return;
             if (Keyboard.current?.escapeKey.wasPressedThisFrame == true) HandleEscape();
             else if (Keyboard.current?.bKey.wasPressedThisFrame == true || Keyboard.current?.tabKey.wasPressedThisFrame == true) ToggleInventory();
-            if (Content?.Attack != null)
-            {
-                if (bindingStatus != null) bindingStatus.text = "当前攻击：" + Content.Attack.KeyLabel + "\n"
-                    + (Content.Attack.IsRebinding ? "按键盘键或鼠标左右键，Esc 取消\n" : "") + Content.Attack.Feedback + Content.Attack.BindingNotice;
-            }
             if (Content?.player != null && Session != null)
             {
                 var run = Session.Run;
                 hud.text = $"{ContentTitle(Content.kind)}  波次 {run.Wave}/{run.MaxWave}  生命 {Content.player.CurrentHealth:0}/{Content.player.MaxHealth:0}"
-                    + $"  骨髓 {run.Marrow}  充能 {Content.Attack.Charge:0}/{Content.Attack.Capacity:0}"
-                    + $"  攻击 [{Content.Attack.KeyLabel}]  B/Tab：背包  Esc：菜单";
+                    + $"  骨髓 {run.Marrow}"
+                    + "  器官自动攻击  B/Tab：背包  Esc：菜单";
                 if (CanInteractWithShop()) hud.text += "  E：商店";
                 if (Content.dummy != null) hud.text += $"  木桩生命 {Content.dummy.CurrentHealth:0}";
             }
@@ -99,14 +95,13 @@ namespace SpringUp.Flow
         }
         public void ToggleInventory()
         {
-            if (IsTransitioning || Content?.Attack?.CaptureBlocksUI == true) return;
+            if (IsTransitioning) return;
             if (windows.Count == 1 && windows[0].Kind == WindowKind.Inventory) { CloseTop(); return; }
             if (WorldInputAllowed && windows.Count == 0) OpenWindow(WindowKind.Inventory);
         }
         public bool CanInteractWithShop() => WorldInputAllowed && !HasModal && Session?.Run.Stage == RunPhase.Rest
             && Content.kind == ContentKind.Rest && Content.Merchant != null
-            && Vector2.Distance(Content.player.transform.position, Content.Merchant.position) <= 2f
-            && Content.Attack?.CaptureBlocksUI != true;
+            && Vector2.Distance(Content.player.transform.position, Content.Merchant.position) <= 2f;
         public bool TryOpenShop()
         {
             if (!CanInteractWithShop()) return false;
@@ -115,7 +110,6 @@ namespace SpringUp.Flow
         public void HandleEscape()
         {
             if (IsTransitioning) return;
-            if (Content?.Attack?.IsRebinding == true) { Content.Attack.ToggleRebind(); return; }
             if (windows.Count != 0)
             {
                 var kind = windows[windows.Count - 1].Kind;
@@ -297,9 +291,7 @@ namespace SpringUp.Flow
                     view.AddButton("返回主菜单（放弃本局）", RequestMainMenu);
                     break;
                 case WindowKind.Settings:
-                    bindingStatus = view.AddText("当前攻击：" + Content.Attack.KeyLabel);
-                    view.AddButton("更改", () => Content?.Attack.ToggleRebind());
-                    view.AddButton("恢复默认 F", () => Content?.Attack.SetAttackKey(Key.F));
+                    view.AddText("器官按管道节拍自动攻击，无需攻击按键或玩家充能。\nB / Tab：背包；Esc：返回。\n移动与疾跑沿用 Player/Move、Player/Sprint 输入设置。");
                     view.AddButton("关闭", CloseTop); break;
                 case WindowKind.Confirm:
                     view.AddText("确定放弃本局吗？当前进度不会保存。");
@@ -321,14 +313,31 @@ namespace SpringUp.Flow
         void BuildShop(FlowWindow view)
         {
             var run = Session.Run;
-            var item = Configuration.Organs["rust_knife"];
             var balance = view.AddText("");
-            var message = view.AddText("仅出售背包中未装备的物品；已装备物品请先在休整背包拆卸。");
+            var message = view.AddText("本轮商品随机刷新；仅出售背包中未装备的物品。已装备物品请先在休整背包拆卸。");
             var selection = view.AddText("未选择物品");
             string selected = null;
             var choices = new List<Button>();
+            var offers = SelectShopOffers(ShopOfferCount);
+            var offerPrices = new int[offers.Count];
+            var offerBought = new bool[offers.Count];
+            var offerButtons = new Button[offers.Count];
             Button sell = null;
             Action refresh = null;
+            Action refreshOffers = null;
+            refreshOffers = () => {
+                for (var i = 0; i < offerButtons.Length; i++)
+                {
+                    var organ = Configuration.Organs[offers[i]];
+                    var button = offerButtons[i];
+                    button.interactable = !offerBought[i]
+                        && run.Inventory.UnequippedIds().Count < run.Inventory.UnequippedCapacity()
+                        && run.Marrow >= offerPrices[i];
+                    button.GetComponentInChildren<Text>().text = offerBought[i]
+                        ? $"已购买 {organ.name}"
+                        : $"购买 {organ.name}（{offerPrices[i]} 骨髓）";
+                }
+            };
             refresh = () => {
                 balance.text = $"骨髓 {run.Marrow} · 背包 {run.Inventory.UnequippedIds().Count}/{run.Inventory.UnequippedCapacity()}";
                 selected = null; selection.text = run.Inventory.UnequippedIds().Count == 0 ? "空库存：没有可出售物品" : "请选择出售物品";
@@ -345,12 +354,22 @@ namespace SpringUp.Flow
                         sell.interactable = true;
                     }));
                 }
+                refreshOffers();
             };
-            int price = run.QuotePurchasePrice("rust_knife");
-            view.AddButton($"购买 {item.name}（{price} 骨髓）", () => {
-                var result = run.TryPurchase("rust_knife", price);
-                message.text = result.Ok ? "购买成功" : SpringUp.UI.ChineseText.Error(result.Reason); refresh();
-            });
+            for (var i = 0; i < offers.Count; i++)
+            {
+                var offerIndex = i;
+                var organId = offers[i];
+                var organ = Configuration.Organs[organId];
+                offerPrices[i] = run.QuotePurchasePrice(organId);
+                offerButtons[i] = view.AddButton($"购买 {organ.name}（{offerPrices[i]} 骨髓）", () => {
+                    if (offerBought[offerIndex]) return;
+                    var result = run.TryPurchase(organId, offerPrices[offerIndex]);
+                    if (result.Ok) offerBought[offerIndex] = true;
+                    message.text = result.Ok ? $"购买成功：{organ.name}" : SpringUp.UI.ChineseText.Error(result.Reason);
+                    refresh();
+                });
+            }
             sell = view.AddButton("出售所选物品", () => {
                 if (selected == null || !run.Inventory.UnequippedIds().Contains(selected)) { message.text = "请重新选择有效物品"; refresh(); return; }
                 var equipment = new RunLaboratoryEquipment(run, Configuration.Definitions);
@@ -358,9 +377,25 @@ namespace SpringUp.Flow
             });
             view.AddButton("关闭", CloseTop); refresh();
         }
+
+        List<string> SelectShopOffers(int count)
+        {
+            var candidates = Configuration.Definitions.Keys
+                .Where(id => Configuration.Organs.TryGetValue(id, out var organ) && organ.shop_price > 0)
+                .Distinct().ToList();
+            var offers = new List<string>();
+            // Keep the original basic offer visible while rotating the rest of the stock.
+            if (candidates.Remove("rust_knife")) offers.Add("rust_knife");
+            for (var i = candidates.Count - 1; i > 0; i--)
+            {
+                var swap = ShopRandom.Next(i + 1);
+                (candidates[i], candidates[swap]) = (candidates[swap], candidates[i]);
+            }
+            for (var i = 0; i < candidates.Count && offers.Count < count; i++) offers.Add(candidates[i]);
+            return offers;
+        }
         FlowWindow Push(WindowKind kind, string title)
         {
-            Content?.Attack?.CancelRound();
             if (actions != null) actions.group.interactable = false;
             if (windows.Count > 0) windows[windows.Count - 1].View.group.interactable = false;
             var focus = eventSystem.currentSelectedGameObject;
@@ -372,9 +407,7 @@ namespace SpringUp.Flow
         public void CloseTop()
         {
             if (windows.Count == 0) return;
-            Content?.Attack?.SuppressInput();
             var last = windows[windows.Count - 1]; windows.RemoveAt(windows.Count - 1);
-            if (last.Kind == WindowKind.Settings && Content?.Attack?.IsRebinding == true) Content.Attack.ToggleRebind();
             if (last.View != null) { last.View.gameObject.SetActive(false); Destroy(last.View.gameObject); }
             last.Lease.Dispose();
             if (windows.Count > 0 && windows[windows.Count - 1].View != null) windows[windows.Count - 1].View.group.interactable = true;

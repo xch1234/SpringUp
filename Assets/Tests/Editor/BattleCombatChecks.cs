@@ -35,6 +35,14 @@ namespace SpringUp.EditorChecks
                 var combat = root.AddComponent<BattleOrganCombat>();
                 root.GetComponent<BattleOrganTargeting>().AttackOrigin = root.transform;
                 var pipeline = root.GetComponent<OrganPipelineController>(); pipeline.enabled = false;
+                var persistent = Enemy("single cast bleed", new Vector2(20, 0), 100);
+                combat.Resolve(new CastEvent(persistent.TargetId, 1, "knife", "once",
+                    status: new StatusEffectData(StatusEffectKind.Bleed, 1, 2, tickDamage: 2)));
+                combat.Advance(.5f); Require(persistent.CurrentHealth == 99, "单次施加状态不会提前跳伤害。");
+                combat.Advance(.5f); Require(persistent.CurrentHealth == 97, "管道停用且不再攻击，流血仍持续。");
+                combat.Advance(1); Require(persistent.CurrentHealth == 95, "状态按自身时长结算末次伤害。");
+                combat.Advance(2); Require(persistent.CurrentHealth == 95, "状态到期停止，无需再次触发链。");
+                persistent.gameObject.SetActive(false); combat.Clear();
                 var a = Enemy("a", new Vector2(2, 0));
                 var b = Enemy("b", new Vector2(2.5f, 0));
                 var c = Enemy("c", new Vector2(-.5f, 0));

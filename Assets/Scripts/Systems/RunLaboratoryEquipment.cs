@@ -35,7 +35,8 @@ namespace Tideflesh.Systems
         {
             var definition = run.Inventory.OrganOf(id);
             if (definitions.TryGetValue(definition.id, out var combat)) return new LaboratoryItem(id, combat);
-            var part = (LaboratoryPart)Array.IndexOf(Parts, definition.part);
+            var part = definition.MountKind == SpringUp.Organs.OrganMountKind.Torso
+                ? LaboratoryPart.Torso : LaboratoryPart.Hand;
             return new LaboratoryItem(id, definition.id, definition.name, part,
                 part == LaboratoryPart.Torso ? LaboratoryOrganKind.TorsoSpecial : LaboratoryOrganKind.Actuator,
                 "尚未接入战斗效果。");

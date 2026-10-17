@@ -60,7 +60,7 @@ namespace Tideflesh.Systems
             var iid = Spawn(organId);
             try
             {
-                if (OrganOf(iid).part != part)
+                if (!OrganOf(iid).CanEquip(part))
                     throw new InventoryException("part mismatch");
                 _unequipped.Remove(iid);
                 Place(iid, part, slot);
@@ -115,7 +115,7 @@ namespace Tideflesh.Systems
         {
             if (!_unequipped.Contains(instanceId))
                 throw new InventoryException("equip only from unequipped");
-            if (OrganOf(instanceId).part != part)
+            if (!OrganOf(instanceId).CanEquip(part))
                 throw new InventoryException("part mismatch");
             Place(instanceId, part, slot);
             _unequipped.Remove(instanceId);
@@ -136,7 +136,7 @@ namespace Tideflesh.Systems
         {
             int index = SlotIndex(part, slot);
             if (!_unequipped.Contains(instanceId)) throw new InventoryException("equip only from unequipped");
-            if (OrganOf(instanceId).part != part) throw new InventoryException("part mismatch");
+            if (!OrganOf(instanceId).CanEquip(part)) throw new InventoryException("part mismatch");
             string previous = _equipped[part][index];
             _unequipped.Remove(instanceId);
             _equipped[part][index] = instanceId;

@@ -22,11 +22,14 @@ namespace SpringUp.EditorChecks
         private const string Key = "SpringUp.Flow.Checks";
         private static double nextCheck;
         private static int stage;
-        private static float previewHealth;
+        private static float previewHealth, automaticHealth, automaticUntil;
+        private static EnemyRuntime automaticTarget;
         private static Keyboard keyboard;
         private static Vector3 movementStart;
         private static EnemyRuntime chaseTarget;
         private static float chaseHealth;
+        private static float physicsCheckTime;
+        private static double physicsDeadline;
         static IntegratedFlowChecks()
         {
             if (SessionState.GetBool(Key, false)) EditorApplication.playModeStateChanged += StateChanged;
@@ -58,6 +61,12 @@ namespace SpringUp.EditorChecks
                 var run = driver.Run;
                 if (stage == -3)
                 {
+                    BattleSceneSyncChecks.RunPlay(driver);
+                    StraightProjectileChecks.RunPhysicsPlayChecks();
+                    PatternActuatorChecks.RunPlay(driver);
+                    OrganTriggerChecks.RunPlay(driver);
+                    TorsoOrganChecks.RunPlay(driver);
+                    OrganCombatReportChecks.RunPlay(driver);
                     CheckCadence(driver);
                     // Hidden batch editors have no focused Game View.
                     InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
@@ -65,16 +74,25 @@ namespace SpringUp.EditorChecks
                     Application.runInBackground = true;
                     Require(!driver.capacityText.transform.parent.gameObject.activeSelf, "Combat must hide settlement background.");
                     CheckEquipmentHud(driver, true);
+                    Require(GameObject.Find("Charge attack HUD") == null && GameObject.Find("Change attack key") == null,
+                        "自动攻击模式没有充能条与攻击改键入口。");
                     Require(!driver.Equipment.TryUnequip(LaboratoryPart.Hand, 0, out _)
                         && run.Inventory.EquippedAt("hand", 1) != null, "战斗期间禁止拆卸。");
                     Require(driver.battleCamera.rect.yMax < 1f, "Combat viewport must reserve HUD space.");
                     movementStart = driver.player.transform.position;
                     keyboard = InputSystem.AddDevice<Keyboard>();
                     InputSystem.QueueStateEvent(keyboard, new KeyboardState(UnityEngine.InputSystem.Key.D));
+                    physicsCheckTime = Time.fixedTime + .5f;
+                    physicsDeadline = EditorApplication.timeSinceStartup + 120;
                     stage = -2; nextCheck = EditorApplication.timeSinceStartup + .5; return;
                 }
                 if (stage == -2)
                 {
+                    if (Time.fixedTime < physicsCheckTime)
+                    {
+                        Require(EditorApplication.timeSinceStartup < physicsDeadline, "等待移动的物理帧超时。");
+                        return;
+                    }
                     Debug.Log("[Playtest Input] input=" + driver.player.GetComponent<PlayerMotor>().MoveInput
                         + " position=" + driver.player.transform.position + " start=" + movementStart);
                     Require(driver.player.transform.position.x > movementStart.x + .2f, "Real keyboard input must move the player.");
@@ -86,10 +104,17 @@ namespace SpringUp.EditorChecks
                         driver.player.transform.position + Vector3.right * 6f, Quaternion.identity);
                     chaseTarget = go.GetComponent<EnemyRuntime>();
                     chaseHealth = driver.player.CurrentHealth;
+                    physicsCheckTime = Time.fixedTime + 4f;
+                    physicsDeadline = EditorApplication.timeSinceStartup + 120;
                     stage = -1; nextCheck = EditorApplication.timeSinceStartup + 4; return;
                 }
                 if (stage == -1)
                 {
+                    if (Time.fixedTime < physicsCheckTime)
+                    {
+                        Require(EditorApplication.timeSinceStartup < physicsDeadline, "等待追击的物理帧超时。");
+                        return;
+                    }
                     Require(chaseTarget != null && Vector2.Distance(chaseTarget.Position, driver.player.transform.position) < 1.3f,
                         "Melee enemy must naturally chase past the former 5.4m stop distance.");
                     Require(driver.player.CurrentHealth < chaseHealth, "Natural approach must cause contact damage through solid colliders.");
@@ -105,17 +130,29 @@ namespace SpringUp.EditorChecks
                     var go = new GameObject("Flow target"); go.SetActive(false);
                     go.transform.position = driver.player.transform.position + Vector3.right;
                     go.AddComponent<EnemyData>(); var enemy = go.AddComponent<EnemyRuntime>(); go.SetActive(true);
-                    float before = enemy.CurrentHealth;
-                    Require(!driver.pipeline.AutomaticExecution && driver.ChargeAttack.TryAttack(), "统一入口使用主动充能攻击。");
-                    Require(enemy.CurrentHealth < before && driver.ChargeAttack.Charge < driver.ChargeAttack.Capacity,
-                        "开局拳头主动攻击实际扣敌人血并消耗充能。");
+                    Require(driver.pipeline.AutomaticExecution, "统一入口恢复自动攻击。");
+                    automaticTarget = enemy; automaticHealth = enemy.CurrentHealth;
+                    foreach (BodyPart part in Enum.GetValues(typeof(BodyPart))) driver.pipeline.GetBody(part).ResetTiming();
+                    automaticUntil = Time.time + 2.3f;
+                    stage = 10; nextCheck = EditorApplication.timeSinceStartup + .2; return;
+                }
+                if (stage == 10)
+                {
+                    if (Time.time < automaticUntil) { nextCheck = EditorApplication.timeSinceStartup + .2; return; }
+                    Require(automaticTarget != null && automaticTarget.CurrentHealth <= automaticHealth - 2 * driver.Definitions["fist"].Damage,
+                        "没有按攻击键，拳头按节拍自动攻击至少两轮。");
                     driver.director.CompleteCurrentWave();
                     Require(run.Phase == "lab" && run.Marrow >= 427 && run.Marrow <= 472 && Time.timeScale == 0, "第一波奖励与暂停。");
-                    Require(!driver.ChargeAttack.TryAttack(), "休息阶段禁止实战攻击。");
+                    Require(!driver.pipeline.enabled, "休息阶段停止实战自动攻击。");
+                    int steps = driver.pipeline.GetBody(BodyPart.Hand).ExecutedStepCount;
+                    driver.pipeline.AdvanceAutomatic(10);
+                    Require(driver.pipeline.GetBody(BodyPart.Hand).ExecutedStepCount == steps, "休息期间不能推进实战管道。");
                     CheckEquipmentHud(driver, false);
                     var bag = driver.Equipment.Inventory;
-                    var knife = bag.Single(x => x.DefinitionId == "rust_knife");
-                    var tentacle = bag.Single(x => x.DefinitionId == "multi_tentacle");
+                    var knife = bag.FirstOrDefault(x => x.DefinitionId == "rust_knife");
+                    if (knife == null) { run.Inventory.Spawn("rust_knife"); driver.Equipment.Refresh(); bag = driver.Equipment.Inventory; knife = bag.Single(x => x.DefinitionId == "rust_knife"); }
+                    var tentacle = bag.FirstOrDefault(x => x.DefinitionId == "multi_tentacle");
+                    if (tentacle == null) { run.Inventory.Spawn("multi_tentacle"); driver.Equipment.Refresh(); bag = driver.Equipment.Inventory; tentacle = bag.Single(x => x.DefinitionId == "multi_tentacle"); }
                     driver.presenter.SelectInventory(knife.InstanceId); driver.presenter.SelectSlot(1, 1);
                     driver.presenter.installButton.onClick.Invoke();
                     Require(run.Inventory.EquippedAt("hand", 2) == knife.InstanceId, "B 安装按钮写回 D 库存。");
@@ -141,18 +178,48 @@ namespace SpringUp.EditorChecks
                     Require(driver.Equipment.TryEquip(knifeId, LaboratoryPart.Hand, 0, out _), "替换拳头。");
                     Require(run.Inventory.Instances.Count == total && run.Inventory.UnequippedIds().Count == 1, "替换事务守恒。");
                     string fistId = run.Inventory.UnequippedIds().Single();
-                    Require(!driver.Equipment.TryEquip(fistId, LaboratoryPart.Head, 0, out _)
+                    Require(!driver.Equipment.TryEquip(fistId, LaboratoryPart.Torso, 0, out _)
                         && run.Inventory.EquippedAt("hand", 1) == knifeId, "非法替换不改变库存。");
-                    Require(driver.Equipment.TryEquip(fistId, LaboratoryPart.Hand, 1, out _), "装回拳头。");
+                    driver.presenter.SelectInventory(fistId); driver.presenter.SelectSlot(0, 0);
+                    Require(driver.presenter.installButton.interactable, "通用器官可通过 UI 安装到头部。");
+                    driver.presenter.installButton.onClick.Invoke();
+                    Require(run.Inventory.EquippedAt("head", 1) == fistId
+                        && driver.pipeline.GetBody(BodyPart.Head).GetSlot(0)?.InstanceId == fistId
+                        && preview.Pipeline.GetBody(BodyPart.Head).GetSlot(0)?.InstanceId == fistId,
+                        "头部库存、实战和预览一致。");
+                    Require(driver.Equipment.TryUnequip(LaboratoryPart.Head, 0, out _)
+                        && driver.Equipment.TryEquip(fistId, LaboratoryPart.Leg, 5, out _)
+                        && driver.pipeline.GetBody(BodyPart.Head).GetSlot(0) == null
+                        && preview.Pipeline.GetBody(BodyPart.Head).GetSlot(0) == null
+                        && driver.pipeline.GetBody(BodyPart.Leg).GetSlot(5)?.InstanceId == fistId
+                        && preview.Pipeline.GetBody(BodyPart.Leg).GetSlot(5)?.InstanceId == fistId,
+                        "移到腿部后旧槽清空，实例与预览位置一致。");
+                    StraightProjectileSampleMenu.Give();
+                    var bulletId = run.Inventory.UnequippedIds().Single(id => run.Inventory.OrganOf(id).id == "straight_projectile");
+                    Require(driver.Equipment.TryEquip(bulletId, LaboratoryPart.Head, 0, out _), "子弹样板可装入头部。");
+                    float bulletPreviewHealth = preview.targets[0].CurrentHealth;
+                    Require(preview.Pipeline.TryExecuteSlot(BodyPart.Head, 0) && preview.Actuators.Active.Count == 1,
+                        "预览发射子弹。");
+                    Require(preview.targets[0].CurrentHealth == bulletPreviewHealth, "发射时不提前扣血。");
+                    preview.Advance(.02f);
+                    Require(preview.Actuators.Active.Count == 1 && preview.targets[0].CurrentHealth == bulletPreviewHealth,
+                        "暂停战场时子弹可在预览中飞行。");
+                    var bulletView = preview.GetComponentsInChildren<EffectPreviewGraphic>().FirstOrDefault()?.rectTransform;
+                    Require(bulletView != null && bulletView.gameObject.activeInHierarchy
+                        && ((RectTransform)bulletView.parent).rect.Contains(bulletView.localPosition),
+                        "预览子弹位于可见面板内。");
+                    preview.Advance(.1f);
+                    Require(preview.Actuators.Active.Count == 0 && preview.targets[0].CurrentHealth < bulletPreviewHealth,
+                        "预览碰撞后扣血并移除子弹。");
+                    PatternActuatorChecks.CapturePreview(driver, preview);
+                    TorsoOrganChecks.RunLab(driver);
                     while (run.Inventory.UnequippedIds().Count <= run.Inventory.UnequippedCapacity()) run.Inventory.Spawn("fist");
                     driver.Equipment.Refresh(); driver.NextWave();
                     Require(run.Phase == "lab" && driver.director.CurrentWave == 1, "超容量阻止下一波。");
                     while (!run.CanStartNextWave()) driver.Equipment.TryDiscard(run.Inventory.UnequippedIds()[0], out _);
                     driver.NextWave(); driver.NextWave();
                     Require(run.Wave == 2 && driver.director.CurrentWave == 2 && Time.timeScale == 1, "第二波与重复点击保护。");
-                    Require(driver.ChargeAttack.Charge == driver.ChargeAttack.Capacity
-                        && driver.ChargeAttack.RequiredCharge == driver.Definitions["rust_knife"].ChargeCost + driver.Definitions["fist"].ChargeCost,
-                        "下一波充满且按实际配装更新整轮消耗，触发器不额外收费。");
+                    Require(driver.pipeline.AutomaticExecution && driver.pipeline.enabled, "换波自动恢复攻击，不检查或恢复充能。");
                     CheckEquipmentHud(driver, true);
                     var equippedBefore = run.Inventory.EquippedAt("hand", 1);
                     var blockedCandidate = run.Inventory.Spawn("fist");
@@ -164,15 +231,32 @@ namespace SpringUp.EditorChecks
                     enemyGo.transform.position = driver.player.transform.position;
                     enemyGo.AddComponent<EnemyData>(); var enemy = enemyGo.AddComponent<EnemyRuntime>(); enemyGo.SetActive(true);
                     float hp = enemy.CurrentHealth;
+                    enemyGo.AddComponent<CircleCollider2D>().radius = .2f;
+                    Require(driver.pipeline.TryExecuteSlot(BodyPart.Head, 0) && enemy.CurrentHealth == hp
+                        && driver.combat.Actuators.Active.Count == 1, "实际战场发射不提前扣血。");
+                    driver.combat.Advance(.01f);
+                    Require(enemy.CurrentHealth == hp - driver.Definitions["straight_projectile"].Damage
+                        && driver.combat.Actuators.Active.Count == 0, "实际碰撞后扣血，清除子弹。");
+                    hp = enemy.CurrentHealth;
+                    Require(driver.pipeline.TryExecuteSlot(BodyPart.Leg, 5) && enemy.CurrentHealth < hp,
+                        "原手部拳头移到腿部后，经实际管道发动并扣血。");
+                    hp = enemy.CurrentHealth;
                     driver.pipeline.GetBody(BodyPart.Hand).ExecuteAllSlots((_, organ) =>
                     {
                         if (ParameterisedBehaviour.TryCreateAttack(organ, enemy.TargetId, out var attack, effectCenter: enemy.Position))
                             driver.combat.Resolve(attack);
                     });
                     Require(enemy.CurrentHealth < hp, "第二波装备实际造成伤害。");
+                    var cleanupTarget = new GameObject("Projectile cleanup target"); cleanupTarget.SetActive(false);
+                    cleanupTarget.transform.position = driver.player.transform.position + Vector3.right * 2;
+                    cleanupTarget.AddComponent<EnemyData>(); cleanupTarget.AddComponent<EnemyRuntime>();
+                    cleanupTarget.AddComponent<CircleCollider2D>(); cleanupTarget.SetActive(true);
+                    Require(driver.pipeline.TryExecuteSlot(BodyPart.Head, 0) && driver.combat.Actuators.Active.Count > 0,
+                        "换波前存在尚未命中的子弹。");
                     for (int wave = 2; wave <= 7; wave++)
                     {
                         driver.director.CompleteCurrentWave();
+                        Require(driver.combat.Actuators.Active.Count == 0, "换波清理全部子弹。");
                         int marrow = run.Marrow;
                         driver.director.CompleteCurrentWave();
                         Require(run.Marrow == marrow, "重复结算不重复发奖励。");
@@ -213,8 +297,10 @@ namespace SpringUp.EditorChecks
         {
             var hud = driver.runStatus.canvas.GetComponentInChildren<RunEquipmentHud>(true);
             Require(hud != null && hud.gameObject.activeSelf == visible, "战斗显示装备 HUD，休息交由实验室显示。");
-            Require(hud.GetComponentsInChildren<Selectable>(true).Length == 0
-                && hud.GetComponentsInChildren<Graphic>(true).All(g => !g.raycastTarget), "装备 HUD 只读且不拦截输入。");
+            var reportToggle = hud.transform.Find("Combat report toggle").GetComponent<Button>();
+            Require(hud.GetComponentsInChildren<Selectable>(true).Length == 1
+                && hud.GetComponentsInChildren<Graphic>(true).All(g => !g.raycastTarget || g.gameObject == reportToggle.gameObject),
+                "装备槽位只读；仅记录展开按钮可拦截点击。");
             string[] parts = { "head", "hand", "leg", "torso" };
             for (int p = 0; p < parts.Length; p++)
                 for (int s = 0; s < driver.Equipment.SlotCount((LaboratoryPart)p); s++)
