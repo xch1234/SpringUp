@@ -5,7 +5,7 @@
       "duration_sec": 60,
       "guaranteed_drops": ["multi_tentacle", "rust_knife"],
       "optional_drops": [],
-      "random_drop_pool": ["multi_tentacle", "rust_knife", "steel_pipe", "slime_gland"],
+      "random_drop_pool": ["straight_projectile", "steel_pipe", "rust_knife", "slime_gland", "multi_tentacle", "collapse_body", "tnt", "orbit_projectile", "spiral_projectile", "laser", "homing_projectile", "poison_fog", "vampire_needle", "triple_projectile", "octopus_sucker", "missile", "charged_laser", "spore", "summon_follower", "trigger_hit", "trigger_delay", "trigger_killcount", "trigger_hurt", "trigger_heal", "trigger_end", "trigger_debuff", "trigger_critical", "trigger_stationary", "torso_overdrive", "torso_leech", "torso_ram", "torso_wideview", "torso_focused", "torso_longguard", "torso_shortguard"],
       "random_drop_count": 2,
       "marrow_reward": 450
     },
@@ -14,7 +14,7 @@
       "duration_sec": 60,
       "guaranteed_drops": ["steel_pipe"],
       "optional_drops": [],
-      "random_drop_pool": ["steel_pipe", "rust_knife", "slime_gland", "multi_tentacle", "collapse_body", "tnt"],
+      "random_drop_pool": ["straight_projectile", "steel_pipe", "rust_knife", "slime_gland", "multi_tentacle", "collapse_body", "tnt", "orbit_projectile", "spiral_projectile", "laser", "homing_projectile", "poison_fog", "vampire_needle", "triple_projectile", "octopus_sucker", "missile", "charged_laser", "spore", "summon_follower", "trigger_hit", "trigger_delay", "trigger_killcount", "trigger_hurt", "trigger_heal", "trigger_end", "trigger_debuff", "trigger_critical", "trigger_stationary", "torso_overdrive", "torso_leech", "torso_ram", "torso_wideview", "torso_focused", "torso_longguard", "torso_shortguard"],
       "random_drop_count": 1,
       "marrow_reward": 550
     },
@@ -23,7 +23,7 @@
       "duration_sec": 60,
       "guaranteed_drops": ["slime_gland"],
       "optional_drops": [],
-      "random_drop_pool": ["steel_pipe", "rust_knife", "slime_gland", "collapse_body", "tnt", "torso_overdrive", "torso_leech"],
+      "random_drop_pool": ["straight_projectile", "steel_pipe", "rust_knife", "slime_gland", "multi_tentacle", "collapse_body", "tnt", "orbit_projectile", "spiral_projectile", "laser", "homing_projectile", "poison_fog", "vampire_needle", "triple_projectile", "octopus_sucker", "missile", "charged_laser", "spore", "summon_follower", "trigger_hit", "trigger_delay", "trigger_killcount", "trigger_hurt", "trigger_heal", "trigger_end", "trigger_debuff", "trigger_critical", "trigger_stationary", "torso_overdrive", "torso_leech", "torso_ram", "torso_wideview", "torso_focused", "torso_longguard", "torso_shortguard"],
       "random_drop_count": 1,
       "marrow_reward": 650
     },
@@ -32,7 +32,7 @@
       "duration_sec": 60,
       "guaranteed_drops": ["tnt"],
       "optional_drops": [],
-      "random_drop_pool": ["collapse_body", "tnt", "multi_tentacle", "torso_ram", "torso_wideview", "torso_focused"],
+      "random_drop_pool": ["straight_projectile", "steel_pipe", "rust_knife", "slime_gland", "multi_tentacle", "collapse_body", "tnt", "orbit_projectile", "spiral_projectile", "laser", "homing_projectile", "poison_fog", "vampire_needle", "triple_projectile", "octopus_sucker", "missile", "charged_laser", "spore", "summon_follower", "trigger_hit", "trigger_delay", "trigger_killcount", "trigger_hurt", "trigger_heal", "trigger_end", "trigger_debuff", "trigger_critical", "trigger_stationary", "torso_overdrive", "torso_leech", "torso_ram", "torso_wideview", "torso_focused", "torso_longguard", "torso_shortguard"],
       "random_drop_count": 1,
       "marrow_reward": 800
     },
@@ -41,7 +41,7 @@
       "duration_sec": 60,
       "guaranteed_drops": ["collapse_body"],
       "optional_drops": [],
-      "random_drop_pool": ["collapse_body", "tnt", "torso_longguard", "torso_shortguard", "torso_wideview"],
+      "random_drop_pool": ["straight_projectile", "steel_pipe", "rust_knife", "slime_gland", "multi_tentacle", "collapse_body", "tnt", "orbit_projectile", "spiral_projectile", "laser", "homing_projectile", "poison_fog", "vampire_needle", "triple_projectile", "octopus_sucker", "missile", "charged_laser", "spore", "summon_follower", "trigger_hit", "trigger_delay", "trigger_killcount", "trigger_hurt", "trigger_heal", "trigger_end", "trigger_debuff", "trigger_critical", "trigger_stationary", "torso_overdrive", "torso_leech", "torso_ram", "torso_wideview", "torso_focused", "torso_longguard", "torso_shortguard"],
       "random_drop_count": 1,
       "marrow_reward": 900
     },
@@ -50,7 +50,7 @@
       "duration_sec": 60,
       "guaranteed_drops": ["spider_nest"],
       "optional_drops": [],
-      "random_drop_pool": ["steel_pipe", "rust_knife", "slime_gland", "multi_tentacle", "collapse_body", "tnt", "torso_overdrive", "torso_leech", "torso_ram"],
+      "random_drop_pool": ["straight_projectile", "steel_pipe", "rust_knife", "slime_gland", "multi_tentacle", "collapse_body", "tnt", "orbit_projectile", "spiral_projectile", "laser", "homing_projectile", "poison_fog", "vampire_needle", "triple_projectile", "octopus_sucker", "missile", "charged_laser", "spore", "summon_follower", "trigger_hit", "trigger_delay", "trigger_killcount", "trigger_hurt", "trigger_heal", "trigger_end", "trigger_debuff", "trigger_critical", "trigger_stationary", "torso_overdrive", "torso_leech", "torso_ram", "torso_wideview", "torso_focused", "torso_longguard", "torso_shortguard"],
       "random_drop_count": 2,
       "marrow_reward": 1000
     },

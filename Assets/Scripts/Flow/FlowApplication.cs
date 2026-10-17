@@ -39,8 +39,6 @@ namespace SpringUp.Flow
             && Content.kind != ContentKind.MainMenu && Session != null
             && (Session.Run.Stage == RunPhase.Combat || Session.Run.Stage == RunPhase.Rest);
         readonly List<WindowEntry> windows = new();
-        static readonly System.Random ShopRandom = new();
-        const int ShopOfferCount = 4;
         Scene contentScene;
         string retryPath;
         bool quitting;
@@ -314,32 +312,38 @@ namespace SpringUp.Flow
         {
             var run = Session.Run;
             var balance = view.AddText("");
-            var message = view.AddText("本轮商品随机刷新；仅出售背包中未装备的物品。已装备物品请先在休整背包拆卸。");
+            var message = view.AddText("本波商品保留，付费可刷新；每次刷新费用递增，下波重置。仅可出售未装备物品。");
             var selection = view.AddText("未选择物品");
             string selected = null;
             var choices = new List<Button>();
-            var offers = SelectShopOffers(ShopOfferCount);
-            var offerPrices = new int[offers.Count];
-            var offerBought = new bool[offers.Count];
+            var offers = run.GetShopOffers();
             var offerButtons = new Button[offers.Count];
-            Button sell = null;
+            Button sell = null, reroll = null;
             Action refresh = null;
             Action refreshOffers = null;
             refreshOffers = () => {
+                offers = run.GetShopOffers();
                 for (var i = 0; i < offerButtons.Length; i++)
                 {
-                    var organ = Configuration.Organs[offers[i]];
+                    var offer = offers[i];
+                    var organ = Configuration.Organs[offer.OrganId];
                     var button = offerButtons[i];
-                    button.interactable = !offerBought[i]
+                    button.interactable = !offer.Purchased
                         && run.Inventory.UnequippedIds().Count < run.Inventory.UnequippedCapacity()
-                        && run.Marrow >= offerPrices[i];
-                    button.GetComponentInChildren<Text>().text = offerBought[i]
+                        && run.Marrow >= offer.Price;
+                    button.GetComponentInChildren<Text>().text = offer.Purchased
                         ? $"已购买 {organ.name}"
-                        : $"购买 {organ.name}（{offerPrices[i]} 骨髓）";
+                        : $"购买 {organ.name}（{offer.Price} 骨髓）";
+                    button.name = button.GetComponentInChildren<Text>().text;
+                }
+                if (reroll != null)
+                {
+                    reroll.interactable = offers.Count > 0 && run.Marrow >= run.ShopRefreshPrice;
+                    reroll.GetComponentInChildren<Text>().text = $"刷新商品（{run.ShopRefreshPrice} 骨髓）";
                 }
             };
             refresh = () => {
-                balance.text = $"骨髓 {run.Marrow} · 背包 {run.Inventory.UnequippedIds().Count}/{run.Inventory.UnequippedCapacity()}";
+                balance.text = $"骨髓 {run.Marrow} · 背包 {run.Inventory.UnequippedIds().Count}/{run.Inventory.UnequippedCapacity()} · 本波已刷新 {run.ShopRefreshCount} 次";
                 selected = null; selection.text = run.Inventory.UnequippedIds().Count == 0 ? "空库存：没有可出售物品" : "请选择出售物品";
                 if (sell != null) sell.interactable = false;
                 foreach (var button in choices) { button.gameObject.SetActive(false); Destroy(button.gameObject); }
@@ -359,17 +363,19 @@ namespace SpringUp.Flow
             for (var i = 0; i < offers.Count; i++)
             {
                 var offerIndex = i;
-                var organId = offers[i];
-                var organ = Configuration.Organs[organId];
-                offerPrices[i] = run.QuotePurchasePrice(organId);
-                offerButtons[i] = view.AddButton($"购买 {organ.name}（{offerPrices[i]} 骨髓）", () => {
-                    if (offerBought[offerIndex]) return;
-                    var result = run.TryPurchase(organId, offerPrices[offerIndex]);
-                    if (result.Ok) offerBought[offerIndex] = true;
-                    message.text = result.Ok ? $"购买成功：{organ.name}" : SpringUp.UI.ChineseText.Error(result.Reason);
+                offerButtons[i] = view.AddButton("商品", () => {
+                    var offer = run.GetShopOffers()[offerIndex];
+                    var result = run.TryPurchaseShopOffer(offer);
+                    message.text = result.Ok ? $"购买成功：{Configuration.Organs[offer.OrganId].name}" : SpringUp.UI.ChineseText.Error(result.Reason);
                     refresh();
                 });
             }
+            reroll = view.AddButton("刷新商品", () => {
+                int price = run.ShopRefreshPrice;
+                var result = run.TryRefreshShop();
+                message.text = result.Ok ? $"已刷新商品，花费 {price} 骨髓。" : SpringUp.UI.ChineseText.Error(result.Reason);
+                refresh();
+            });
             sell = view.AddButton("出售所选物品", () => {
                 if (selected == null || !run.Inventory.UnequippedIds().Contains(selected)) { message.text = "请重新选择有效物品"; refresh(); return; }
                 var equipment = new RunLaboratoryEquipment(run, Configuration.Definitions);
@@ -378,22 +384,6 @@ namespace SpringUp.Flow
             view.AddButton("关闭", CloseTop); refresh();
         }
 
-        List<string> SelectShopOffers(int count)
-        {
-            var candidates = Configuration.Definitions.Keys
-                .Where(id => Configuration.Organs.TryGetValue(id, out var organ) && organ.shop_price > 0)
-                .Distinct().ToList();
-            var offers = new List<string>();
-            // Keep the original basic offer visible while rotating the rest of the stock.
-            if (candidates.Remove("rust_knife")) offers.Add("rust_knife");
-            for (var i = candidates.Count - 1; i > 0; i--)
-            {
-                var swap = ShopRandom.Next(i + 1);
-                (candidates[i], candidates[swap]) = (candidates[swap], candidates[i]);
-            }
-            for (var i = 0; i < candidates.Count && offers.Count < count; i++) offers.Add(candidates[i]);
-            return offers;
-        }
         FlowWindow Push(WindowKind kind, string title)
         {
             if (actions != null) actions.group.interactable = false;

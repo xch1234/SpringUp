@@ -21,6 +21,93 @@ namespace SpringUp.EditorChecks
         RunConfiguration Config() => new RunConfiguration(
             AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Organs/organs.json").text,
             AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Waves/waves.json").text, OrganCatalog.LoadDefault());
+        [Test] public void ExpandedEconomyCoversEveryImplementedPricedOrgan()
+        {
+            var config = Config();
+            var eligible = config.Definitions.Keys.Where(id => config.Organs[id].shop_price > 0).ToArray();
+            Assert.AreEqual(35, eligible.Length);
+            foreach (var wave in config.Waves.Where(w => w.wave < 7))
+            {
+                CollectionAssert.AreEquivalent(eligible, wave.random_drop_pool);
+                Assert.AreEqual(wave.wave == 1 || wave.wave == 6 ? 2 : 1, wave.random_drop_count);
+            }
+            Assert.IsEmpty(config.Waves.Last().random_drop_pool);
+            var run = new RunController(config.Organs, config.Waves, null, () => 0, config.Definitions.Keys);
+            CollectionAssert.AreEquivalent(eligible, run.SelectShopOffers(100));
+            Assert.IsEmpty(run.SelectShopOffers(0));
+            var low = run.SelectShopOffers(4);
+            var high = new RunController(config.Organs, config.Waves, null, () => 1, config.Definitions.Keys).SelectShopOffers(4);
+            Assert.AreEqual(4, low.Distinct().Count());
+            Assert.AreEqual(4, high.Distinct().Count());
+            Assert.AreNotEqual(string.Join(",", low), string.Join(",", high));
+            Assert.IsFalse(high.Contains("rust_knife"), "No fixed knife slot.");
+        }
+
+        [Test] public void PaidShopRefreshIsAtomicAndPersists()
+        {
+            void Check(bool condition, string message) { Assert.IsTrue(condition, message); }
+            var catalog = new System.Collections.Generic.Dictionary<string, Tideflesh.Systems.OrganDefinition>();
+            foreach (var id in new[] { "fist", "one", "two", "three", "four", "five" })
+                catalog.Add(id, new Tideflesh.Systems.OrganDefinition { id = id, name = id, part = "any", type = "executor", shop_price = id == "fist" ? 0 : 10 });
+            var waves = new System.Collections.Generic.List<WaveDefinition>();
+            for (int i = 1; i <= 3; i++) waves.Add(new WaveDefinition { wave = i, duration_sec = 60,
+                guaranteed_drops = Array.Empty<string>(), optional_drops = Array.Empty<string>(), marrow_reward = 450 });
+            double random = .5;
+            var run = new RunController(catalog, waves, null, () => random);
+            Check(!run.TryRefreshShop().Ok && run.Marrow == 0 && run.ShopRefreshCount == 0, "Boot cannot refresh.");
+            run.StartRun();
+            Check(!run.TryRefreshShop().Ok, "Combat cannot refresh.");
+            run.CombatTimerFinished();
+            int balance = run.Marrow;
+            var offers = run.GetShopOffers();
+            Check(offers.Count == 4 && offers.Select(x => x.OrganId).Distinct().Count() == 4, "Four unique offers.");
+            Check(ReferenceEquals(offers, run.GetShopOffers()) && run.Marrow == balance, "Reopening keeps offers and quotes for free.");
+            var first = offers[0];
+            Check(run.TryPurchaseShopOffer(first).Ok, "Purchase a current offer.");
+            int afterPurchase = run.Marrow;
+            Check(!run.TryPurchaseShopOffer(first).Ok && run.Marrow == afterPurchase, "Sold offer cannot charge twice.");
+            Check(run.GetShopOffers()[0].Purchased, "Sold flag survives reopening.");
+            var inventoryIds = run.Inventory.Instances.Keys.ToArray();
+            random = 0;
+            Check(run.ShopRefreshPrice == 30 && run.TryRefreshShop().Ok, "First refresh costs 30.");
+            Check(run.Marrow == afterPurchase - 30 && run.ShopRefreshCount == 1 && run.ShopRefreshPrice == 50, "Fee and count commit once.");
+            var refreshed = run.GetShopOffers();
+            Check(!ReferenceEquals(offers, refreshed) && refreshed.All(x => !x.Purchased), "Refresh creates fresh stock.");
+            Check(inventoryIds.SequenceEqual(run.Inventory.Instances.Keys), "Refresh preserves owned organs.");
+            balance = run.Marrow;
+            Check(!run.TryPurchaseShopOffer(offers[1]).Ok && run.Marrow == balance, "Stale pre-refresh offer cannot be bought.");
+            Check(run.TryRefreshShop().Ok && run.Marrow == balance - 50 && run.ShopRefreshPrice == 70, "Second refresh costs 50.");
+            while (run.Marrow >= run.ShopRefreshPrice) Check(run.TryRefreshShop().Ok, "Affordable refresh succeeds.");
+            balance = run.Marrow; int count = run.ShopRefreshCount;
+            offers = run.GetShopOffers();
+            Check(!run.TryRefreshShop().Ok && run.Marrow == balance && run.ShopRefreshCount == count
+                && ReferenceEquals(offers, run.GetShopOffers()), "Unaffordable refresh is atomic.");
+            run.StartNextWave();
+            Check(run.ShopRefreshCount == 0 && run.ShopRefreshPrice == 30 && !run.TryRefreshShop().Ok, "Next wave resets price, combat stays blocked.");
+            run.CombatTimerFinished();
+            Check(!ReferenceEquals(offers, run.GetShopOffers()), "Next rest has new stock.");
+            var custom = new RunController(catalog, waves, null, () => .5, shopRefreshBasePrice: 7, shopRefreshPriceIncrement: 3, shopOfferCount: 2);
+            custom.StartRun(); custom.CombatTimerFinished();
+            Check(custom.GetShopOffers().Count == 2 && custom.ShopRefreshPrice == 7, "Custom settings used.");
+            Check(custom.TryRefreshShop().Ok && custom.ShopRefreshPrice == 10, "Custom increment used.");
+            // Exact balance, full inventory, failed purchase, and empty candidate pool.
+            var exact = new RunController(catalog, waves, null, () => .5, shopRefreshBasePrice: 450);
+            exact.StartRun(); exact.CombatTimerFinished();
+            var exactOffer = exact.GetShopOffers()[0];
+            for (int i = 0; i < 5; i++) exact.Inventory.Spawn("one");
+            Check(!exact.TryPurchaseShopOffer(exactOffer).Ok && !exactOffer.Purchased && exact.Marrow == 450, "Full bag purchase preserves stock and balance.");
+            Check(exact.TryRefreshShop().Ok && exact.Marrow == 0, "Full bag can refresh with exact funds.");
+            var empty = new RunController(catalog, waves, null, () => .5, new[] { "fist" });
+            empty.StartRun(); empty.CombatTimerFinished();
+            Check(!empty.TryRefreshShop().Ok && empty.Marrow == 450 && empty.ShopRefreshCount == 0, "Empty stock never charges.");
+            var fresh = new RunController(catalog, waves, null);
+            Check(fresh.ShopRefreshCount == 0 && fresh.ShopRefreshPrice == 30, "New run resets refresh count.");
+            var expensive = new RunController(catalog, waves, null, () => .5, shopRefreshBasePrice: 1, shopRefreshPriceIncrement: int.MaxValue);
+            expensive.StartRun(); expensive.CombatTimerFinished();
+            Check(expensive.TryRefreshShop().Ok && expensive.ShopRefreshPrice == int.MaxValue, "Large prices never overflow negative.");
+            Check(!expensive.TryRefreshShop().Ok, "Huge price is unaffordable.");
+        }
+
         [Test] public void NestedPauseLeasesAreIdempotent()
         {
             using var service = new PauseService();
@@ -80,6 +167,8 @@ namespace SpringUp.EditorChecks
             if (!Application.isBatchMode) throw new InvalidOperationException("Use a separate batch validation copy");
             System.IO.Directory.CreateDirectory("Logs/Presentation");
             var core = new SceneFlowCoreTests();
+            core.PaidShopRefreshIsAtomicAndPersists();
+            core.ExpandedEconomyCoversEveryImplementedPricedOrgan();
             core.NestedPauseLeasesAreIdempotent();
             core.RewardsOverflowButPurchaseAndNextWaveAreAtomic();
             Debug.Log("[Scene Flow Checks] CORE PASS: pause ownership, capacity and purchase transactions.");
@@ -224,10 +313,11 @@ namespace SpringUp.EditorChecks
                         var buttons = app.uiRoot.GetComponentsInChildren<UnityEngine.UI.Button>();
                         var buyButtons = buttons.Where(b => b.name.StartsWith("购买 ")).ToArray();
                         Require(buyButtons.Length == 4, "Shop exposes four rotating offers");
-                        var buy = buttons.Single(b => b.name.StartsWith("购买 " + app.Configuration.Organs["rust_knife"].name));
+                        var buy = buyButtons.First(b => b.interactable);
+                        var boughtOrgan = app.Configuration.Organs.Values.Single(o => buy.name.StartsWith("购买 " + o.name + "（"));
                         int marrowBefore = run.Marrow, inventoryBefore = run.Inventory.Instances.Count;
                         buy.onClick.Invoke();
-                        int listPrice = app.Configuration.Organs["rust_knife"].shop_price;
+                        int listPrice = boughtOrgan.shop_price;
                         int paid = marrowBefore - run.Marrow;
                         int low = EconomySwing.RoundAwayFromZero(listPrice, 0, EconomySwing.PurchaseHalfPercent);
                         int high = EconomySwing.RoundAwayFromZero(listPrice, 1, EconomySwing.PurchaseHalfPercent);
@@ -241,6 +331,16 @@ namespace SpringUp.EditorChecks
                         marrowBefore = run.Marrow; sell.onClick.Invoke();
                         Require(run.Marrow == marrowBefore + price && !run.Inventory.Instances.ContainsKey(saleId), "Sale uses inventory price and removes instance");
                         sell.onClick.Invoke(); Require(run.Marrow == marrowBefore + price, "Repeat sale cannot reward twice");
+                        var reroll = buttons.Single(b => b.name == "刷新商品");
+                        int refreshPrice = run.ShopRefreshPrice;
+                        marrowBefore = run.Marrow;
+                        reroll.onClick.Invoke();
+                        Require(run.Marrow == marrowBefore - refreshPrice && run.ShopRefreshCount == 1, "Paid refresh deducts once");
+                        Require(reroll.GetComponentInChildren<UnityEngine.UI.Text>().text.Contains(run.ShopRefreshPrice.ToString()), "Refresh button shows next price");
+                        var preservedStock = run.GetShopOffers();
+                        app.CloseTop();
+                        Require(app.TryOpenShop() && ReferenceEquals(preservedStock, run.GetShopOffers()) && run.ShopRefreshCount == 1,
+                            "Reopening shop preserves stock and refresh price");
                         FlowPresentationChecks.CaptureFlowUI(app, "shop-zh.png");
                         position = content.player.transform.position;
                         pausedEnemy = new GameObject("Ready enemy during pause"); pausedEnemy.SetActive(false);

@@ -41,7 +41,7 @@ public class ProgramDTests
         Assert.AreEqual("multi_tentacle", waves[0].guaranteed_drops[0]);
         Assert.AreEqual("rust_knife", waves[0].guaranteed_drops[1]);
         Assert.AreEqual(0, waves[0].optional_drops.Length);
-        Assert.AreEqual(4, waves[0].random_drop_pool.Length);
+        Assert.AreEqual(35, waves[0].random_drop_pool.Length);
         Assert.AreEqual(2, waves[0].random_drop_count);
         Assert.AreEqual(1200, waves[6].marrow_reward);
     }
@@ -114,9 +114,9 @@ public class ProgramDTests
         var high = NewRun(new Recorder(), () => 0.999999);
         high.StartRun(); high.CombatTimerFinished();
         Assert.AreEqual("lab", low.Phase);
-        Assert.AreEqual(450, low.Marrow);
-        CollectionAssert.AreEquivalent(new[] { "multi_tentacle", "rust_knife" }, BagOrganIds(low));
-        CollectionAssert.AreEquivalent(new[] { "steel_pipe", "slime_gland" }, BagOrganIds(high));
+        Assert.AreEqual(427, low.Marrow); // Deterministic minimum: 450 with -5% reward swing.
+        CollectionAssert.AreEquivalent(new[] { "straight_projectile", "steel_pipe" }, BagOrganIds(low));
+        CollectionAssert.AreEquivalent(new[] { "torso_shortguard", "torso_longguard" }, BagOrganIds(high));
         Assert.AreNotEqual(string.Join(",", BagOrganIds(low)), string.Join(",", BagOrganIds(high)));
     }
 
