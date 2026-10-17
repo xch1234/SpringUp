@@ -58,7 +58,7 @@ namespace SpringUp.Flow
             if (battleCamera != null) baseCameraSize = battleCamera.orthographicSize;
             if (kind == ContentKind.Rest) EnsureMerchant();
             initialized = true;
-            if (kind == ContentKind.Battle) killMarrow = new KillMarrowBinding(session.Run);
+            if (kind == ContentKind.Battle) killMarrow = new KillMarrowBinding(session.Run, app.ShowKillReward);
             session.Run.LoadoutChanged += LoadoutChanged;
             player.Died += Died;
             if (director != null) director.WaveCompleted += Completed;
@@ -150,7 +150,6 @@ namespace SpringUp.Flow
             if (!initialized) { if (world != null) world.SetActive(false); return; }
             initialized = false;
             killMarrow?.Dispose(); killMarrow = null;
-            MarrowDeathVisual.Clear();
             if (pipeline != null) pipeline.AutomaticExecution = false;
             if (equipmentHud != null) { equipmentHud.gameObject.SetActive(false); Destroy(equipmentHud.gameObject); }
             if (session != null && player != null)

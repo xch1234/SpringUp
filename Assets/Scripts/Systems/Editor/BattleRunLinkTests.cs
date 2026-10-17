@@ -13,7 +13,7 @@ public class BattleRunLinkTests
         link.NotifyWaveTimerFinished(1);
 
         Assert.AreEqual("lab", link.Run.Phase);
-        Assert.AreEqual(0, link.Run.Marrow);
+        Assert.AreEqual(10, link.Run.Marrow);
         Assert.IsTrue(link.TryStartNextWave(out var next));
         Assert.AreEqual(2, next);
         Assert.AreEqual("combat", link.Run.Phase);
@@ -21,7 +21,7 @@ public class BattleRunLinkTests
     }
 
     [Test]
-    public void OverCapacity_KeepsLabWave()
+    public void UnlimitedBag_AdvancesWave()
     {
         var link = NewLink(waves: 2);
         link.Begin();
@@ -29,10 +29,10 @@ public class BattleRunLinkTests
         for (var i = 0; i < 5; i++)
             link.Run.Inventory.Spawn("fist");
 
-        Assert.IsFalse(link.TryStartNextWave(out var next));
-        Assert.AreEqual(0, next);
-        Assert.AreEqual("lab", link.Run.Phase);
-        Assert.AreEqual(1, link.Run.Wave);
+        Assert.IsTrue(link.TryStartNextWave(out var next));
+        Assert.AreEqual(2, next);
+        Assert.AreEqual("combat", link.Run.Phase);
+        Assert.AreEqual(2, link.Run.Wave);
     }
 
     [Test]
@@ -117,7 +117,8 @@ public class BattleRunLinkTests
             {
                 wave = i,
                 duration_sec = 60,
-                guaranteed_drops = i == 1 ? new[] { "rust_knife" } : new string[0],
+                guaranteed_drops = new string[0],
+                random_drop_pool = i == 1 ? new[] { "rust_knife" } : new string[0],
                 optional_drops = new string[0],
                 marrow_reward = 10
             });

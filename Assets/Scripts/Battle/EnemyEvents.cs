@@ -32,6 +32,7 @@ namespace TideBorne.Battle
         {
             public SpringUp.Organs.CastEvent? organAttack;
             public int baseMarrow;
+            public bool rewardEligible;
             public string targetId;
             public string enemyId;
             public Vector2 deathPoint;

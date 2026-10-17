@@ -1362,6 +1362,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bf99814306185d4493df4f528cdcb16, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Flow.FlowApplication
+  rewardFlightSettings: {fileID: 11400000, guid: 0abaae284a344803b348140b9148b5d8, type: 2}
   organsJson: {fileID: 4900000, guid: b2ccb87763bfce84c965c9483720fb96, type: 3}
   wavesJson: {fileID: 4900000, guid: c0618cea03453394da2792e05d6d7ffe, type: 3}
   organCatalog: {fileID: 11400000, guid: cdef01a9745c436b9664a0a17c25aa11, type: 2}

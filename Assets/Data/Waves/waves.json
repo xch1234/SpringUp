@@ -3,56 +3,105 @@
     {
       "wave": 1,
       "duration_sec": 60,
-      "guaranteed_drops": ["multi_tentacle", "rust_knife"],
+      "guaranteed_drops": [],
       "optional_drops": [],
-      "random_drop_pool": ["multi_tentacle", "rust_knife", "steel_pipe", "slime_gland"],
-      "random_drop_count": 2,
-      "marrow_reward": 0
+      "random_drop_pool": [
+        "multi_tentacle",
+        "rust_knife",
+        "steel_pipe",
+        "slime_gland"
+      ],
+      "random_drop_count": 1,
+      "marrow_reward": 50,
+      "kill_organ_chance": 0.005
     },
     {
       "wave": 2,
       "duration_sec": 60,
-      "guaranteed_drops": ["steel_pipe"],
+      "guaranteed_drops": [],
       "optional_drops": [],
-      "random_drop_pool": ["steel_pipe", "rust_knife", "slime_gland", "multi_tentacle", "collapse_body", "tnt"],
+      "random_drop_pool": [
+        "steel_pipe",
+        "rust_knife",
+        "slime_gland",
+        "multi_tentacle",
+        "collapse_body",
+        "tnt"
+      ],
       "random_drop_count": 1,
-      "marrow_reward": 0
+      "marrow_reward": 60,
+      "kill_organ_chance": 0.005
     },
     {
       "wave": 3,
       "duration_sec": 60,
-      "guaranteed_drops": ["slime_gland"],
+      "guaranteed_drops": [],
       "optional_drops": [],
-      "random_drop_pool": ["steel_pipe", "rust_knife", "slime_gland", "collapse_body", "tnt", "torso_overdrive", "torso_leech"],
+      "random_drop_pool": [
+        "steel_pipe",
+        "rust_knife",
+        "slime_gland",
+        "collapse_body",
+        "tnt",
+        "torso_overdrive",
+        "torso_leech"
+      ],
       "random_drop_count": 1,
-      "marrow_reward": 0
+      "marrow_reward": 70,
+      "kill_organ_chance": 0.005
     },
     {
       "wave": 4,
       "duration_sec": 60,
-      "guaranteed_drops": ["tnt"],
+      "guaranteed_drops": [],
       "optional_drops": [],
-      "random_drop_pool": ["collapse_body", "tnt", "multi_tentacle", "torso_ram", "torso_wideview", "torso_focused"],
+      "random_drop_pool": [
+        "collapse_body",
+        "tnt",
+        "multi_tentacle",
+        "torso_ram",
+        "torso_wideview",
+        "torso_focused"
+      ],
       "random_drop_count": 1,
-      "marrow_reward": 0
+      "marrow_reward": 80,
+      "kill_organ_chance": 0.005
     },
     {
       "wave": 5,
       "duration_sec": 60,
-      "guaranteed_drops": ["collapse_body"],
+      "guaranteed_drops": [],
       "optional_drops": [],
-      "random_drop_pool": ["collapse_body", "tnt", "torso_longguard", "torso_shortguard", "torso_wideview"],
+      "random_drop_pool": [
+        "collapse_body",
+        "tnt",
+        "torso_longguard",
+        "torso_shortguard",
+        "torso_wideview"
+      ],
       "random_drop_count": 1,
-      "marrow_reward": 0
+      "marrow_reward": 90,
+      "kill_organ_chance": 0.005
     },
     {
       "wave": 6,
       "duration_sec": 60,
-      "guaranteed_drops": ["spider_nest"],
+      "guaranteed_drops": [],
       "optional_drops": [],
-      "random_drop_pool": ["steel_pipe", "rust_knife", "slime_gland", "multi_tentacle", "collapse_body", "tnt", "torso_overdrive", "torso_leech", "torso_ram"],
-      "random_drop_count": 2,
-      "marrow_reward": 0
+      "random_drop_pool": [
+        "steel_pipe",
+        "rust_knife",
+        "slime_gland",
+        "multi_tentacle",
+        "collapse_body",
+        "tnt",
+        "torso_overdrive",
+        "torso_leech",
+        "torso_ram"
+      ],
+      "random_drop_count": 1,
+      "marrow_reward": 100,
+      "kill_organ_chance": 0.005
     },
     {
       "wave": 7,
@@ -61,7 +110,8 @@
       "optional_drops": [],
       "random_drop_pool": [],
       "random_drop_count": 0,
-      "marrow_reward": 0
+      "marrow_reward": 0,
+      "kill_organ_chance": 0.005
     }
   ]
 }

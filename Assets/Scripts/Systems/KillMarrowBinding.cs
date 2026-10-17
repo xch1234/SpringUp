@@ -1,17 +1,22 @@
 using System;
 using TideBorne.Battle;
+using UnityEngine;
 namespace Tideflesh.Systems
 {
-    // Owned by the current scene driver, disposed before unload / run replacement.
+    // Old demos can omit presentation; economic settlement has no UI dependency.
     public sealed class KillMarrowBinding : IDisposable
     {
         readonly RunController run;
-        public KillMarrowBinding(RunController run) { this.run = run; EnemyEvents.DeathCommitted += Killed; }
+        readonly Action<KillRewardResult, Vector2> present;
+        public KillMarrowBinding(RunController run, Action<KillRewardResult, Vector2> present = null)
+        { this.run = run; this.present = present; EnemyEvents.DeathCommitted += Killed; }
         void Killed(EnemyEvents.KilledInfo info)
         {
-            if (run.TryCreditKill(info.targetId, info.baseMarrow, out _)) MarrowDeathVisual.Spawn(info.deathPoint);
+            var reward = run.ResolveKill(info.targetId, info.baseMarrow, info.rewardEligible);
+            if (!reward.Accepted || present == null) return;
+            try { present(reward, info.deathPoint); }
+            catch (Exception error) { Debug.LogException(error); } // Never interrupt death or undo committed rewards.
         }
-        public void Dispose() { EnemyEvents.DeathCommitted -= Killed; }
+        public void Dispose() => EnemyEvents.DeathCommitted -= Killed;
     }
 }
-

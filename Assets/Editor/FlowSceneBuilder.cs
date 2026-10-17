@@ -170,6 +170,7 @@ namespace SpringUp.EditorChecks
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var app = new GameObject("Flow Bootstrap").AddComponent<FlowApplication>();
+            app.rewardFlightSettings = AssetDatabase.LoadAssetAtPath<RewardFlightSettings>("Assets/Data/Rewards/RewardFlightSettings.asset");
             app.organsJson = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Organs/organs.json");
             app.wavesJson = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Waves/waves.json");
             app.organCatalog = AssetDatabase.LoadAssetAtPath<OrganCatalog>("Assets/Resources/OrganCatalog.asset");

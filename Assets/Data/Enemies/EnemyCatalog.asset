@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2f30935c1da4b59b01b7eb47163b0ba, type: 3}
   m_Name: EnemyCatalog
   m_EditorClassIdentifier: 
-  marrowVisualLifetime: 0.3
   enemies:
   - {fileID: 11400000, guid: 97838bda797c4a19a0d39cb6e82e899e, type: 2}
   - {fileID: 11400000, guid: 207e8801073d44a881eca1bd7c24f868, type: 2}

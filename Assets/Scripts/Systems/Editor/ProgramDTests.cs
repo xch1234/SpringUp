@@ -37,12 +37,11 @@ public class ProgramDTests
         var catalog = Catalog.LoadOrgans(File.ReadAllText(OrgansPath));
         var waves = Catalog.LoadWaves(File.ReadAllText(WavesPath), catalog);
         Assert.AreEqual(7, waves.Count);
-        Assert.AreEqual(0, waves[0].marrow_reward);
-        Assert.AreEqual("multi_tentacle", waves[0].guaranteed_drops[0]);
-        Assert.AreEqual("rust_knife", waves[0].guaranteed_drops[1]);
+        Assert.AreEqual(50, waves[0].marrow_reward);
+        Assert.AreEqual(0, waves[0].guaranteed_drops.Length);
         Assert.AreEqual(0, waves[0].optional_drops.Length);
         Assert.AreEqual(4, waves[0].random_drop_pool.Length);
-        Assert.AreEqual(2, waves[0].random_drop_count);
+        Assert.AreEqual(1, waves[0].random_drop_count);
         Assert.AreEqual(0, waves[6].marrow_reward);
     }
 
@@ -114,9 +113,9 @@ public class ProgramDTests
         var high = NewRun(new Recorder(), () => 0.999999);
         high.StartRun(); high.CombatTimerFinished();
         Assert.AreEqual("lab", low.Phase);
-        Assert.AreEqual(0, low.Marrow);
-        CollectionAssert.AreEquivalent(new[] { "multi_tentacle", "rust_knife" }, BagOrganIds(low));
-        CollectionAssert.AreEquivalent(new[] { "steel_pipe", "slime_gland" }, BagOrganIds(high));
+        Assert.AreEqual(50, low.Marrow);
+        CollectionAssert.AreEquivalent(new[] { "multi_tentacle" }, BagOrganIds(low));
+        CollectionAssert.AreEquivalent(new[] { "slime_gland" }, BagOrganIds(high));
         Assert.AreNotEqual(string.Join(",", BagOrganIds(low)), string.Join(",", BagOrganIds(high)));
     }
 
@@ -130,7 +129,7 @@ public class ProgramDTests
         run.StartNextWave();
         run.CombatTimerFinished();
         Assert.AreEqual("lab", run.Phase);
-        Assert.AreEqual(0, run.Marrow);
+        Assert.AreEqual(110, run.Marrow);
         var labCount = 0;
         foreach (var n in rec.Names)
             if (n == "LabOpened") labCount++;
@@ -166,15 +165,15 @@ public class ProgramDTests
     }
 
     [Test]
-    public void OverCapacity_BlocksNextWave()
+    public void UnlimitedBag_AllowsNextWave()
     {
         var run = NewRun(new Recorder());
         run.StartRun();
         run.CombatTimerFinished();
         for (var i = 0; i < 4; i++)
             run.Inventory.Spawn("fist");
-        Assert.IsFalse(run.CanStartNextWave());
-        Assert.Throws<RunException>(() => run.StartNextWave());
+        Assert.IsTrue(run.CanStartNextWave());
+        Assert.DoesNotThrow(() => run.StartNextWave());
     }
 
     [Test]
@@ -193,12 +192,12 @@ public class ProgramDTests
     }
 
     [Test]
-    public void WaveEnd_DoesNotPayMarrow()
+    public void WaveEnd_PaysFixedAdditionalMarrow()
     {
         var run = NewRun(new Recorder(), () => 0.24);
         run.StartRun();
         run.CombatTimerFinished();
-        Assert.AreEqual(0, run.Marrow);
+        Assert.AreEqual(50, run.Marrow);
     }
 
     [Test]

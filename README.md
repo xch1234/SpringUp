@@ -24,13 +24,14 @@ Unity 2D 器官组合游戏。当前主流程：战斗 60 秒 → 获得奖励 �
 - **7 种躯干**：`Assets/Data/Organs/Torso/*Torso.asset`。
 - **独立状态参数**：`Assets/Data/Statuses/`。原 Hand 中六种执行器已迁入 Actuators，多肢触手迁入 Triggers，普通器官不限制头/手/腿部位。
 - **敌人数值、行为与击杀骨髓**：`Assets/Data/Enemies/`；迁移差异与验收见 [敌人配置与击杀骨髓迁移](Docs/敌人配置与击杀骨髓迁移.md)。前六波生成截止时间在 `Assets/Data/Waves/SpawnSettings.asset`。
+- **第二阶段奖励与光点**：[调参和验收说明](Docs/第二阶段奖励与光点说明.md)。波末额外保底和击杀器官概率在 `waves.json`；光点 Sprite、颜色、轨迹与接收锚点在 `Assets/Data/Rewards/RewardFlightSettings.asset`。
 - **波次时长和器官奖励**：`Assets/Data/Waves/waves.json`。库存价格等元数据在 `Assets/Data/Organs/organs.json`；实际战斗数值来自器官 `.asset`。
 
 逐项参数、脚本示例和场景对象位置见 [开发改动总览与调参手册](Docs/开发改动总览与调参手册.md)。不要寻找已删除的 `mvp_baseline.json` 或充能组件。
 
 ## 我想试新器官
 
-主场景进入休息期后，使用 **Tools → SpringUp → 样板** 菜单添加执行器、触发器或躯干，再从背包装入槽位。新增样板尚未全部加入正式掉落表；背包超容量时需装备、出售或丢弃后再出战。
+主场景进入休息期后，使用 **Tools → SpringUp → 样板** 菜单添加执行器、触发器或躯干，再从背包装入槽位。新增样板尚未全部加入正式掉落表；未装备库存已取消容量限制。
 
 ## 场景分别做什么
 

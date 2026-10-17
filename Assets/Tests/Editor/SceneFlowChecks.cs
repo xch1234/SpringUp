@@ -41,13 +41,8 @@ namespace SpringUp.EditorChecks
             int reward = run.Marrow;
             Assert.Throws<RunException>(() => run.CombatTimerFinished());
             Assert.AreEqual(reward, run.Marrow);
-            while (run.Inventory.UnequippedWithinCap()) run.Inventory.Spawn("fist");
-            int count = run.Inventory.Instances.Count;
-            Assert.IsFalse(run.TryPurchase("rust_knife").Ok);
-            Assert.AreEqual(reward, run.Marrow); Assert.AreEqual(count, run.Inventory.Instances.Count);
-            Assert.Throws<RunException>(() => run.StartNextWave());
-            while (!run.CanStartNextWave()) run.Discard(run.Inventory.UnequippedIds()[0]);
-            run.Discard(run.Inventory.UnequippedIds()[0]);
+            for (int i = 0; i < 200; i++) run.Inventory.Spawn("fist");
+            Assert.IsTrue(run.CanStartNextWave());
             Assert.IsTrue(run.TryPurchase("rust_knife").Ok);
             int paid = reward - run.Marrow;
             int list = run.Inventory.Catalog["rust_knife"].shop_price;
@@ -272,9 +267,8 @@ namespace SpringUp.EditorChecks
                         Require(Time.timeScale == 0, "Esc closes settings before pause");
                         app.HandleEscape(); Require(Time.timeScale == 1, "Pause closes next");
                         InputSystem.RemoveDevice(keyboard); keyboard = null;
-                        while (run.Inventory.UnequippedWithinCap()) run.Inventory.Spawn("fist");
-                        app.NextWave(); Require(!app.IsTransitioning && run.Stage == RunPhase.Rest, "Overflow blocks transition");
-                        while (!run.CanStartNextWave()) run.Discard(run.Inventory.UnequippedIds().Last());
+                        for (int i = 0; i < 20; i++) run.Inventory.Spawn("fist");
+                        Require(run.CanStartNextWave(), "Large inventory permits transition");
                         app.NextWave(); app.NextWave(); stage++; break;
                     case 6:
                         Require(run.Wave == 2 && content.director.CurrentWave == 2, "Repeated next request starts only wave 2");

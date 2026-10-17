@@ -142,7 +142,7 @@ namespace SpringUp.EditorChecks
                     Require(automaticTarget != null && automaticTarget.CurrentHealth <= automaticHealth - 2 * driver.Definitions["fist"].Damage,
                         "没有按攻击键，拳头按节拍自动攻击至少两轮。");
                     driver.director.CompleteCurrentWave();
-                    Require(run.Phase == "lab" && run.Marrow == run.WaveKillMarrow && Time.timeScale == 0, "第一波奖励与暂停。");
+                    Require(run.Phase == "lab" && run.Marrow >= run.WaveKillMarrow + 50 && Time.timeScale == 0, "第一波奖励与暂停。");
                     Require(!driver.pipeline.enabled, "休息阶段停止实战自动攻击。");
                     int steps = driver.pipeline.GetBody(BodyPart.Hand).ExecutedStepCount;
                     driver.pipeline.AdvanceAutomatic(10);
@@ -213,10 +213,9 @@ namespace SpringUp.EditorChecks
                         "预览碰撞后扣血并移除子弹。");
                     PatternActuatorChecks.CapturePreview(driver, preview);
                     TorsoOrganChecks.RunLab(driver);
-                    while (run.Inventory.UnequippedIds().Count <= run.Inventory.UnequippedCapacity()) run.Inventory.Spawn("fist");
+                    for (int i = 0; i < 20; i++) run.Inventory.Spawn("fist");
                     driver.Equipment.Refresh(); driver.NextWave();
-                    Require(run.Phase == "lab" && driver.director.CurrentWave == 1, "超容量阻止下一波。");
-                    while (!run.CanStartNextWave()) driver.Equipment.TryDiscard(run.Inventory.UnequippedIds()[0], out _);
+                    Require(run.Phase == "combat" && driver.director.CurrentWave == 2, "无限背包允许下一波。");
                     driver.NextWave(); driver.NextWave();
                     Require(run.Wave == 2 && driver.director.CurrentWave == 2 && Time.timeScale == 1, "第二波与重复点击保护。");
                     Require(driver.pipeline.AutomaticExecution && driver.pipeline.enabled, "换波自动恢复攻击，不检查或恢复充能。");

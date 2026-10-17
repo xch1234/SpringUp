@@ -180,6 +180,7 @@ namespace TideBorne.Battle
             {
                 enemyId = Id, targetId = TargetId, organAttack = attack,
                 deathPoint = deathPosition, killerOrganId = sourceOrganId, enemy = gameObject,
+                rewardEligible = !TrainingTarget && Data.Definition.archetype != EnemyArchetype.Dummy,
                 baseMarrow = Data.Definition.archetype == EnemyArchetype.Dummy ? 0 : Data.Definition.baseMarrow
             };
             if (lethal)
@@ -274,7 +275,6 @@ namespace TideBorne.Battle
         public static int ClearBattlefield()
         {
             // 先快照：Destroy 是延迟的，但 OnDestroy 可能在任何时刻把元素移出原列表。
-            MarrowDeathVisual.Clear();
             var snapshot = s_ActiveEnemies.ToArray();
             var cleared = 0;
 

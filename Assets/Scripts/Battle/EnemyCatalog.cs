@@ -8,7 +8,6 @@ namespace TideBorne.Battle
     {
         public EnemyDefinition[] enemies;
         public EnemyDefinition trainingDummy;
-        [Min(0)] public float marrowVisualLifetime = 0.3f;
         public static EnemyCatalog Load()
         {
             var link = Resources.Load<EnemyCatalogReference>("EnemyCatalogReference");
