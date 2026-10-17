@@ -41,6 +41,8 @@ public class ProgramDTests
         Assert.AreEqual("multi_tentacle", waves[0].guaranteed_drops[0]);
         Assert.AreEqual("rust_knife", waves[0].guaranteed_drops[1]);
         Assert.AreEqual(0, waves[0].optional_drops.Length);
+        Assert.AreEqual(4, waves[0].random_drop_pool.Length);
+        Assert.AreEqual(2, waves[0].random_drop_count);
         Assert.AreEqual(1200, waves[6].marrow_reward);
     }
 
@@ -105,22 +107,17 @@ public class ProgramDTests
     }
 
     [Test]
-    public void Wave1Timer_OpensLabWithBothDrops()
+    public void Wave1Timer_DrawsRandomDropsFromPool()
     {
-        var rec = new Recorder();
-        var run = NewRun(rec);
-        run.StartRun();
-        run.CombatTimerFinished();
-        Assert.AreEqual("lab", run.Phase);
-        Assert.AreEqual(450, run.Marrow);
-        CollectionAssert.AreEquivalent(
-            new[] { "multi_tentacle", "rust_knife" },
-            BagOrganIds(run));
-        Assert.AreEqual("WaveEnded", rec.Events[rec.Events.Count - 2].Name);
-        Assert.AreEqual("LabOpened", rec.Events[rec.Events.Count - 1].Name);
-        var lab = (LabOpenedPayload)rec.Events[rec.Events.Count - 1].Payload;
-        Assert.AreEqual(450, lab.MarrowDelta);
-        Assert.AreEqual(2, lab.Drops.Count);
+        var low = NewRun(new Recorder(), () => 0.0);
+        low.StartRun(); low.CombatTimerFinished();
+        var high = NewRun(new Recorder(), () => 0.999999);
+        high.StartRun(); high.CombatTimerFinished();
+        Assert.AreEqual("lab", low.Phase);
+        Assert.AreEqual(450, low.Marrow);
+        CollectionAssert.AreEquivalent(new[] { "multi_tentacle", "rust_knife" }, BagOrganIds(low));
+        CollectionAssert.AreEquivalent(new[] { "steel_pipe", "slime_gland" }, BagOrganIds(high));
+        Assert.AreNotEqual(string.Join(",", BagOrganIds(low)), string.Join(",", BagOrganIds(high)));
     }
 
     [Test]

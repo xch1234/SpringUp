@@ -149,8 +149,10 @@ namespace SpringUp.EditorChecks
                     Require(driver.pipeline.GetBody(BodyPart.Hand).ExecutedStepCount == steps, "休息期间不能推进实战管道。");
                     CheckEquipmentHud(driver, false);
                     var bag = driver.Equipment.Inventory;
-                    var knife = bag.Single(x => x.DefinitionId == "rust_knife");
-                    var tentacle = bag.Single(x => x.DefinitionId == "multi_tentacle");
+                    var knife = bag.FirstOrDefault(x => x.DefinitionId == "rust_knife");
+                    if (knife == null) { run.Inventory.Spawn("rust_knife"); driver.Equipment.Refresh(); bag = driver.Equipment.Inventory; knife = bag.Single(x => x.DefinitionId == "rust_knife"); }
+                    var tentacle = bag.FirstOrDefault(x => x.DefinitionId == "multi_tentacle");
+                    if (tentacle == null) { run.Inventory.Spawn("multi_tentacle"); driver.Equipment.Refresh(); bag = driver.Equipment.Inventory; tentacle = bag.Single(x => x.DefinitionId == "multi_tentacle"); }
                     driver.presenter.SelectInventory(knife.InstanceId); driver.presenter.SelectSlot(1, 1);
                     driver.presenter.installButton.onClick.Invoke();
                     Require(run.Inventory.EquippedAt("hand", 2) == knife.InstanceId, "B 安装按钮写回 D 库存。");

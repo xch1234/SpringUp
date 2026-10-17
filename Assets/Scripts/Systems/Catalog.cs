@@ -82,6 +82,11 @@ namespace Tideflesh.Systems
         public int duration_sec;
         public string[] guaranteed_drops;
         public string[] optional_drops;
+        // When present, RunController draws random drops from this pool instead of
+        // replaying guaranteed_drops/optional_drops. The old fields remain a
+        // compatibility fallback for older wave data and tests.
+        public string[] random_drop_pool;
+        public int random_drop_count;
         public int marrow_reward;
     }
 
@@ -144,6 +149,13 @@ namespace Tideflesh.Systems
                     RequireDrop(dropId, catalog);
                 foreach (var dropId in wave.optional_drops)
                     RequireDrop(dropId, catalog);
+                if (wave.random_drop_pool != null)
+                {
+                    if (wave.random_drop_count < 0)
+                        throw new CatalogException("<unknown>", "random_drop_count cannot be negative");
+                    foreach (var dropId in wave.random_drop_pool)
+                        RequireDrop(dropId, catalog);
+                }
             }
             return new List<WaveDefinition>(file.waves);
         }

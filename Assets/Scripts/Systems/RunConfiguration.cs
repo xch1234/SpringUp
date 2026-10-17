@@ -40,12 +40,16 @@ namespace Tideflesh.Systems
             foreach (var wave in waves)
             {
                 wave.guaranteed_drops = wave.guaranteed_drops.Select(id => id == "spider_nest" ? "tnt" : id).ToArray();
-                foreach (var id in wave.guaranteed_drops.Concat(wave.optional_drops))
+                wave.optional_drops = wave.optional_drops.Select(id => id == "spider_nest" ? "tnt" : id).ToArray();
+                if (wave.random_drop_pool != null)
+                    wave.random_drop_pool = wave.random_drop_pool.Select(id => id == "spider_nest" ? "tnt" : id).ToArray();
+                foreach (var id in wave.guaranteed_drops.Concat(wave.optional_drops)
+                    .Concat(wave.random_drop_pool ?? Array.Empty<string>()))
                     if (!definitions.ContainsKey(id)) throw new InvalidOperationException("奖励缺少战斗定义：" + id);
             }
             Organs = catalog;
             Waves = waves;
         }
-        public RunController CreateRun() => new RunController(Organs, Waves, null);
+        public RunController CreateRun() => new RunController(Organs, Waves, null, null, Definitions.Keys);
     }
 }

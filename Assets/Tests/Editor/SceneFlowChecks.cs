@@ -178,7 +178,8 @@ namespace SpringUp.EditorChecks
                         Require(content.pipeline.AutomaticExecution, "Rest automatically tests the equipped build");
                         app.OpenWindow(WindowKind.Inventory);
                         Require(Time.timeScale == 0 && !app.WorldInputAllowed, "Inventory pauses world execution");
-                        knife = run.Inventory.UnequippedIds().Single(id => run.Inventory.OrganOf(id).id == "rust_knife");
+                        knife = run.Inventory.UnequippedIds().FirstOrDefault(id => run.Inventory.OrganOf(id).id == "rust_knife");
+                        if (knife == null) { run.Inventory.Spawn("rust_knife"); knife = run.Inventory.UnequippedIds().Single(id => run.Inventory.OrganOf(id).id == "rust_knife"); }
                         var lab = Object.FindFirstObjectByType<FlowLaboratoryWindow>();
                         Require(lab != null && lab.presenter.source == null, "Real laboratory view without demo bootstrap");
                         int beforeSample = run.Inventory.Instances.Count;
@@ -221,7 +222,9 @@ namespace SpringUp.EditorChecks
                         content.player.transform.position = content.Merchant.position;
                         Require(app.TryOpenShop(), "Merchant shop entry");
                         var buttons = app.uiRoot.GetComponentsInChildren<UnityEngine.UI.Button>();
-                        var buy = buttons.Single(b => b.name.StartsWith("购买 "));
+                        var buyButtons = buttons.Where(b => b.name.StartsWith("购买 ")).ToArray();
+                        Require(buyButtons.Length == 4, "Shop exposes four rotating offers");
+                        var buy = buttons.Single(b => b.name.StartsWith("购买 " + app.Configuration.Organs["rust_knife"].name));
                         int marrowBefore = run.Marrow, inventoryBefore = run.Inventory.Instances.Count;
                         buy.onClick.Invoke();
                         int listPrice = app.Configuration.Organs["rust_knife"].shop_price;

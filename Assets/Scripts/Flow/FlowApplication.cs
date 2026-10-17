@@ -39,6 +39,8 @@ namespace SpringUp.Flow
             && Content.kind != ContentKind.MainMenu && Session != null
             && (Session.Run.Stage == RunPhase.Combat || Session.Run.Stage == RunPhase.Rest);
         readonly List<WindowEntry> windows = new();
+        static readonly System.Random ShopRandom = new();
+        const int ShopOfferCount = 4;
         Scene contentScene;
         string retryPath;
         bool quitting;
@@ -311,14 +313,31 @@ namespace SpringUp.Flow
         void BuildShop(FlowWindow view)
         {
             var run = Session.Run;
-            var item = Configuration.Organs["rust_knife"];
             var balance = view.AddText("");
-            var message = view.AddText("仅出售背包中未装备的物品；已装备物品请先在休整背包拆卸。");
+            var message = view.AddText("本轮商品随机刷新；仅出售背包中未装备的物品。已装备物品请先在休整背包拆卸。");
             var selection = view.AddText("未选择物品");
             string selected = null;
             var choices = new List<Button>();
+            var offers = SelectShopOffers(ShopOfferCount);
+            var offerPrices = new int[offers.Count];
+            var offerBought = new bool[offers.Count];
+            var offerButtons = new Button[offers.Count];
             Button sell = null;
             Action refresh = null;
+            Action refreshOffers = null;
+            refreshOffers = () => {
+                for (var i = 0; i < offerButtons.Length; i++)
+                {
+                    var organ = Configuration.Organs[offers[i]];
+                    var button = offerButtons[i];
+                    button.interactable = !offerBought[i]
+                        && run.Inventory.UnequippedIds().Count < run.Inventory.UnequippedCapacity()
+                        && run.Marrow >= offerPrices[i];
+                    button.GetComponentInChildren<Text>().text = offerBought[i]
+                        ? $"已购买 {organ.name}"
+                        : $"购买 {organ.name}（{offerPrices[i]} 骨髓）";
+                }
+            };
             refresh = () => {
                 balance.text = $"骨髓 {run.Marrow} · 背包 {run.Inventory.UnequippedIds().Count}/{run.Inventory.UnequippedCapacity()}";
                 selected = null; selection.text = run.Inventory.UnequippedIds().Count == 0 ? "空库存：没有可出售物品" : "请选择出售物品";
@@ -335,18 +354,45 @@ namespace SpringUp.Flow
                         sell.interactable = true;
                     }));
                 }
+                refreshOffers();
             };
-            int price = run.QuotePurchasePrice("rust_knife");
-            view.AddButton($"购买 {item.name}（{price} 骨髓）", () => {
-                var result = run.TryPurchase("rust_knife", price);
-                message.text = result.Ok ? "购买成功" : SpringUp.UI.ChineseText.Error(result.Reason); refresh();
-            });
+            for (var i = 0; i < offers.Count; i++)
+            {
+                var offerIndex = i;
+                var organId = offers[i];
+                var organ = Configuration.Organs[organId];
+                offerPrices[i] = run.QuotePurchasePrice(organId);
+                offerButtons[i] = view.AddButton($"购买 {organ.name}（{offerPrices[i]} 骨髓）", () => {
+                    if (offerBought[offerIndex]) return;
+                    var result = run.TryPurchase(organId, offerPrices[offerIndex]);
+                    if (result.Ok) offerBought[offerIndex] = true;
+                    message.text = result.Ok ? $"购买成功：{organ.name}" : SpringUp.UI.ChineseText.Error(result.Reason);
+                    refresh();
+                });
+            }
             sell = view.AddButton("出售所选物品", () => {
                 if (selected == null || !run.Inventory.UnequippedIds().Contains(selected)) { message.text = "请重新选择有效物品"; refresh(); return; }
                 var equipment = new RunLaboratoryEquipment(run, Configuration.Definitions);
                 message.text = equipment.TrySell(selected, out var error) ? "出售成功" : error; refresh();
             });
             view.AddButton("关闭", CloseTop); refresh();
+        }
+
+        List<string> SelectShopOffers(int count)
+        {
+            var candidates = Configuration.Definitions.Keys
+                .Where(id => Configuration.Organs.TryGetValue(id, out var organ) && organ.shop_price > 0)
+                .Distinct().ToList();
+            var offers = new List<string>();
+            // Keep the original basic offer visible while rotating the rest of the stock.
+            if (candidates.Remove("rust_knife")) offers.Add("rust_knife");
+            for (var i = candidates.Count - 1; i > 0; i--)
+            {
+                var swap = ShopRandom.Next(i + 1);
+                (candidates[i], candidates[swap]) = (candidates[swap], candidates[i]);
+            }
+            for (var i = 0; i < candidates.Count && offers.Count < count; i++) offers.Add(candidates[i]);
+            return offers;
         }
         FlowWindow Push(WindowKind kind, string title)
         {
