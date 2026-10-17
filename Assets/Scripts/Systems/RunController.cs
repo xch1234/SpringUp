@@ -22,6 +22,7 @@ namespace Tideflesh.Systems
     public sealed class LabOpenedPayload
     {
         public List<OrganInstance> Drops;
+        // Informational wave kill total; already credited, never pay this again.
         public int MarrowDelta;
     }
 
@@ -63,6 +64,28 @@ namespace Tideflesh.Systems
         public event Action<RunPhase> Ended;
         public int Wave { get; private set; }
         public int Marrow { get; private set; }
+        readonly HashSet<string> rewardedLives = new HashSet<string>();
+        decimal marrowFraction;
+        public int WaveKillMarrow { get; private set; }
+        public event Action<int> BalanceChanged;
+        // A life id is a spawn snapshot, never an object reference that can be reused by a pool.
+        public int CreditKill(string lifeId, int baseMarrow)
+        {
+            TryCreditKill(lifeId, baseMarrow, out int gained);
+            return gained;
+        }
+        public bool TryCreditKill(string lifeId, int baseMarrow, out int gained)
+        {
+            gained = 0;
+            if (Stage != RunPhase.Combat || string.IsNullOrEmpty(lifeId) || baseMarrow <= 0 || !rewardedLives.Add(lifeId)) return false;
+            decimal exact = baseMarrow * (decimal)Inventory.MarrowGainMult() + marrowFraction;
+            gained = (int)decimal.Floor(exact);
+            marrowFraction = exact - gained;
+            Marrow += gained;
+            WaveKillMarrow += gained;
+            BalanceChanged?.Invoke(Marrow);
+            return true;
+        }
         public int MaxWave => _maxWave;
         public int WaveDuration => _waves[Wave].duration_sec;
 
@@ -98,6 +121,9 @@ namespace Tideflesh.Systems
                 throw new RunException("run already started");
             Inventory = new Inventory(_catalog);
             Marrow = 0;
+            marrowFraction = 0;
+            rewardedLives.Clear();
+            WaveKillMarrow = 0;
             Wave = 1;
             Inventory.SpawnEquipped("fist", "hand", 1);
             Stage = RunPhase.Combat;
@@ -118,11 +144,6 @@ namespace Tideflesh.Systems
             var spawned = new List<string>();
             foreach (var oid in drops)
                 spawned.Add(Inventory.Spawn(oid));
-            var gained = EconomySwing.Floor(
-                cfg.marrow_reward * (double)Inventory.MarrowGainMult(),
-                _nextUnit(),
-                EconomySwing.MarrowHalfPercent);
-            Marrow += gained;
             if (Wave >= _maxWave)
             {
                 Stage = RunPhase.Won;
@@ -141,7 +162,7 @@ namespace Tideflesh.Systems
                     organ_id = inst.organ_id
                 });
             }
-            var reward = new LabOpenedPayload { Drops = payloadDrops, MarrowDelta = gained };
+            var reward = new LabOpenedPayload { Drops = payloadDrops, MarrowDelta = WaveKillMarrow };
             RestOpened?.Invoke(reward);
             _emit?.Invoke("LabOpened", reward);
         }
@@ -153,6 +174,7 @@ namespace Tideflesh.Systems
             if (!CanStartNextWave())
                 throw new RunException("cannot start next wave");
             Wave += 1;
+            WaveKillMarrow = 0;
             Stage = RunPhase.Combat;
             WaveStarted?.Invoke(Wave);
             _emit?.Invoke("RunStarted", new RunStartedPayload { Wave = Wave });

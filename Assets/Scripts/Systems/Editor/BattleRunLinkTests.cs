@@ -13,7 +13,7 @@ public class BattleRunLinkTests
         link.NotifyWaveTimerFinished(1);
 
         Assert.AreEqual("lab", link.Run.Phase);
-        Assert.AreEqual(10, link.Run.Marrow);
+        Assert.AreEqual(0, link.Run.Marrow);
         Assert.IsTrue(link.TryStartNextWave(out var next));
         Assert.AreEqual(2, next);
         Assert.AreEqual("combat", link.Run.Phase);

@@ -183,18 +183,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00cd6da56cd64e7ba7f64597a09ee1e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyData
-  id: Medic
-  rank: 0
-  moveSpeed: 2.75
-  maxHealth: 16
-  attackPower: 5
-  attackCooldown: 1.5
-  attackRange: 6
-  projectileCount: 1
-  projectileSpeed: 4
-  attackRadius: 1
-  dropTableId: 
-  canBeDisplaced: 1
+  definition: {fileID: 11400000, guid: 71d6e73ad8b641008c6fad26164c51a5, type: 2}
 --- !u!114 &687511443245195871
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -222,13 +211,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyMotor
   data: {fileID: 0}
-  moveMode: 1
-  faceMoveDirection: 1
-  facingLerpSpeed: 720
-  stopAtAttackRangeRatio: 0.9
-  minStopDistance: 0.5
-  preferredDistance: 5
-  distanceTolerance: 0.8
   clampToPlayArea: 1
   playAreaHalfWidth: 32
   playAreaHalfHeight: 18
@@ -244,8 +226,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7c402beb97b4e279c84bb6b50beef34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyHealer
-  healInterval: 3
-  healRadius: 5
-  healPercent: 0.2
-  healSelf: 0
   logHeals: 1

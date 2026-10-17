@@ -36,6 +36,7 @@ namespace SpringUp.EditorChecks
         {
             var run = Config().CreateRun(); run.StartRun();
             Assert.Throws<RunException>(() => run.Unequip("hand", 1));
+            run.CreditKill("purchase-test", 500);
             run.CombatTimerFinished();
             int reward = run.Marrow;
             Assert.Throws<RunException>(() => run.CombatTimerFinished());

@@ -18,6 +18,7 @@ namespace SpringUp.EditorChecks
         {
             var scene = SceneManager.CreateScene("Battle combat checks");
             var objects = new List<GameObject>();
+            var definitions = new List<EnemyDefinition>();
             GameObject Go(string name)
             {
                 var go = new GameObject(name); SceneManager.MoveGameObjectToScene(go, scene); objects.Add(go); return go;
@@ -26,7 +27,9 @@ namespace SpringUp.EditorChecks
             {
                 var go = Go(name); go.SetActive(false); go.transform.position = position;
                 var data = go.AddComponent<EnemyData>();
-                var edit = new SerializedObject(data); edit.FindProperty("maxHealth").floatValue = hp; edit.ApplyModifiedPropertiesWithoutUndo();
+                var definition = UnityEngine.Object.Instantiate(EnemyCatalog.Load().Get(EnemyArchetype.Normal));
+                definition.maxHealth = hp; definition.hasContactDamage = false;
+                definitions.Add(definition); data.Configure(definition);
                 var enemy = go.AddComponent<EnemyRuntime>(); go.SetActive(true); return enemy;
             }
             try
@@ -88,6 +91,7 @@ namespace SpringUp.EditorChecks
             }
             finally
             {
+                foreach (var definition in definitions) UnityEngine.Object.Destroy(definition);
                 foreach (var go in objects) if (go != null) { go.SetActive(false); UnityEngine.Object.Destroy(go); }
                 SceneManager.UnloadSceneAsync(scene);
             }

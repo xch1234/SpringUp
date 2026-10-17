@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b6699baf9b24826b98895344fa1b343, type: 3}
+  m_Name: Normal
+  m_EditorClassIdentifier: 
+  attackAutomatically: 1
+  initialDelay: 0.5
+  useProjectiles: 1
+  spreadAngleDegrees: 12
+  contactRadius: 0.7
+  damageIntervalOverride: 0
+  productArchetype: 0
+  produceInterval: 3
+  spawnJitter: 1.5
+  maxAliveProducts: 12
+  healInterval: 3
+  healRadius: 5
+  healPercent: 0.2
+  healSelf: 0
+  id: Normal
+  rank: 0
+  moveSpeed: 2.5
+  maxHealth: 20
+  attackPower: 5
+  attackCooldown: 1.5
+  attackRange: 6
+  projectileCount: 1
+  projectileSpeed: 4
+  attackRadius: 1
+  dropTableId: 
+  canBeDisplaced: 1
+  moveMode: 0
+  faceMoveDirection: 1
+  facingLerpSpeed: 720
+  stopAtAttackRangeRatio: 0.9
+  minStopDistance: 0.5
+  preferredDistance: 5
+  distanceTolerance: 0.8
+  archetype: 0
+  allowRegularSpawn: 1
+  baseMarrow: 30
+  hasContactDamage: 1
+  hasRangedAttack: 0
+  hasProducer: 0
+  hasHealer: 0
+  color: {r: 0.85, g: 0.3, b: 0.35, a: 1}

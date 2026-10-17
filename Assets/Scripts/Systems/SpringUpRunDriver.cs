@@ -90,6 +90,7 @@ namespace Tideflesh.Systems
                 : originalViewport;
         }
 
+        KillMarrowBinding killMarrow;
         private void Start()
         {
             try
@@ -100,6 +101,8 @@ namespace Tideflesh.Systems
                 var waves = config.Waves;
                 CombatReport.SetNames(definitions.Values);
                 Run = new RunController(catalog, waves, Signal);
+                killMarrow = new KillMarrowBinding(Run);
+                Run.BalanceChanged += BalanceChanged;
                 Equipment = new RunLaboratoryEquipment(Run, definitions);
                 equipmentHud.Bind(Equipment);
                 laboratorySource.Bind(Equipment);
@@ -119,6 +122,8 @@ namespace Tideflesh.Systems
                 Time.timeScale = 0f;
             }
         }
+
+        void BalanceChanged(int _) => RefreshView();
 
         private void Signal(string name, object payload)
         {
@@ -151,7 +156,7 @@ namespace Tideflesh.Systems
             {
                 var reward = (LabOpenedPayload)payload;
                 rewardText.text = "本波奖励：" + string.Join("、", reward.Drops.Select(d => Run.Inventory.Catalog[d.organ_id].name))
-                    + "    髓质 +" + reward.MarrowDelta;
+                    + "    本波击杀已入账髓质 " + reward.MarrowDelta;
                 laboratoryRoot.SetActive(true);
             }
             else if (name == "RunEnded") StopCombat();
@@ -222,6 +227,8 @@ namespace Tideflesh.Systems
         }
         private void OnDestroy()
         {
+            killMarrow?.Dispose();
+            if (Run != null) Run.BalanceChanged -= BalanceChanged;
             if (battleCamera != null) { battleCamera.rect = originalViewport; battleCamera.orthographicSize = originalCameraSize; }
             if (director != null) director.WaveCompleted -= WaveCompleted;
             if (player != null) player.Died -= PlayerDied;

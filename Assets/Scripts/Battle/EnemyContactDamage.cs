@@ -19,11 +19,8 @@ namespace TideBorne.Battle
     [AddComponentMenu("潮涌之躯/战场/接触伤害（EnemyContactDamage）")]
     public class EnemyContactDamage : MonoBehaviour
     {
-        [Tooltip("接触判定半径，米。")]
-        [SerializeField] private float contactRadius = 0.7f;
-
-        [Tooltip("造成伤害的间隔，秒。留 0 则沿用 EnemyData.attackCooldown。")]
-        [SerializeField] private float damageIntervalOverride = 0f;
+        private float contactRadius => GetComponent<EnemyData>().Definition.contactRadius;
+        private float damageIntervalOverride => GetComponent<EnemyData>().Definition.damageIntervalOverride;
 
         private EnemyData _data;
         private EnemyRuntime _runtime;
@@ -34,7 +31,6 @@ namespace TideBorne.Battle
         public float ContactRadius
         {
             get { return contactRadius; }
-            set { contactRadius = Mathf.Max(0.05f, value); }
         }
 
         private void Awake()
@@ -53,6 +49,8 @@ namespace TideBorne.Battle
             // 开局给一点延迟，避免刚生成就贴脸扣血。
             _cooldownRemaining = 0.3f;
         }
+
+        private void OnEnable() { _cooldownRemaining = 0.3f; }
 
         private void Update()
         {
@@ -87,7 +85,7 @@ namespace TideBorne.Battle
         /// <summary>造成一次接触伤害。冷却没好时返回 false。</summary>
         public bool ApplyContactDamage()
         {
-            if (_cooldownRemaining > 0f)
+            if (!isActiveAndEnabled || !_data.Definition.hasContactDamage || (_runtime != null && !_runtime.IsAlive) || _cooldownRemaining > 0f)
                 return false;
 
             _cooldownRemaining = damageIntervalOverride > 0.01f

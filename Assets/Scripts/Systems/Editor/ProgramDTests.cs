@@ -37,13 +37,13 @@ public class ProgramDTests
         var catalog = Catalog.LoadOrgans(File.ReadAllText(OrgansPath));
         var waves = Catalog.LoadWaves(File.ReadAllText(WavesPath), catalog);
         Assert.AreEqual(7, waves.Count);
-        Assert.AreEqual(450, waves[0].marrow_reward);
+        Assert.AreEqual(0, waves[0].marrow_reward);
         Assert.AreEqual("multi_tentacle", waves[0].guaranteed_drops[0]);
         Assert.AreEqual("rust_knife", waves[0].guaranteed_drops[1]);
         Assert.AreEqual(0, waves[0].optional_drops.Length);
         Assert.AreEqual(4, waves[0].random_drop_pool.Length);
         Assert.AreEqual(2, waves[0].random_drop_count);
-        Assert.AreEqual(1200, waves[6].marrow_reward);
+        Assert.AreEqual(0, waves[6].marrow_reward);
     }
 
     [Test]
@@ -114,7 +114,7 @@ public class ProgramDTests
         var high = NewRun(new Recorder(), () => 0.999999);
         high.StartRun(); high.CombatTimerFinished();
         Assert.AreEqual("lab", low.Phase);
-        Assert.AreEqual(450, low.Marrow);
+        Assert.AreEqual(0, low.Marrow);
         CollectionAssert.AreEquivalent(new[] { "multi_tentacle", "rust_knife" }, BagOrganIds(low));
         CollectionAssert.AreEquivalent(new[] { "steel_pipe", "slime_gland" }, BagOrganIds(high));
         Assert.AreNotEqual(string.Join(",", BagOrganIds(low)), string.Join(",", BagOrganIds(high)));
@@ -130,7 +130,7 @@ public class ProgramDTests
         run.StartNextWave();
         run.CombatTimerFinished();
         Assert.AreEqual("lab", run.Phase);
-        Assert.AreEqual(1000, run.Marrow);
+        Assert.AreEqual(0, run.Marrow);
         var labCount = 0;
         foreach (var n in rec.Names)
             if (n == "LabOpened") labCount++;
@@ -193,14 +193,12 @@ public class ProgramDTests
     }
 
     [Test]
-    public void WaveReward_UsesFractionalPercent()
+    public void WaveEnd_DoesNotPayMarrow()
     {
         var run = NewRun(new Recorder(), () => 0.24);
         run.StartRun();
         run.CombatTimerFinished();
-        double percent = EconomySwing.Percent(0.24, EconomySwing.MarrowHalfPercent);
-        Assert.Greater(Math.Abs(percent - Math.Round(percent)), 0.2);
-        Assert.AreEqual(438, run.Marrow);
+        Assert.AreEqual(0, run.Marrow);
     }
 
     [Test]

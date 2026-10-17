@@ -241,8 +241,10 @@ namespace SpringUp.EditorChecks
             EnemyRuntime.ClearBattlefield();
             var target = new GameObject("Trigger integration target"); target.SetActive(false);
             target.transform.position = driver.player.transform.position + Vector3.right * .6f;
-            var data = target.AddComponent<EnemyData>(); var edit = new SerializedObject(data);
-            edit.FindProperty("maxHealth").floatValue = 10000; edit.ApplyModifiedPropertiesWithoutUndo();
+            var data = target.AddComponent<EnemyData>();
+            var enemyDefinition = Object.Instantiate(EnemyCatalog.Load().Get(EnemyArchetype.Normal));
+            enemyDefinition.maxHealth = 10000; enemyDefinition.hasContactDamage = false;
+            data.Configure(enemyDefinition);
             var enemy = target.AddComponent<EnemyRuntime>(); target.AddComponent<CircleCollider2D>().radius = .2f; target.SetActive(true);
             var body = driver.pipeline.GetBody(Part.Head); var old = Enumerable.Range(0, 6).Select(body.GetSlot).ToArray();
             var stats = new SerializedObject(driver.player.Stats); float oldCrit = stats.FindProperty("critChance").floatValue;
@@ -287,7 +289,7 @@ namespace SpringUp.EditorChecks
                 driver.combat.Clear(); driver.pipeline.MovingProvider = null;
                 for (int i = 0; i < 6; i++) body.SetSlot(i, old[i]);
                 stats.Update(); stats.FindProperty("critChance").floatValue = oldCrit; stats.ApplyModifiedPropertiesWithoutUndo();
-                driver.player.ResetHealthToMax(); Object.DestroyImmediate(target);
+                driver.player.ResetHealthToMax(); Object.DestroyImmediate(target); Object.DestroyImmediate(enemyDefinition);
             }
             Debug.Log("[Triggers] PLAY PASS: all 9 conditions through real health, physics, kill, critical, slow and execution lifecycle.");
         }

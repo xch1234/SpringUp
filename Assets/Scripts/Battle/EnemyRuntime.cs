@@ -7,7 +7,7 @@ namespace TideBorne.Battle
     /// 敌人的运行时状态与生死流程：受伤、施加状态、死亡。
     ///
     /// **两条离开战场的路径必须分开**（见 <see cref="RemoveFromBattlefield"/>）：
-    /// 被打死走 <see cref="Die"/>，会发 `OnKilled` 并允许掉落；
+    /// 被打死走 真实死亡结算，会发 `OnKilled` 并允许掉落；
     /// 波次到点清场走 <see cref="RemoveFromBattlefield"/>，**不发 `OnKilled`、不产生掉落**。
     /// 混在一起会让「击杀触发」类器官（多肢触手 / 蜘蛛巢）在清场时白拿收益。
     /// </summary>
@@ -122,6 +122,7 @@ namespace TideBorne.Battle
         private void OnEnable()
         {
             attachedSlows.Clear();
+            TrainingTarget = false;
             TargetId = System.Guid.NewGuid().ToString("N");
             // 池化复用：重新激活时恢复满血，否则第二个"敌人"会带着上次的残血出现。
             _isDead = false;
@@ -167,25 +168,44 @@ namespace TideBorne.Battle
 
         private float ApplyDamage(float damage, string sourceOrganId, Vector2 hitPoint, SpringUp.Organs.CastEvent? attack)
         {
-            if (float.IsNaN(damage) || float.IsInfinity(damage) || damage <= 0f || !IsAlive)
+            if (float.IsNaN(damage) || float.IsInfinity(damage) || damage <= 0f || !isActiveAndEnabled || !IsAlive)
                 return 0f;
 
             var applied = Mathf.Min(damage, TrainingTarget ? Mathf.Max(0f, currentHealth - 1f) : currentHealth);
             if (applied <= 0f) return 0f;
             currentHealth -= applied;
             Vector2 deathPosition = Position;
+            bool lethal = currentHealth <= 0f;
+            var killed = new EnemyEvents.KilledInfo
+            {
+                enemyId = Id, targetId = TargetId, organAttack = attack,
+                deathPoint = deathPosition, killerOrganId = sourceOrganId, enemy = gameObject,
+                baseMarrow = Data.Definition.archetype == EnemyArchetype.Dummy ? 0 : Data.Definition.baseMarrow
+            };
+            if (lethal)
+            {
+                _isDead = true;
+                EnemyEvents.CommitDeath(killed);
+            }
 
             EnemyEvents.RaiseDamaged(new EnemyEvents.DamagedInfo
             {
-                enemyId = Id,
+                enemyId = killed.enemyId,
                 damage = applied,
                 sourceOrganId = sourceOrganId,
                 hitPoint = hitPoint,
                 enemy = gameObject
             });
 
-            if (currentHealth <= 0f)
-                Die(sourceOrganId, deathPosition, attack);
+            if (lethal)
+            {
+                try { EnemyEvents.RaiseKilled(killed); }
+                finally
+                {
+                    // A callback may already have returned/reused this object.
+                    if (TargetId == killed.targetId && isActiveAndEnabled) ReleaseOrDestroy();
+                }
+            }
 
             return applied;
         }
@@ -217,30 +237,9 @@ namespace TideBorne.Battle
             });
         }
 
-        /// <summary>被击杀：发 `OnKilled` 后退场。只有真的被打死才走这里。</summary>
-        private void Die(string killerOrganId, Vector2 deathPoint, SpringUp.Organs.CastEvent? attack)
-        {
-            if (_isDead)
-                return;
-
-            _isDead = true;
-
-            EnemyEvents.RaiseKilled(new EnemyEvents.KilledInfo
-            {
-                enemyId = Id,
-                targetId = TargetId,
-                organAttack = attack,
-                deathPoint = deathPoint,
-                killerOrganId = killerOrganId,
-                enemy = gameObject
-            });
-
-            ReleaseOrDestroy();
-        }
-
         /// <summary>
         /// 波次到点清场：把敌人从战场移除，**不发 `OnKilled`、不产生掉落物**。
-        /// 与 <see cref="Die"/> 是两条完全分开的路径。
+        /// 与 真实死亡结算 是两条完全分开的路径。
         /// </summary>
         /// <returns>是否真的移除了（已经死掉的返回 false）。</returns>
         public bool RemoveFromBattlefield()
@@ -257,7 +256,7 @@ namespace TideBorne.Battle
 
         /// <summary>
         /// 退场方式：池化对象归还池，非池化对象销毁。
-        /// 两处退场（<see cref="Die"/> 与 <see cref="RemoveFromBattlefield"/>）共用，
+        /// 两处退场（真实死亡结算 与 <see cref="RemoveFromBattlefield"/>）共用，
         /// 保证"被杀"与"清场"在回收行为上一致，不会一边漏回池。
         /// </summary>
         private void ReleaseOrDestroy()
@@ -275,6 +274,7 @@ namespace TideBorne.Battle
         public static int ClearBattlefield()
         {
             // 先快照：Destroy 是延迟的，但 OnDestroy 可能在任何时刻把元素移出原列表。
+            MarrowDeathVisual.Clear();
             var snapshot = s_ActiveEnemies.ToArray();
             var cleared = 0;
 

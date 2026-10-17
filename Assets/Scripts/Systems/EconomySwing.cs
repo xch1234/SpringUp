@@ -4,7 +4,6 @@ namespace Tideflesh.Systems
 {
     public static class EconomySwing
     {
-        public const double MarrowHalfPercent = 5;
         public const double PurchaseHalfPercent = 10;
 
         // unit01 为 [0, 1]。返回值是百分比前的数，例如 -2.6，不收成整数。

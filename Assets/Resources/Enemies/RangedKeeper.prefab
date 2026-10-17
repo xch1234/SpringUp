@@ -184,18 +184,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00cd6da56cd64e7ba7f64597a09ee1e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyData
-  id: RangedKeeper
-  rank: 0
-  moveSpeed: 2
-  maxHealth: 20
-  attackPower: 5
-  attackCooldown: 1.5
-  attackRange: 6
-  projectileCount: 1
-  projectileSpeed: 4
-  attackRadius: 1
-  dropTableId: 
-  canBeDisplaced: 1
+  definition: {fileID: 11400000, guid: 1f8943097dc444dbab3381cfc8aa3b83, type: 2}
 --- !u!114 &4202579363873982647
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -223,13 +212,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyMotor
   data: {fileID: 0}
-  moveMode: 1
-  faceMoveDirection: 1
-  facingLerpSpeed: 720
-  stopAtAttackRangeRatio: 0.9
-  minStopDistance: 0.5
-  preferredDistance: 6
-  distanceTolerance: 0.8
   clampToPlayArea: 1
   playAreaHalfWidth: 32
   playAreaHalfHeight: 18
@@ -246,13 +228,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyAttack
   data: {fileID: 0}
-  attackAutomatically: 1
-  initialDelay: 0.5
-  useProjectiles: 1
   projectileVisualSize: 0.421875
   projectileColor: {r: 0.45, g: 0.55, b: 0.95, a: 1}
   projectileSprite: {fileID: 21300000, guid: 0ee5d417cee127b42b7ae3311d0d7280, type: 3}
-  spreadAngleDegrees: 12
 --- !u!114 &3901110169505359910
 MonoBehaviour:
   m_ObjectHideFlags: 0

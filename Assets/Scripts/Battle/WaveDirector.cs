@@ -156,7 +156,7 @@ namespace TideBorne.Battle
             _elapsed += Time.deltaTime;
 
             if (spawner != null)
-                spawner.Tick(Time.deltaTime, waveDuration);
+                spawner.Tick(Time.deltaTime, WaveSpawnSettings.Load().SpawnDuration(CurrentWave, waveDuration));
 
             if (_elapsed >= waveDuration)
                 CompleteCurrentWave();

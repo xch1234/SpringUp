@@ -16,17 +16,10 @@ namespace TideBorne.Battle
     [AddComponentMenu("潮涌之躯/战场/医疗兵（EnemyHealer）")]
     public class EnemyHealer : MonoBehaviour
     {
-        [Tooltip("治疗间隔，秒。")]
-        [SerializeField] private float healInterval = 3f;
-
-        [Tooltip("治疗半径，米。")]
-        [SerializeField] private float healRadius = 5f;
-
-        [Tooltip("每次治疗回复最大生命的比例，0–1。")]
-        [SerializeField] private float healPercent = 0.2f;
-
-        [Tooltip("是否也治疗自己。")]
-        [SerializeField] private bool healSelf = false;
+        private float healInterval => GetComponent<EnemyData>().Definition.healInterval;
+        private float healRadius => GetComponent<EnemyData>().Definition.healRadius;
+        private float healPercent => GetComponent<EnemyData>().Definition.healPercent;
+        private bool healSelf => GetComponent<EnemyData>().Definition.healSelf;
 
         [Tooltip("治疗生效时在 Console 打一行，便于肉眼验收。")]
         [SerializeField] private bool logHeals = true;
@@ -34,16 +27,18 @@ namespace TideBorne.Battle
         private float _cooldownRemaining;
 
         /// <summary>治疗间隔，秒。</summary>
-        public float HealInterval { get { return healInterval; } set { healInterval = Mathf.Max(0.1f, value); } }
+        public float HealInterval { get { return healInterval; } }
 
         /// <summary>治疗半径，米。</summary>
-        public float HealRadius { get { return healRadius; } set { healRadius = Mathf.Max(0.1f, value); } }
+        public float HealRadius { get { return healRadius; } }
 
         private void Awake()
         {
             // 首次治疗也给一点延迟，避免开局瞬间全队满血、看不出效果。
             _cooldownRemaining = healInterval;
         }
+
+        private void OnEnable() { _cooldownRemaining = healInterval; }
 
         private void Update()
         {
@@ -60,6 +55,7 @@ namespace TideBorne.Battle
         /// <summary>治疗半径内的敌人。返回被治疗的个数。</summary>
         public int HealNearbyEnemies()
         {
+            if (!isActiveAndEnabled || !GetComponent<EnemyData>().Definition.hasHealer) return 0;
             var origin = (Vector2)transform.position;
             var radiusSquared = healRadius * healRadius;
             var self = GetComponent<EnemyRuntime>();
