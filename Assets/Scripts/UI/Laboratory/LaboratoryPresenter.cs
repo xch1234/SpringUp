@@ -15,6 +15,7 @@ namespace SpringUp.Laboratory
         public Text selectionText, inventoryTitle;
         public Button installButton, removeButton;
         public Font fontOverride;
+        public bool ReadOnly { get; set; }
         private ILaboratoryEquipment equipment;
         private string candidateId;
         private int part = 1, slot = -1;
@@ -24,11 +25,13 @@ namespace SpringUp.Laboratory
         private LaboratoryItem Candidate => equipment.Inventory.FirstOrDefault(x => x.InstanceId == candidateId);
         public string SelectedInstanceId => candidateId ?? equipment?.GetSlot((LaboratoryPart)part, slot)?.InstanceId;
         private void OnEnable() { if (source != null) InitializeView(); }
-        private void Start() { if (equipment == null) InitializeView(); }
-        public void InitializeView()
+        private void Start() { if (equipment == null && source != null) InitializeView(); }
+        public void InitializeView() => Bind(source.Equipment);
+        // Explicit binding lets production windows reuse the view without demo initialization.
+        public void Bind(ILaboratoryEquipment value)
         {
             if (equipment != null) equipment.Changed -= EquipmentChanged;
-            equipment = source.Equipment;
+            equipment = value ?? throw new System.ArgumentNullException(nameof(value));
             equipment.Changed += EquipmentChanged;
             if (font == null)
             {
@@ -71,17 +74,19 @@ namespace SpringUp.Laboratory
             {
                 var item = equipment.Inventory[i];
                 cards[i].caption.font = font;
-                cards[i].Bind($"{(candidateId == item.InstanceId ? "> " : "")}{item.Name}\n{item.MountLabel} #{item.InstanceId.Substring(0, System.Math.Min(4, item.InstanceId.Length))}", () => SelectInventory(item.InstanceId));
+                cards[i].Bind($"{(candidateId == item.InstanceId ? "> " : "")}{item.Name}\n{item.MountLabel} #{ShortId(item.InstanceId)}", () => SelectInventory(item.InstanceId));
             }
             var candidate = Candidate;
             var target = equipment.GetSlot((LaboratoryPart)part, slot);
             inventoryTitle.text = $"背包 · {equipment.Inventory.Count} 件";
-            installButton.interactable = candidate != null && slot >= 0 && candidate.CanEquip((LaboratoryPart)part);
-            removeButton.interactable = candidate == null && target != null;
+            installButton.interactable = !ReadOnly && candidate != null && slot >= 0 && candidate.CanEquip((LaboratoryPart)part);
+            removeButton.interactable = !ReadOnly && candidate == null && target != null;
             installButton.GetComponentInChildren<Text>().text = target == null ? "安装" : "替换";
-            selectionText.text = $"物品：{candidate?.Name ?? "未选择"} {((candidate ?? target)?.InstanceId.Substring(0, System.Math.Min(6, (candidate ?? target).InstanceId.Length)) ?? "")}    {(candidate ?? target)?.Kind}    槽位：{(slot < 0 ? "未选择" : PartNames[part] + " " + (slot + 1))}\n" +
+            selectionText.text = $"物品：{candidate?.Name ?? "未选择"} {(ShortId((candidate ?? target)?.InstanceId) ?? "")}    {(candidate ?? target)?.Kind}    槽位：{(slot < 0 ? "未选择" : PartNames[part] + " " + (slot + 1))}\n" +
                 (candidate?.Description ?? target?.Description ?? "选择物品和对应槽位安装；只选择已装备槽位可拆下。");
         }
+        static string ShortId(string id) => string.IsNullOrEmpty(id) ? "" :
+            id.StartsWith("inst_") ? id.Substring(5) : id.Substring(System.Math.Max(0, id.Length - 4));
         private void Install()
         {
             if (!installButton.interactable) return;

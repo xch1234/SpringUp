@@ -142,7 +142,7 @@ namespace SpringUp.EditorChecks
                     Require(automaticTarget != null && automaticTarget.CurrentHealth <= automaticHealth - 2 * driver.Definitions["fist"].Damage,
                         "没有按攻击键，拳头按节拍自动攻击至少两轮。");
                     driver.director.CompleteCurrentWave();
-                    Require(run.Phase == "lab" && run.Marrow == 45 && Time.timeScale == 0, "第一波奖励与暂停。");
+                    Require(run.Phase == "lab" && run.Marrow >= 427 && run.Marrow <= 472 && Time.timeScale == 0, "第一波奖励与暂停。");
                     Require(!driver.pipeline.enabled, "休息阶段停止实战自动攻击。");
                     int steps = driver.pipeline.GetBody(BodyPart.Hand).ExecutedStepCount;
                     driver.pipeline.AdvanceAutomatic(10);

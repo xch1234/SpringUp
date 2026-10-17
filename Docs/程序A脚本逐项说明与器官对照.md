@@ -4,6 +4,19 @@
 
 这里的“程序 A”包括器官核心，以及它与 B 实验室、C 战场、D 库存相接的代码。接线部分单独列出，不表示这些文件全部由 A 独立编写。
 
+## main 整合后的新入口与接线
+
+当前优先从 `Assets/Scenes/Flow/Bootstrap.unity` 启动。本文所有器官核心与资源对照继续有效；`SpringUpRunDriver` 是旧 Demo 的适配器，新场景使用以下接线：
+
+- [FlowApplication.cs](../Assets/Scripts/Flow/FlowApplication.cs)：常驻入口，负责主菜单、场景切换、暂停窗口、B/Tab 背包和 E 商店。打开窗口暂停世界；战斗背包只读。
+- [FlowContent.cs](../Assets/Scripts/Flow/FlowContent.cs)：每个战斗/休整场景的入口；接入三条自动管道、TorsoEquipmentRuntime、OrganCombatReport、RunEquipmentHud。装备变更立即重算躯干并清理旧效果；退出场景解绑。
+- [RunConfiguration.cs](../Assets/Scripts/Systems/RunConfiguration.cs)：新旧入口共用的 JSON 与 OrganCatalog 校验，接受通用普通器官和躯干专用器官，保留 main 的经济数值。
+- [RunSession.cs](../Assets/Scripts/Flow/RunSession.cs)：保存一局库存、波次和跨场景生命；不保存临时弹体、执行进度或攻击充能。
+- [FlowLaboratoryWindow.cs](../Assets/Scripts/Flow/FlowLaboratoryWindow.cs)：把正式库存接到 LaboratoryPresenter，处理只读与可编辑模式；样板菜单也会刷新已打开背包。
+- [EconomySwing.cs](../Assets/Scripts/Systems/EconomySwing.cs)：main 新增的购买、出售和奖励浮动；器官伤害仍读取 `.asset`，不由商店价格决定。
+
+新流程和旧 Demo 共用器官配置，各自保存场景玩家属性。新流程调基础生命、速度与节奏，修改 `Flow/Battle` 和 `Flow/Rest` 的 `World/Player → PlayerStatsBase`；相机使用场景自身 Camera，躯干视野在运行时乘到其基础尺寸上。最新整合范围与验证见 [整合记录](2026-10-17-main与A整合记录.md)。
+
 ## 怎么查这份文档
 
 - [先分清文件和对象](#先分清文件和对象)：为什么一个器官有两个 asset，却找不到同名 cs。

@@ -123,7 +123,7 @@ public class BattleRunLinkTests
             });
         }
 
-        return new BattleRunLink(new RunController(CatalogOf(), list, IgnoreSignal));
+        return new BattleRunLink(new RunController(CatalogOf(), list, IgnoreSignal, () => 0.5));
     }
 
     static Inventory NewInventory() => new Inventory(CatalogOf());

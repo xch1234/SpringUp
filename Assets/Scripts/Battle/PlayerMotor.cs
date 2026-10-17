@@ -38,10 +38,12 @@ namespace TideBorne.Battle
         [Tooltip("疾跑倍率。体力系统尚未定（策划案待定问题 7），故暂不消耗资源。")]
         [SerializeField] private float sprintMultiplier = 1.5f;
 
+        public System.Func<bool> InputAllowed { get; set; }
         private Rigidbody2D _body;
-        private readonly RaycastHit2D[] wallHits = new RaycastHit2D[16];
         private Vector2 _moveInput;
         private bool _sprintHeld;
+        readonly RaycastHit2D[] wallHits = new RaycastHit2D[16];
+        ContactFilter2D wallFilter;
 
         /// <summary>本帧是否按住疾跑。</summary>
         public bool IsSprinting { get { return _sprintHeld; } }
@@ -78,6 +80,9 @@ namespace TideBorne.Battle
             // 俯视 2D 不需要重力；全局 Physics2D 重力是 -9.81（见 Physics2DSettings.asset）。
             _body.gravityScale = 0f;
             _body.freezeRotation = true;
+            wallFilter = new ContactFilter2D();
+            wallFilter.SetLayerMask(1 << BattleLayers.Resolve(BattleLayers.Wall));
+            wallFilter.useTriggers = false;
         }
 
         private void OnEnable()
@@ -103,6 +108,8 @@ namespace TideBorne.Battle
         /// <summary>读输入、不做物理写入（物理写入放 FixedUpdate）。</summary>
         private void Update()
         {
+            if (InputAllowed != null && !InputAllowed())
+            { _moveInput = Vector2.zero; _sprintHeld = false; _body.linearVelocity = Vector2.zero; return; }
             _moveInput = ReadMoveInput();
             // 每帧读值而不是只听 performed 回调：回调收不到"松开"，会卡在按下状态。
             _sprintHeld = ReadSprintHeld();
@@ -149,34 +156,36 @@ namespace TideBorne.Battle
             // Kinematic velocity is not stopped by static walls automatically.
             // Sweep the actual colliders and retain tangential movement along the wall.
             if (_body.bodyType == RigidbodyType2D.Kinematic)
-                _body.linearVelocity = LimitWallVelocity(_body.linearVelocity, Time.fixedDeltaTime);
+                _body.linearVelocity = ConstrainToWalls(_body.linearVelocity, Time.fixedDeltaTime);
         }
 
-        private Vector2 LimitWallVelocity(Vector2 velocity, float deltaTime)
+        // Kinematic bodies do not resolve static-wall contacts. Sweep the actual player shape
+        // before integrating velocity, removing only the blocked normal component to allow sliding.
+        public Vector2 ConstrainToWalls(Vector2 velocity, float deltaTime)
         {
-            int wallLayer = LayerMask.NameToLayer(BattleLayers.Wall);
-            if (wallLayer < 0 || deltaTime <= 0) return velocity;
-            var filter = new ContactFilter2D { useLayerMask = true, layerMask = 1 << wallLayer, useTriggers = false };
+            if (deltaTime <= 0) return Vector2.zero;
+            Vector2 displacement = velocity * deltaTime;
             const float skin = .02f;
-            for (int pass = 0; pass < 3; pass++)
+            for (int pass = 0; pass < 3 && displacement.sqrMagnitude > .0000001f; pass++)
             {
-                float distance = velocity.magnitude * deltaTime;
-                if (distance < .000001f) break;
-                int count = _body.Cast(velocity.normalized, filter, wallHits, distance + skin);
-                bool limited = false;
+                float distance = displacement.magnitude;
+                Vector2 direction = displacement / distance;
+                int count = _body.Cast(direction, wallFilter, wallHits, distance + skin);
+                bool blocked = false;
                 for (int i = 0; i < count; i++)
                 {
                     var hit = wallHits[i];
-                    float inward = Vector2.Dot(velocity, hit.normal);
-                    if (inward >= -.00001f) continue;
-                    float fraction = Mathf.Clamp01((hit.distance - skin) / distance);
-                    if (fraction >= 1) continue;
-                    velocity -= hit.normal * inward * (1 - fraction);
-                    limited = true;
+                    float approach = -Vector2.Dot(direction, hit.normal);
+                    if (approach <= 0) continue;
+                    float allowed = Mathf.Max(0, hit.distance - skin) * approach;
+                    float excess = -Vector2.Dot(displacement, hit.normal) - allowed;
+                    if (excess <= 0) continue;
+                    displacement += hit.normal * excess;
+                    blocked = true;
                 }
-                if (!limited) break;
+                if (!blocked) break;
             }
-            return velocity;
+            return displacement / deltaTime;
         }
 
         private Vector2 ReadMoveInput()

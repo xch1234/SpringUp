@@ -162,6 +162,9 @@ namespace TideBorne.Battle
             currentHealth = MaxHealth;
         }
 
+        public void RestoreHealth(float value) => currentHealth = Mathf.Clamp(value, 0, MaxHealth);
+        public void SetHealthRegeneration(bool value) => applyHealthRegen = value;
+
         private void Awake()
         {
             if (stats == null)

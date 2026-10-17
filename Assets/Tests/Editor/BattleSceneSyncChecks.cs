@@ -16,7 +16,9 @@ namespace SpringUp.EditorChecks
             var scene = EditorSceneManager.GetActiveScene();
             var roots = scene.GetRootGameObjects();
             var driver = roots.SelectMany(g => g.GetComponentsInChildren<SpringUpRunDriver>(true)).Single();
-            Assert.AreEqual(9, roots.Single(g => g.name == "MapBackground").GetComponentsInChildren<SpriteRenderer>().Length);
+            var tiles = roots.Single(g => g.name == "MapBackground").GetComponentsInChildren<SpriteRenderer>();
+            Assert.AreEqual(1600, tiles.Length, "Use main's shared 40 by 40 terrain layout.");
+            foreach (var tile in tiles) Assert.AreEqual(tile.bounds.size.x, tile.bounds.size.y, .001f, "Terrain tiles retain square aspect.");
             Assert.AreEqual(4, roots.Single(g => g.name == "BoundaryWalls").GetComponentsInChildren<BoxCollider2D>().Length);
             Assert.IsFalse(roots.Any(g => g.name == "Ground"));
             Assert.AreEqual(new Vector3(12, 0, 0), roots.Single(g => g.name == "TrainingDummy").transform.position);
