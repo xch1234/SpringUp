@@ -199,7 +199,7 @@ namespace SpringUp.EditorChecks
                 {
                     case 0:
                         Require(content.kind == ContentKind.MainMenu, "Independent main menu");
-                        Require(app.uiRoot.GetComponentsInChildren<UnityEngine.UI.Text>().Any(t => t.text == "开始新局"), "Chinese main menu");
+                        Require(app.uiRoot.GetComponentsInChildren<UnityEngine.UI.Text>().Any(t => t.text == "开始游戏"), "Chinese main menu");
                         FlowPresentationChecks.CaptureFlowUI(app, "main-menu-zh.png");
                         app.StartNewRun(); app.StartNewRun(); stage++; break;
                     case 1:
@@ -258,7 +258,7 @@ namespace SpringUp.EditorChecks
                     case 2:
                         ArenaBoundaryChecks.Run(content);
                         Require(content.kind == ContentKind.Rest && content.player.CurrentHealth == health, "Health preserved entering rest");
-                        Require(content.director == null && EnemyRuntime.ActiveCount == 1, "Only training dummy in rest, count=" + EnemyRuntime.ActiveCount);
+                        Require(content.director == null && EnemyRuntime.ActiveCount > 0 && EnemyRuntime.ActiveEnemies.All(enemy => enemy.TrainingTarget), "Only training dummies in rest, count=" + EnemyRuntime.ActiveCount);
                         if (content.dummy.CurrentHealth == content.dummy.MaxHealth) return;
                         Require(content.pipeline.AutomaticExecution, "Rest automatically tests the equipped build");
                         var trainingPosition = content.player.transform.position;
