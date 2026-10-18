@@ -99,6 +99,11 @@ namespace TideBorne.EditorTools
                 RemoveOldBackground(root.transform);
                 ConfigureWalkBounds(root.transform);
                 ConfigureCameraBounds(scene);
+                foreach (var sceneRoot in scene.GetRootGameObjects())
+                {
+                    var entry = sceneRoot.GetComponentInChildren<SpringUp.Flow.FlowContent>(true);
+                    if (entry != null) entry.EnsureMerchant();
+                }
 
                 EditorSceneManager.MarkSceneDirty(scene);
                 EditorSceneManager.SaveScene(scene);

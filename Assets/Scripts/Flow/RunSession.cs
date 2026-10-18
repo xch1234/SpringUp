@@ -9,6 +9,8 @@ namespace SpringUp.Flow
         public RunSession(RunConfiguration configuration)
         {
             Run = configuration.CreateRun();
+            // Formal sessions stay locked until their scene host authorizes a laboratory interaction.
+            Run.EquipmentAccessPolicy = () => false;
             Run.StartRun();
         }
     }

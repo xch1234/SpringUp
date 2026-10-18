@@ -37,10 +37,10 @@ namespace SpringUp.EditorChecks
         public static void ShowUI() { Tools.visibleLayers |= 1 << LayerMask.NameToLayer("UI"); SetCanvasVisibility(false); }
         static void SetCanvasVisibility(bool hide)
         {
-            foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include))
                 if (hide) SceneVisibilityManager.instance.Hide(canvas.gameObject, true);
                 else SceneVisibilityManager.instance.Show(canvas.gameObject, true);
-            foreach (var events in Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (var events in Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(FindObjectsInactive.Include))
                 if (hide) SceneVisibilityManager.instance.Hide(events.gameObject, true);
                 else SceneVisibilityManager.instance.Show(events.gameObject, true);
             SceneView.RepaintAll();

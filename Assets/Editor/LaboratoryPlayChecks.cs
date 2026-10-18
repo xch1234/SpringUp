@@ -39,8 +39,8 @@ namespace SpringUp.LaboratoryEditor
             try
             {
                 if (EditorApplication.timeSinceStartup - start > 25) throw new Exception("Play 检查超时。");
-                var p = UnityEngine.Object.FindFirstObjectByType<LaboratoryPresenter>();
-                var demo = UnityEngine.Object.FindFirstObjectByType<LaboratoryCombatDemo>();
+                var p = UnityEngine.Object.FindAnyObjectByType<LaboratoryPresenter>();
+                var demo = UnityEngine.Object.FindAnyObjectByType<LaboratoryCombatDemo>();
                 if (p == null || demo == null || demo.Pipeline == null) return;
                 if (EditorApplication.timeSinceStartup - phaseStart < 1.3) return;
                 var equipment = p.source.Equipment;

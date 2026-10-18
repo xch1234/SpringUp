@@ -70,7 +70,7 @@ namespace SpringUp.EditorChecks
             var scene = EditorSceneManager.OpenScene("Assets/Scenes/Battle_Greybox.unity");
             // Save a separate copy before modifying; source demo never changes.
             EditorSceneManager.SaveScene(scene, path);
-            foreach (var enemy in Object.FindObjectsByType<EnemyRuntime>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (var enemy in Object.FindObjectsByType<EnemyRuntime>(FindObjectsInactive.Include))
                 Object.DestroyImmediate(enemy.gameObject);
             foreach (var root in scene.GetRootGameObjects())
                 foreach (var component in root.GetComponentsInChildren<MonoBehaviour>(true))
@@ -80,7 +80,7 @@ namespace SpringUp.EditorChecks
             foreach (var root in scene.GetRootGameObjects())
                 foreach (var events in root.GetComponentsInChildren<EventSystem>(true))
                     Object.DestroyImmediate(events.gameObject);
-            var player = Object.FindFirstObjectByType<PlayerRuntime>();
+            var player = Object.FindAnyObjectByType<PlayerRuntime>();
             var motor = player.GetComponent<PlayerMotor>() ?? player.gameObject.AddComponent<PlayerMotor>();
             var inputs = AssetDatabase.LoadAllAssetsAtPath("Assets/Settings/InputSystem_Actions.inputactions").OfType<InputActionReference>().ToArray();
             var motorData = new SerializedObject(motor);
@@ -91,12 +91,12 @@ namespace SpringUp.EditorChecks
             stats.FindProperty("baseCooldown").floatValue = .15f;
             stats.FindProperty("baseCycleDuration").floatValue = 2;
             stats.ApplyModifiedPropertiesWithoutUndo();
-            var director = Object.FindFirstObjectByType<WaveDirector>();
+            var director = Object.FindAnyObjectByType<WaveDirector>();
             director.ConfigureExternal(7, 60);
             if (kind == ContentKind.Rest)
             {
                 Object.DestroyImmediate(director); director = null;
-                foreach (var spawner in Object.FindObjectsByType<EnemySpawner>(FindObjectsSortMode.None))
+                foreach (var spawner in Object.FindObjectsByType<EnemySpawner>())
                     Object.DestroyImmediate(spawner);
             }
             var pipeline = new GameObject("Player organ execution").AddComponent<OrganPipelineController>();

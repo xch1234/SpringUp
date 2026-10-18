@@ -35,12 +35,6 @@ namespace TideBorne.Battle
         [Tooltip("相对目标的偏移。z 必须是负数，否则相机跑到 2D 平面背后。")]
         [SerializeField] private Vector3 offset = new Vector3(0f, 0f, -10f);
 
-        [Tooltip("跟随平滑时间，秒。0 表示硬跟随。**当前实现为硬跟随，此字段保留但未使用。**")]
-        [SerializeField] private float smoothTime = 0.12f;
-
-        [Tooltip("每帧最大跟随距离，0 表示不限。**当前实现为硬跟随，此字段保留但未使用。**")]
-        [SerializeField] private float maxSpeed = 0f;
-
         [Header("地图边界限制")]
         [Tooltip("开启后，相机不会让画面越过地图边界：目标靠近边缘时相机停住，回到中间再继续跟。")]
         [SerializeField] private bool clampToMapBounds = true;

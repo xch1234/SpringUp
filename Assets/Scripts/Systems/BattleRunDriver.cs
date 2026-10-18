@@ -31,16 +31,16 @@ namespace Tideflesh.Systems
         static void Install()
         {
             if (SpringUp.Flow.FlowApplication.IsActive) return;
-            if (UnityEngine.Object.FindFirstObjectByType<SpringUpRunDriver>() != null) return;
-            if (UnityEngine.Object.FindFirstObjectByType<WaveDirector>() == null) return;
-            if (UnityEngine.Object.FindFirstObjectByType<BattleRunDriver>() != null) return;
+            if (UnityEngine.Object.FindAnyObjectByType<SpringUpRunDriver>() != null) return;
+            if (UnityEngine.Object.FindAnyObjectByType<WaveDirector>() == null) return;
+            if (UnityEngine.Object.FindAnyObjectByType<BattleRunDriver>() != null) return;
             var go = new GameObject("BattleRunDriver");
             go.AddComponent<BattleRunDriver>();
         }
 
         void Awake()
         {
-            _director = FindFirstObjectByType<WaveDirector>();
+            _director = FindAnyObjectByType<WaveDirector>();
             if (_director != null)
                 _director.WaveCompleted += OnWaveCompleted;
         }
@@ -248,7 +248,7 @@ namespace Tideflesh.Systems
         OrganPipelineController HandPipeline()
         {
             if (_pipeline != null) return _pipeline;
-            _pipeline = FindFirstObjectByType<OrganPipelineController>();
+            _pipeline = FindAnyObjectByType<OrganPipelineController>();
             if (_pipeline == null)
                 _pipeline = gameObject.AddComponent<OrganPipelineController>();
             if (_pipeline.GetComponent<BattleOrganTargeting>() == null)

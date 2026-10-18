@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 
 namespace SpringUp.Flow
 {
-    public enum WindowKind { Pause, Inventory, Shop, Settings, Confirm, Settlement, Failure }
+    public enum WindowKind { Pause, Inventory, Shop, Settings, Confirm, Settlement, Failure, Laboratory }
     [DefaultExecutionOrder(-1000)]
     public sealed class FlowApplication : MonoBehaviour
     {
@@ -47,6 +47,9 @@ namespace SpringUp.Flow
         bool quitting;
         Font uiFont;
         public bool HasModal => windows.Count > 0;
+        public bool CanModifyEquipment => !IsTransitioning && Session?.Run.Stage == RunPhase.Rest
+            && Content != null && Content.IsNearCounter(Content.Laboratory)
+            && windows.Count == 1 && windows[0].Kind == WindowKind.Laboratory;
         sealed class WindowEntry
         {
             public WindowKind Kind;
@@ -75,7 +78,7 @@ namespace SpringUp.Flow
         static string ContentTitle(ContentKind kind) => kind == ContentKind.Battle ? "战斗" : kind == ContentKind.Rest ? "休整" : "主菜单";
         static string WindowTitle(WindowKind kind) => kind switch
         {
-            WindowKind.Inventory => "实验室 · 装备", WindowKind.Shop => "商店",
+            WindowKind.Inventory => "背包 · 仅查看", WindowKind.Laboratory => "实验室 · 器官装配", WindowKind.Shop => "商店",
             WindowKind.Settings => "设置", WindowKind.Confirm => "确认放弃",
             WindowKind.Settlement => "本局结算", WindowKind.Failure => "加载失败", _ => "暂停"
         };
@@ -91,6 +94,7 @@ namespace SpringUp.Flow
                     + $"  骨髓 {run.Marrow}"
                     + "  器官自动攻击  B/Tab：背包  Esc：菜单";
                 if (CanInteractWithShop()) hud.text += "  E：商店";
+                else if (CanInteractWithLaboratory()) hud.text += "  E：实验室装配";
                 if (Content.dummy != null) hud.text += $"  木桩生命 {Content.dummy.CurrentHealth:0}";
             }
             else hud.text = "春生 · 流程验证";
@@ -98,12 +102,19 @@ namespace SpringUp.Flow
         public void ToggleInventory()
         {
             if (IsTransitioning) return;
-            if (windows.Count == 1 && windows[0].Kind == WindowKind.Inventory) { CloseTop(); return; }
+            if (windows.Count == 1 && (windows[0].Kind == WindowKind.Inventory || windows[0].Kind == WindowKind.Laboratory)) { CloseTop(); return; }
             if (WorldInputAllowed && windows.Count == 0) OpenWindow(WindowKind.Inventory);
         }
         public bool CanInteractWithShop() => WorldInputAllowed && !HasModal && Session?.Run.Stage == RunPhase.Rest
-            && Content.kind == ContentKind.Rest && Content.Merchant != null
-            && Vector2.Distance(Content.player.transform.position, Content.Merchant.position) <= 2f;
+            && Content.IsNearCounter(Content.Merchant);
+        public bool CanInteractWithLaboratory() => WorldInputAllowed && !HasModal && Session?.Run.Stage == RunPhase.Rest
+            && Content.IsNearCounter(Content.Laboratory);
+        public bool TryInteract() => CanInteractWithLaboratory() ? TryOpenLaboratory() : TryOpenShop();
+        public bool TryOpenLaboratory()
+        {
+            if (!CanInteractWithLaboratory()) return false;
+            OpenWindow(WindowKind.Laboratory); return true;
+        }
         public bool TryOpenShop()
         {
             if (!CanInteractWithShop()) return false;
@@ -132,6 +143,8 @@ namespace SpringUp.Flow
             Content?.Stop();
             RewardFlights?.Clear();
             Session = new RunSession(Configuration);
+            var current = Session;
+            current.Run.EquipmentAccessPolicy = () => Session == current && CanModifyEquipment;
             Switch(BattlePath);
         }
         public void ShowKillReward(KillRewardResult reward, Vector2 deathPosition)
@@ -269,7 +282,7 @@ namespace SpringUp.Flow
             actions.AddButton("暂停［Esc］", () => OpenWindow(WindowKind.Pause));
             if (Content.kind == ContentKind.Rest)
             {
-                actions.AddText("B / Tab：背包 · 靠近商人 E：商店");
+                actions.AddText("B / Tab：查看背包\n靠近 STORE 按 E：商店\n靠近 LAB 按 E：器官装配");
                 actions.AddButton("重置木桩", () => Content.ResetDummy());
                 actions.AddButton("进入下一波", NextWave);
             }
@@ -294,6 +307,7 @@ namespace SpringUp.Flow
             if (kind == WindowKind.Inventory && (HasModal || Session == null ||
                 (Session.Run.Stage != RunPhase.Rest && Session.Run.Stage != RunPhase.Combat))) return;
             if (kind == WindowKind.Shop && !CanInteractWithShop()) return;
+            if (kind == WindowKind.Laboratory && !CanInteractWithLaboratory()) return;
             if (windows.Any(w => w.Kind == kind)) return;
             var view = Push(kind, kind == WindowKind.Pause ? $"暂停 · {ContentTitle(Content.kind)}" : WindowTitle(kind));
             switch (kind)
@@ -304,12 +318,13 @@ namespace SpringUp.Flow
                     view.AddButton("返回主菜单（放弃本局）", RequestMainMenu);
                     break;
                 case WindowKind.Settings:
-                    view.AddText("器官按管道节拍自动攻击，无需攻击按键或玩家充能。\nB / Tab：背包；Esc：返回。\n移动与疾跑沿用 Player/Move、Player/Sprint 输入设置。");
+                    view.AddText("器官按管道节拍自动攻击，无需攻击按键或玩家充能。\nB / Tab：查看背包；Esc：返回。\n休整时靠近 STORE / LAB 按 E 交互，仅实验室可装配。\n移动与疾跑沿用 Player/Move、Player/Sprint 输入设置。");
                     view.AddButton("关闭", CloseTop); break;
                 case WindowKind.Confirm:
                     view.AddText("确定放弃本局吗？当前进度不会保存。");
                     view.AddButton("取消", CloseTop); view.AddButton("放弃本局", AbandonRun); break;
                 case WindowKind.Inventory:
+                case WindowKind.Laboratory:
                     view.GetComponent<FlowLaboratoryWindow>().Bind(this);
                     break;
                 case WindowKind.Shop:
@@ -403,7 +418,7 @@ namespace SpringUp.Flow
             if (actions != null) actions.group.interactable = false;
             if (windows.Count > 0) windows[windows.Count - 1].View.group.interactable = false;
             var focus = eventSystem.currentSelectedGameObject;
-            var view = kind == WindowKind.Inventory ? Instantiate(laboratoryPrefab, uiRoot) : CreateView();
+            var view = kind == WindowKind.Inventory || kind == WindowKind.Laboratory ? Instantiate(laboratoryPrefab, uiRoot) : CreateView();
             if (view.title != null) view.title.text = title;
             windows.Add(new WindowEntry { Kind = kind, View = view, Lease = Pause.Acquire(), Focus = focus });
             return view;

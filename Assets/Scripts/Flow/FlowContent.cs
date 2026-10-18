@@ -29,6 +29,14 @@ namespace SpringUp.Flow
         float baseCameraSize;
         [SerializeField] Transform merchant;
         public Transform Merchant => merchant;
+        [SerializeField] Transform laboratory;
+        public Transform Laboratory => laboratory;
+        [SerializeField, Min(.1f)] float interactionRadius = 2f;
+        public float InteractionRadius => interactionRadius;
+        // Normalized positions on the ship sprite, measured from its lower-left corner.
+        // Stand on the deck immediately to the left of each painted counter.
+        [SerializeField] Vector2 shopAnchor = new Vector2(.645f, .60f);
+        [SerializeField] Vector2 laboratoryAnchor = new Vector2(.645f, .38f);
         FlowApplication app;
         RunSession session;
         KillMarrowBinding killMarrow;
@@ -97,27 +105,71 @@ namespace SpringUp.Flow
             if (dummy == null && trainingDummies.Count > 0)
                 dummy = trainingDummies[0];
         }
-        // Created by the shared scene entry, so regenerated Rest scenes retain the interaction.
+        // Kept as the shared builder entry point; both counters follow the ship artwork.
         public void EnsureMerchant()
         {
-            if (merchant != null || kind != ContentKind.Rest) return;
-            var go = new GameObject("Merchant · E Shop");
-            go.transform.SetParent(world.transform, false);
-            go.transform.position = player.transform.position + Vector3.left * 3;
-            merchant = go.transform;
-            var sprite = go.AddComponent<SpriteRenderer>();
-            sprite.sprite = player.GetComponentInChildren<SpriteRenderer>().sprite;
-            sprite.color = new Color(.2f, .9f, .85f);
-            go.transform.localScale = new Vector3(1.4f, 1.4f, 1);
-            var label = new GameObject("Merchant label").AddComponent<TextMesh>();
-            label.transform.SetParent(go.transform, false); label.transform.localPosition = Vector3.up;
-            label.text = "SHOP [E]"; label.characterSize = .15f; label.fontSize = 40;
-            label.anchor = TextAnchor.MiddleCenter;
+            if (kind != ContentKind.Rest || world == null) return;
+            var ship = world.transform.Find("ShipBackground")?.GetComponent<SpriteRenderer>();
+            merchant = ConfigureCounter(merchant, "Merchant · E Shop", "Merchant label", "SHOP [E]", shopAnchor, ship);
+            laboratory = ConfigureCounter(laboratory, "Laboratory · E Equipment", "Laboratory label", "LAB [E]", laboratoryAnchor, ship);
+        }
+        Transform ConfigureCounter(Transform counter, string objectName, string labelName, string text,
+            Vector2 anchor, SpriteRenderer ship)
+        {
+            if (counter == null) counter = world.transform.Find(objectName);
+            if (counter == null)
+            {
+                counter = new GameObject(objectName).transform;
+                counter.SetParent(world.transform, false);
+            }
+            var local = new Vector3((anchor.x - .5f) * 48f, (anchor.y - .5f) * 36f, 0f);
+            if (ship != null && ship.sprite != null)
+            {
+                var bounds = ship.sprite.bounds;
+                local = new Vector3(Mathf.Lerp(bounds.min.x, bounds.max.x, anchor.x),
+                    Mathf.Lerp(bounds.min.y, bounds.max.y, anchor.y), 0f);
+                counter.position = ship.transform.TransformPoint(local);
+            }
+            else counter.position = world.transform.TransformPoint(local);
+            counter.localScale = Vector3.one;
+            // The counter is already painted into the background; remove the cyan placeholder visually.
+            var placeholder = counter.GetComponent<SpriteRenderer>();
+            if (placeholder != null) placeholder.enabled = false;
+            var label = counter.Find(labelName)?.GetComponent<TextMesh>();
+            if (label == null)
+            {
+                label = new GameObject(labelName).AddComponent<TextMesh>();
+                label.transform.SetParent(counter, false);
+            }
+            label.transform.localPosition = new Vector3(-.6f, .8f, -.1f);
+            label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            label.GetComponent<MeshRenderer>().sharedMaterial = label.font.material;
+            label.text = text; label.characterSize = .12f; label.fontSize = 40;
+            label.anchor = TextAnchor.MiddleRight;
+            label.gameObject.SetActive(false);
+            return counter;
+        }
+        public bool IsNearCounter(Transform counter)
+        {
+            return kind == ContentKind.Rest && player != null && counter != null
+                && counter.gameObject.activeInHierarchy && player.gameObject.activeInHierarchy
+                && ((Vector2)(counter.position - player.transform.position)).sqrMagnitude <= interactionRadius * interactionRadius;
+        }
+        void UpdateCounterHint(Transform counter, bool available)
+        {
+            if (counter == null) return;
+            var label = counter.GetComponentInChildren<TextMesh>(true);
+            if (label != null && label.gameObject.activeSelf != available) label.gameObject.SetActive(available);
         }
         void Update()
         {
             if (initialized && pipeline != null) pipeline.AutomaticExecution = app.WorldInputAllowed;
-            if (kind == ContentKind.Rest && Keyboard.current?.eKey.wasPressedThisFrame == true) app?.TryOpenShop();
+            if (initialized && kind == ContentKind.Rest)
+            {
+                UpdateCounterHint(merchant, app.CanInteractWithShop());
+                UpdateCounterHint(laboratory, app.CanInteractWithLaboratory());
+                if (Keyboard.current?.eKey.wasPressedThisFrame == true) app.TryInteract();
+            }
         }
         void LateUpdate()
         {

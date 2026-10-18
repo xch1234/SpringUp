@@ -6,6 +6,7 @@ namespace SpringUp.UI
         public static string Error(string code) => code switch
         {
             "rest_only" or "lab actions only in lab" => "仅可在休整期间操作。",
+            "laboratory_required" => "请靠近 LAB 柜台按 E 进入实验室后调整器官。",
             "capacity" => "背包容量不足，请先出售或丢弃物品。",
             "insufficient_marrow" => "骨髓不足，无法完成操作。",
             "sold_out" => "该商品已购买，请刷新商品或等待下一波。",

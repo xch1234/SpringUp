@@ -126,6 +126,23 @@ namespace TideBorne.EditorTools
                 return;
 
             s_Initialized = true;
+            EditorApplication.delayCall += InitializeExternalEditor;
+        }
+
+        private static void InitializeExternalEditor()
+        {
+            // 没有编辑器时，Console 双击脚本会落入 Unity 的内部编辑器回退。
+            // 仅补齐空配置；保留用户已选择的 Rider、VS 或其他编辑器。
+            if (!Application.isBatchMode && string.IsNullOrWhiteSpace(CodeEditor.CurrentEditorPath))
+            {
+                var executable = FindVsCodeExecutable();
+                if (executable != null)
+                {
+                    CodeEditor.SetExternalScriptEditor(executable);
+                    Debug.Log(LogPrefix + "已为未配置的 External Script Editor 设置 VS Code：" + executable);
+                }
+            }
+
             WriteInitializationReport();
         }
 

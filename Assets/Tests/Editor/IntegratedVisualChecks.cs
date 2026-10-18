@@ -38,7 +38,7 @@ namespace SpringUp.EditorChecks
             if (EditorApplication.timeSinceStartup < next) return;
             try
             {
-                var driver = Object.FindFirstObjectByType<SpringUpRunDriver>();
+                var driver = Object.FindAnyObjectByType<SpringUpRunDriver>();
                 if (stage == 0)
                 {
                     var enemy = Object.Instantiate(Resources.Load<GameObject>("Enemies/Normal"));
@@ -74,7 +74,7 @@ namespace SpringUp.EditorChecks
             var previousRect = camera.rect;
             var previousMask = camera.cullingMask;
             var previousActive = RenderTexture.active;
-            var canvases = Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+            var canvases = Object.FindObjectsByType<Canvas>();
             var previous = new List<(Canvas canvas, RenderMode mode, Camera camera, float distance, int order)>();
             var texture = new Texture2D(width, height, TextureFormat.RGB24, false);
             var uiTarget = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32);
@@ -90,7 +90,7 @@ namespace SpringUp.EditorChecks
             {
                 camera.targetTexture = target;
                 camera.cullingMask &= ~(1 << 31);
-                var driver = Object.FindFirstObjectByType<SpringUpRunDriver>();
+                var driver = Object.FindAnyObjectByType<SpringUpRunDriver>();
                 float scale = Mathf.Min(width / 1440f, height / 900f);
                 camera.rect = driver.Run.Phase == "combat" ? new Rect(0, 0, 1, 1 - 44f * scale / height) : new Rect(0, 0, 1, 1);
                 foreach (var canvas in canvases)

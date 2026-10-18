@@ -37,8 +37,8 @@ namespace SpringUp.EditorChecks
             EditorSceneManager.CloseScene(labScene, true);
             SceneManager.SetActiveScene(scene);
             var driver = new GameObject("SpringUp Run").AddComponent<SpringUpRunDriver>();
-            driver.director = Object.FindFirstObjectByType<WaveDirector>();
-            driver.player = Object.FindFirstObjectByType<PlayerRuntime>();
+            driver.director = Object.FindAnyObjectByType<WaveDirector>();
+            driver.player = Object.FindAnyObjectByType<PlayerRuntime>();
             var motor = driver.player.GetComponent<PlayerMotor>();
             if (motor == null) motor = driver.player.gameObject.AddComponent<PlayerMotor>();
             var input = new SerializedObject(motor);
@@ -57,8 +57,8 @@ namespace SpringUp.EditorChecks
             driver.combat = driver.gameObject.AddComponent<BattleOrganCombat>();
             driver.gameObject.AddComponent<BattleOrganEffects>();
             driver.GetComponent<BattleOrganTargeting>().AttackOrigin = driver.player.transform;
-            driver.laboratorySource = Object.FindFirstObjectByType<LaboratoryDemoBootstrap>();
-            driver.presenter = Object.FindFirstObjectByType<LaboratoryPresenter>();
+            driver.laboratorySource = Object.FindAnyObjectByType<LaboratoryDemoBootstrap>();
+            driver.presenter = Object.FindAnyObjectByType<LaboratoryPresenter>();
             driver.laboratoryRoot = driver.presenter.gameObject;
             foreach (var text in driver.laboratoryRoot.GetComponentsInChildren<Text>(true))
                 if (text.text == "装备与战斗测试") text.text = "实验室";

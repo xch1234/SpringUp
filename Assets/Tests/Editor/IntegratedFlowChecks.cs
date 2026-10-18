@@ -56,7 +56,7 @@ namespace SpringUp.EditorChecks
             if (EditorApplication.timeSinceStartup < nextCheck) return;
             try
             {
-                var driver = Object.FindFirstObjectByType<SpringUpRunDriver>();
+                var driver = Object.FindAnyObjectByType<SpringUpRunDriver>();
                 Require(driver != null && driver.Run != null, "统一入口启动。");
                 var run = driver.Run;
                 if (stage == -3)
@@ -126,7 +126,7 @@ namespace SpringUp.EditorChecks
                 if (stage == 0)
                 {
                     Require(run.Phase == "combat" && run.Wave == 1 && driver.director.CurrentWave == 1, "第一波只启动一次。");
-                    Require(Object.FindFirstObjectByType<BattleRunDriver>() == null, "无灰盒流程重复接管。");
+                    Require(Object.FindAnyObjectByType<BattleRunDriver>() == null, "无灰盒流程重复接管。");
                     var go = new GameObject("Flow target"); go.SetActive(false);
                     go.transform.position = driver.player.transform.position + Vector3.right;
                     go.AddComponent<EnemyData>(); var enemy = go.AddComponent<EnemyRuntime>(); go.SetActive(true);

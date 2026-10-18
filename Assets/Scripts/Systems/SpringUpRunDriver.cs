@@ -168,7 +168,7 @@ namespace Tideflesh.Systems
             pipeline.enabled = false;
             combat.Clear();
             pipeline.GetComponent<BattleOrganEffects>()?.Clear();
-            foreach (var projectile in FindObjectsByType<Projectile>(FindObjectsSortMode.None))
+            foreach (var projectile in FindObjectsByType<Projectile>())
                 if (projectile.gameObject.scene == gameObject.scene) Destroy(projectile.gameObject);
             Time.timeScale = 0f;
         }

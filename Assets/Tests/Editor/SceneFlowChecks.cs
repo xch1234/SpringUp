@@ -187,14 +187,14 @@ namespace SpringUp.EditorChecks
             try
             {
                 Require(EditorApplication.timeSinceStartup < deadline, "Timeout at stage " + stage);
-                var app = Object.FindFirstObjectByType<FlowApplication>();
+                var app = Object.FindAnyObjectByType<FlowApplication>();
                 if (app == null || app.IsTransitioning || app.Content == null) return;
                 var content = app.Content;
                 var run = app.Session?.Run;
-                Require(Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None).Length == 1, "One EventSystem");
-                Require(Object.FindFirstObjectByType<BattleRunDriver>() == null, "No legacy automatic driver");
+                Require(Object.FindObjectsByType<EventSystem>().Length == 1, "One EventSystem");
+                Require(Object.FindAnyObjectByType<BattleRunDriver>() == null, "No legacy automatic driver");
                 Require(UnityEngine.SceneManagement.SceneManager.sceneCount == 2, "One bootstrap + one content scene");
-                Require(Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None).Count(x => x.isActiveAndEnabled) == 1, "One audio listener");
+                Require(Object.FindObjectsByType<AudioListener>().Count(x => x.isActiveAndEnabled) == 1, "One audio listener");
                 switch (stage)
                 {
                     case 0:
@@ -220,13 +220,13 @@ namespace SpringUp.EditorChecks
                         try { run.Unequip("hand", 1); } catch (RunException) { rejected = true; }
                         Require(rejected, "Battle equipment locked");
                         app.ToggleInventory();
-                        var battleBag = Object.FindFirstObjectByType<FlowLaboratoryWindow>();
+                        var battleBag = Object.FindAnyObjectByType<FlowLaboratoryWindow>();
                         Require(battleBag != null && battleBag.backpack.ReadOnly && !battleBag.discardButton.interactable, "Battle inventory read-only");
                         Require(battleBag.sellButton == null || !battleBag.sellButton.gameObject.activeSelf, "No inventory selling");
                         app.HandleEscape(); Require(app.WorldInputAllowed, "Inventory Esc returns directly to game");
                         app.ToggleInventory(); app.ToggleInventory(); Require(app.WorldInputAllowed, "Inventory toggle closes");
                         app.OpenWindow(WindowKind.Pause); app.ToggleInventory();
-                        Require(Object.FindObjectsByType<FlowLaboratoryWindow>(FindObjectsSortMode.None).All(x => !x.gameObject.activeInHierarchy), "Pause blocks inventory");
+                        Require(Object.FindObjectsByType<FlowLaboratoryWindow>().All(x => !x.gameObject.activeInHierarchy), "Pause blocks inventory");
                         app.HandleEscape();
                         var target = new GameObject("Battle attack verification"); target.SetActive(false);
                         target.transform.position = content.player.transform.position + Vector3.right;
@@ -261,11 +261,13 @@ namespace SpringUp.EditorChecks
                         Require(content.director == null && EnemyRuntime.ActiveCount == 1, "Only training dummy in rest, count=" + EnemyRuntime.ActiveCount);
                         if (content.dummy.CurrentHealth == content.dummy.MaxHealth) return;
                         Require(content.pipeline.AutomaticExecution, "Rest automatically tests the equipped build");
-                        app.OpenWindow(WindowKind.Inventory);
+                        var trainingPosition = content.player.transform.position;
+                        content.player.transform.position = content.Laboratory.position;
+                        Require(app.TryOpenLaboratory(), "Rest equipment changes require laboratory entry");
                         Require(Time.timeScale == 0 && !app.WorldInputAllowed, "Inventory pauses world execution");
                         knife = run.Inventory.UnequippedIds().FirstOrDefault(id => run.Inventory.OrganOf(id).id == "rust_knife");
                         if (knife == null) { run.Inventory.Spawn("rust_knife"); knife = run.Inventory.UnequippedIds().Single(id => run.Inventory.OrganOf(id).id == "rust_knife"); }
-                        var lab = Object.FindFirstObjectByType<FlowLaboratoryWindow>();
+                        var lab = Object.FindAnyObjectByType<FlowLaboratoryWindow>();
                         Require(lab != null && lab.backpack != null, "Real laboratory view without demo bootstrap");
                         int beforeSample = run.Inventory.Instances.Count;
                         StraightProjectileSampleMenu.Give();
@@ -273,7 +275,7 @@ namespace SpringUp.EditorChecks
                         Require(lab.backpack.pageLabel.text.Contains(run.Inventory.UnequippedIds().Count + " 件"), "Open inventory refreshes after sample menu");
                         run.Discard(run.Inventory.UnequippedIds().Last(id => run.Inventory.OrganOf(id).id == "straight_projectile"));
                         FlowPresentationChecks.CaptureFlowUI(app, "inventory-zh.png");
-                        Require(Object.FindFirstObjectByType<SpringUp.Laboratory.LaboratoryCombatDemo>() == null, "No internal combat preview");
+                        Require(Object.FindAnyObjectByType<SpringUp.Laboratory.LaboratoryCombatDemo>() == null, "No internal combat preview");
                         lab.backpack.ChangePage(-100);
                         var sourceSlot = lab.backpack.inventorySlots.First(slot => slot.Item?.InstanceId == knife);
                         var targetSlot = lab.backpack.equipmentSlots.First(slot => slot.part == SpringUp.Laboratory.LaboratoryPart.Hand && slot.index == 0);
@@ -284,6 +286,7 @@ namespace SpringUp.EditorChecks
                         Require(content.combat.ActiveBlackHoles == 0 && content.combat.Actuators.Active.Count == 0, "Equipment clears old execution");
                         Require(content.pipeline.GetBody(BodyPart.Hand).GetSlot(0).InstanceId == knife, "Rest pipeline updated immediately");
                         app.CloseTop();
+                        content.player.transform.position = trainingPosition;
                         content.dummy.TakeDamage(100000, "test", content.dummy.Position);
                         Require(content.dummy.IsAlive && run.Marrow == reward && run.Stage == RunPhase.Rest, "Dummy cannot reward or end wave");
                         content.ResetDummy();
@@ -454,7 +457,14 @@ namespace SpringUp.EditorChecks
         {
             var content = app.Content; var run = app.Session.Run;
             Require(app.Configuration.Definitions.Count == 36, "All A organ definitions available in Bootstrap");
-            void Equip(string id, string part, int slot) { var instance = run.Inventory.Spawn(id); run.Equip(instance, part, slot); }
+            void Equip(string id, string part, int slot)
+            {
+                var previousPosition = content.player.transform.position;
+                content.player.transform.position = content.Laboratory.position;
+                Require(app.TryOpenLaboratory(), "Merged organ check enters laboratory");
+                var instance = run.Inventory.Spawn(id); run.Equip(instance, part, slot);
+                app.CloseTop(); content.player.transform.position = previousPosition;
+            }
             Equip("straight_projectile", "head", 1);
             Equip("poison_fog", "leg", 1);
             float beforeMax = content.player.MaxHealth;

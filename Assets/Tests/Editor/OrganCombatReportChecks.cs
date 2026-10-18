@@ -68,7 +68,7 @@ namespace SpringUp.EditorChecks
         public static void RunPlay(SpringUpRunDriver driver)
         {
             Assert.Greater(driver.CombatReport.Damage.Count, 0, "Real combat damage must reach the report.");
-            var hud = Object.FindFirstObjectByType<RunEquipmentHud>();
+            var hud = Object.FindAnyObjectByType<RunEquipmentHud>();
             var button = hud.transform.Find("Combat report toggle").GetComponent<Button>();
             var panel = hud.transform.Find("Combat report").gameObject;
             Assert.IsFalse(panel.activeSelf); button.onClick.Invoke(); Assert.IsTrue(panel.activeSelf);

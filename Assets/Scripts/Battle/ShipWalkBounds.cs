@@ -1,3 +1,4 @@
+using System.Threading;
 using UnityEngine;
 
 namespace TideBorne.Battle
@@ -17,6 +18,7 @@ namespace TideBorne.Battle
     public class ShipWalkBounds : MonoBehaviour
     {
         private const string EdgePrefix = "__ShipEdge_";
+        private int rebuildRequested;
 
         [Tooltip("船体长方形尺寸：x = 船身长度，y = 船宽。")]
         [SerializeField] private Vector2 bodySize = new Vector2(30.8f, 20.7f);
@@ -35,44 +37,51 @@ namespace TideBorne.Battle
 
         private void OnEnable()
         {
-            // 边界墙在编辑期已经烘进场景；运行时直接复用，避免每次加载都重建一遍。
-            if (Application.isPlaying && HasWalls())
-                return;
-
-            Rebuild();
+            Interlocked.Exchange(ref rebuildRequested, 1);
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.update -= RebuildWhenReady;
+            UnityEditor.EditorApplication.update += RebuildWhenReady;
+#endif
+            // 运行时在首次物理更新前补齐墙体；已有墙体会被复用。
+            if (Application.IsPlaying(gameObject))
+                Rebuild();
         }
 
-        private bool HasWalls()
+        private void OnDisable()
         {
-            for (var i = 0; i < transform.childCount; i++)
-            {
-                var child = transform.GetChild(i);
-                if (child != null && child.name.StartsWith(EdgePrefix))
-                    return true;
-            }
-
-            return false;
+            Interlocked.Exchange(ref rebuildRequested, 0);
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.update -= RebuildWhenReady;
+#endif
         }
 
         private void OnValidate()
         {
-            Rebuild();
+            // 此回调可能发生在加载线程或反序列化期间，不能修改对象层级。
+            Interlocked.Exchange(ref rebuildRequested, 1);
         }
+
+#if UNITY_EDITOR
+        private void RebuildWhenReady()
+        {
+            if (this == null || !isActiveAndEnabled || !gameObject.scene.IsValid() || !gameObject.scene.isLoaded
+                || UnityEditor.EditorApplication.isCompiling || UnityEditor.EditorApplication.isUpdating
+                || UnityEditor.BuildPipeline.isBuildingPlayer
+                || UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode != Application.isPlaying)
+                return;
+
+            if (Interlocked.Exchange(ref rebuildRequested, 0) != 0)
+                Rebuild();
+        }
+#endif
 
         /// <summary>按当前参数重建边界墙。</summary>
         [ContextMenu("重建边界")]
         public void Rebuild()
         {
+            Interlocked.Exchange(ref rebuildRequested, 0);
             if (transform == null)
                 return;
-
-            // 先清掉旧的墙，避免改参数后叠加出一堆。
-            for (var i = transform.childCount - 1; i >= 0; i--)
-            {
-                var child = transform.GetChild(i);
-                if (child != null && child.name.StartsWith(EdgePrefix))
-                    DestroyImmediate(child.gameObject);
-            }
 
             var points = BuildPoints();
             var centroid = Vector2.zero;
@@ -81,6 +90,7 @@ namespace TideBorne.Battle
             centroid /= points.Length - 1;
 
             var wallLayer = BattleLayers.Resolve(BattleLayers.Wall);
+            var walls = new Transform[points.Length - 1];
 
             for (var i = 0; i < points.Length - 1; i++)
             {
@@ -96,18 +106,46 @@ namespace TideBorne.Battle
                 if (Vector2.Dot(outward, midpoint - centroid) < 0f)
                     outward = -outward;
 
-                var wall = new GameObject(EdgePrefix + i);
-                wall.layer = wallLayer;
+                var wallTransform = transform.Find(EdgePrefix + i);
+                if (wallTransform == null)
+                {
+                    wallTransform = new GameObject(EdgePrefix + i).transform;
+                    wallTransform.SetParent(transform, false);
+                }
+                walls[i] = wallTransform;
+                var wall = wallTransform.gameObject;
+                if (wall.layer != wallLayer) wall.layer = wallLayer;
+                if (!wall.activeSelf) wall.SetActive(true);
 
-                var wallTransform = wall.transform;
-                wallTransform.SetParent(transform, false);
-                wallTransform.localPosition = midpoint + outward * (wallThickness * 0.5f);
-                wallTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(edge.y, edge.x) * Mathf.Rad2Deg);
-                wallTransform.localScale = Vector3.one;
+                Vector3 position = midpoint + outward * (wallThickness * 0.5f);
+                var rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(edge.y, edge.x) * Mathf.Rad2Deg);
+                if (wallTransform.localPosition != position) wallTransform.localPosition = position;
+                if (wallTransform.localRotation != rotation) wallTransform.localRotation = rotation;
+                if (wallTransform.localScale != Vector3.one) wallTransform.localScale = Vector3.one;
 
-                var box = wall.AddComponent<BoxCollider2D>();
-                box.size = new Vector2(length + wallThickness * 2f, wallThickness);
-                box.offset = Vector2.zero;
+                var box = wall.GetComponent<BoxCollider2D>();
+                if (box == null) box = wall.AddComponent<BoxCollider2D>();
+                var size = new Vector2(length + wallThickness * 2f, wallThickness);
+                if (box.size != size) box.size = size;
+                if (box.offset != Vector2.zero) box.offset = Vector2.zero;
+                if (box.isTrigger) box.isTrigger = false;
+                if (!box.enabled) box.enabled = true;
+            }
+
+            // 清理旧版本可能留下的重复墙，保留其他手工添加的子物体。
+            for (var i = transform.childCount - 1; i >= 0; i--)
+            {
+                var child = transform.GetChild(i);
+                if (!child.name.StartsWith(EdgePrefix) || System.Array.IndexOf(walls, child) >= 0)
+                    continue;
+
+                if (Application.IsPlaying(gameObject))
+                {
+                    child.gameObject.SetActive(false);
+                    Destroy(child.gameObject);
+                }
+                else
+                    DestroyImmediate(child.gameObject);
             }
         }
 

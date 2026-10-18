@@ -13,7 +13,18 @@ namespace SpringUp.Laboratory
         public Text detail, pageLabel, message;
         public Button previousPage, nextPage;
         public ScrollRect detailsScroll;
-        public bool ReadOnly { get; set; }
+        bool readOnly;
+        public bool ReadOnly
+        {
+            get => readOnly;
+            set
+            {
+                if (readOnly == value) return;
+                readOnly = value;
+                if (readOnly) CancelDrag();
+                if (equipment != null) RefreshSelection();
+            }
+        }
         public string SelectedInstanceId { get; private set; }
         public bool IsDragging => draggingId != null;
         RunLaboratoryEquipment equipment;
@@ -65,13 +76,13 @@ namespace SpringUp.Laboratory
             foreach (var slot in equipmentSlots.Concat(inventorySlots))
                 slot.view.SetSelected(item != null && slot.Item?.InstanceId == item.InstanceId);
             detailIcon.Bind(item);
-            detail.text = item == null ? "选择器官查看详情\n\n拖到装备槽：装配 / 替换\n拖回背包区域：卸下\n装备之间拖动：移动 / 交换\n\n同一行从左向右执行。" :
+            detail.text = item == null ? (ReadOnly ? "选择器官查看详情\n\n靠近休整区 LAB 柜台按 E，进入实验室后才能调整装备。" : "选择器官查看详情\n\n拖到装备槽：装配 / 替换\n拖回背包区域：卸下\n装备之间拖动：移动 / 交换\n\n同一行从左向右执行。") :
                 $"{item.Name}\n{item.Kind} · {item.MountLabel}\n位置：{(selectedSlot == null ? "背包" : LaboratoryPresenter.PartNames[(int)selectedSlot.part] + "第 " + (selectedSlot.index + 1) + " 槽")}\n\n{item.Description}";
         }
         public void BeginDrag(OrganDragSlot source, PointerEventData e)
         {
             CancelDrag(); Select(source.Item?.InstanceId);
-            if (ReadOnly) { if (message != null) message.text = "战斗中仅可查看，休整期间才能调整装备。"; return; }
+            if (ReadOnly) { if (message != null) message.text = "仅可查看。请靠近 LAB 柜台按 E 进入实验室后调整装备。"; return; }
             if (source.Item == null) return;
             draggingId = source.Item.InstanceId; draggingItem = source.Item;
             fromInventory = source.inventory; fromPart = source.part; fromIndex = source.index;

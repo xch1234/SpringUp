@@ -85,6 +85,9 @@ namespace Tideflesh.Systems
 
         public Inventory Inventory { get; private set; }
         public RunPhase Stage { get; private set; } = RunPhase.Boot;
+        // Scene hosts provide spatial/window authorization; standalone legacy demos retain their Rest rules.
+        public Func<bool> EquipmentAccessPolicy { get; set; }
+        public bool CanModifyEquipment => Stage == RunPhase.Rest && (EquipmentAccessPolicy?.Invoke() ?? true);
         // Compatibility adapter for existing demos; new consumers use Stage/events.
         public string Phase => Stage switch { RunPhase.Boot => "boot", RunPhase.Combat => "combat",
             RunPhase.Settling => "wave_settling", RunPhase.Rest => "lab", RunPhase.Won => "run_won", _ => "run_lost" };
@@ -244,28 +247,28 @@ namespace Tideflesh.Systems
 
         public void Equip(string instanceId, string part, int slot)
         {
-            RequireLab();
+            RequireEquipmentAccess();
             Inventory.Equip(instanceId, part, slot);
             EmitLoadout();
         }
 
         public void Unequip(string part, int slot)
         {
-            RequireLab();
+            RequireEquipmentAccess();
             Inventory.Unequip(part, slot);
             EmitLoadout();
         }
 
         public void Replace(string instanceId, string part, int slot)
         {
-            RequireLab();
+            RequireEquipmentAccess();
             Inventory.Replace(instanceId, part, slot);
             EmitLoadout();
         }
 
         public void MoveOrSwap(string instanceId, string fromPart, int fromSlot, string toPart, int toSlot)
         {
-            RequireLab();
+            RequireEquipmentAccess();
             Inventory.MoveOrSwap(instanceId, fromPart, fromSlot, toPart, toSlot);
             EmitLoadout();
         }
@@ -281,13 +284,15 @@ namespace Tideflesh.Systems
         public void Sell(string instanceId)
         {
             RequireLab();
+            // Selling an equipped organ also removes it from the loadout.
+            if (!Inventory.UnequippedIds().Contains(instanceId)) RequireEquipmentAccess();
             Marrow += Inventory.Sell(instanceId);
             EmitLoadout();
         }
 
         public void Discard(string instanceId)
         {
-            RequireLab();
+            RequireEquipmentAccess();
             Inventory.Discard(instanceId);
             EmitLoadout();
         }
@@ -404,6 +409,12 @@ namespace Tideflesh.Systems
             var unit = _nextUnit();
             if (double.IsNaN(unit) || double.IsNegativeInfinity(unit) || unit < 0) return 0;
             return Math.Min(0.999999999999, unit);
+        }
+
+        void RequireEquipmentAccess()
+        {
+            RequireLab();
+            if (!CanModifyEquipment) throw new RunException("laboratory_required");
         }
 
         void RequireLab()
