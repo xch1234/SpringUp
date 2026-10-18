@@ -4,9 +4,10 @@ namespace SpringUp.Flow
     [CreateAssetMenu(menuName = "SpringUp/Reward Flight Settings")]
     public sealed class RewardFlightSettings : ScriptableObject
     {
-        public Sprite sprite;
-        public Color marrowColor = new Color(1f, .78f, .18f);
-        public Color organColor = new Color(.7f, .35f, 1f);
+        public Sprite marrowSprite;
+        public Sprite organSprite;
+        public Color marrowColor = Color.white;
+        public Color organColor = Color.white;
         [Min(1)] public float size = 14f;
         [Min(0)] public float holdSeconds = .1f;
         [Min(.01f)] public float flightSeconds = .4f;

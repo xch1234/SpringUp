@@ -33,7 +33,8 @@ namespace Tideflesh.Systems
             if (prefab == null) throw new InvalidOperationException("Missing EquipmentHud prefab. Run Tools/SpringUp/UI/Build Organ UI Assets.");
             var hud = Instantiate(prefab, parent, false);
             foreach (var text in hud.GetComponentsInChildren<Text>(true)) text.font = font;
-            hud.reportToggle.onClick.AddListener(() => hud.reportPanel.SetActive(!hud.reportPanel.activeSelf));
+            if (hud.reportToggle != null && hud.reportPanel != null)
+                hud.reportToggle.onClick.AddListener(() => hud.reportPanel.SetActive(!hud.reportPanel.activeSelf));
             return hud;
         }
         public void Bind(RunLaboratoryEquipment source)
@@ -53,7 +54,7 @@ namespace Tideflesh.Systems
         }
         void Update()
         {
-            if (report != null && reportPanel.activeInHierarchy && reportRevision != report.Revision)
+            if (report != null && reportPanel != null && reportText != null && reportPanel.activeInHierarchy && reportRevision != report.Revision)
             { reportRevision = report.Revision; reportText.text = report.Describe(); }
         }
         void OnDestroy()

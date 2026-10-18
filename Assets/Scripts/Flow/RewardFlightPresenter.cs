@@ -18,8 +18,6 @@ namespace SpringUp.Flow
         PauseService pause;
         RectTransform layer;
         Canvas canvas;
-        Sprite generatedSprite;
-        Texture2D generatedTexture;
         public RectTransform Receiver { get; private set; }
         public int ActiveCount => active.Count;
         public static RewardFlightPresenter Create(Transform uiRoot, RewardFlightSettings settings, PauseService pause)
@@ -58,17 +56,20 @@ namespace SpringUp.Flow
         public void SpawnAtViewport(Vector2 origin, bool organ)
         {
             if (settings == null || active.Count >= Mathf.Max(1, settings.maxConcurrent)) return;
+            var sprite = organ ? settings.organSprite : settings.marrowSprite;
+            if (sprite == null) return; // Missing artwork only skips presentation; rewards are already committed.
             Flight flight;
             if (idle.Count > 0) flight = idle.Pop();
             else
             {
-                var go = new GameObject("Reward spark", typeof(RectTransform), typeof(Image));
+                var go = new GameObject("Reward icon", typeof(RectTransform), typeof(Image));
                 go.transform.SetParent(layer, false);
                 flight = new Flight { image = go.GetComponent<Image>() };
                 flight.image.raycastTarget = false;
+                flight.image.preserveAspect = true;
             }
             flight.startUV = new Vector2(Mathf.Clamp01(origin.x), Mathf.Clamp01(origin.y)); flight.elapsed = 0;
-            flight.image.sprite = settings.sprite != null ? settings.sprite : GetSpark();
+            flight.image.sprite = sprite;
             flight.image.color = organ ? settings.organColor : settings.marrowColor;
             flight.image.rectTransform.sizeDelta = Vector2.one * Mathf.Max(1, settings.size);
             flight.image.gameObject.SetActive(true);
@@ -104,28 +105,6 @@ namespace SpringUp.Flow
         {
             foreach (var flight in active) { flight.image.gameObject.SetActive(false); idle.Push(flight); }
             active.Clear();
-        }
-        Sprite GetSpark()
-        {
-            if (generatedSprite != null) return generatedSprite;
-            const int size = 32;
-            generatedTexture = new Texture2D(size, size, TextureFormat.RGBA32, false) { name = "Reward spark (generated)", hideFlags = HideFlags.DontSave };
-            var pixels = new Color[size * size];
-            for (int y = 0; y < size; y++) for (int x = 0; x < size; x++)
-            {
-                float dx = Mathf.Abs((x + .5f) / size * 2 - 1), dy = Mathf.Abs((y + .5f) / size * 2 - 1);
-                float alpha = Mathf.Clamp01(1 - Mathf.Pow(dx * dy * 8 + (dx + dy) * .5f, .65f));
-                pixels[y * size + x] = new Color(1, 1, 1, alpha);
-            }
-            generatedTexture.SetPixels(pixels); generatedTexture.Apply();
-            generatedSprite = Sprite.Create(generatedTexture, new Rect(0, 0, size, size), Vector2.one * .5f, size);
-            generatedSprite.hideFlags = HideFlags.DontSave;
-            return generatedSprite;
-        }
-        void OnDestroy()
-        {
-            if (generatedSprite != null) Destroy(generatedSprite);
-            if (generatedTexture != null) Destroy(generatedTexture);
         }
     }
 }

@@ -90,10 +90,6 @@ namespace SpringUp.EditorChecks
                 slots.Add(new RunEquipmentHud.Slot { part = (LaboratoryPart)p, index = i, view = view });
             }
             hud.slots = slots.ToArray();
-            hud.reportToggle = Button("Combat report toggle", root, "伤害 / 触发记录", 320, 270, 210, 28, 16);
-            hud.reportPanel = Image("Combat report", root, 0, 304, 530, 210, new Color(.03f, .06f, .09f, .96f)).gameObject;
-            hud.reportText = Text("Report", hud.reportPanel.transform, "等待器官发动", 12, 8, 506, 194, 16);
-            hud.reportText.alignment = TextAnchor.UpperLeft; hud.reportPanel.SetActive(false);
             PrefabUtility.SaveAsPrefabAsset(root.gameObject, HudPath); Object.DestroyImmediate(root.gameObject);
         }
         static void BuildBackpack(OrganArtCatalog art)
@@ -106,7 +102,6 @@ namespace SpringUp.EditorChecks
             // Only the actual panel blocks clicks; icons/overlays themselves do not swallow drop events.
             var background = Image("Artwork", root, 0, 0, 1774, 887, Color.white, true);
             background.sprite = SpriteAt("Assets/Art/UI/Backpack.png");
-            window.title = Text("Window title", root, "背包", 150, 888, 250, 38, 25);
             var slots = new List<OrganDragSlot>();
             for (int p = 0; p < 4; p++) for (int i = 0; i < (p == 3 ? 2 : 6); i++)
             {
@@ -127,7 +122,7 @@ namespace SpringUp.EditorChecks
             backpack.inventorySlots = slots.ToArray();
             backpack.detailIcon = Icon(root, "Selected organ", art, 1282, 175, 80, false);
             // Long descriptions remain reachable without reducing the font to fit.
-            var viewport = Image("Details viewport", root, 1260, 285, 360, 480, Color.clear, true);
+            var viewport = Image("Details viewport", root, 1260, 285, 360, 400, Color.clear, true);
             viewport.gameObject.AddComponent<RectMask2D>();
             var scroll = viewport.gameObject.AddComponent<ScrollRect>(); scroll.viewport = (RectTransform)viewport.transform;
             scroll.horizontal = false; scroll.movementType = ScrollRect.MovementType.Clamped;
@@ -138,13 +133,10 @@ namespace SpringUp.EditorChecks
             content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             scroll.content = content;
             backpack.detailsScroll = scroll;
-            backpack.previousPage = Button("Previous page", root, "上一页", 345, 887, 140, 40);
-            backpack.pageLabel = Text("Page", root, "1 / 1 页", 500, 887, 340, 40, 24); backpack.pageLabel.alignment = TextAnchor.MiddleCenter;
-            backpack.nextPage = Button("Next page", root, "下一页", 880, 887, 140, 40);
-            binding.discardButton = Button("Discard selected", root, "丢弃选中器官", 1270, 780, 320, 42);
-            binding.status = Text("Status", root, "", 150, 980, 1470, 68, 23);
-            backpack.message = Text("Interaction message", root, "点击查看详情，拖动调整装备。", 150, 933, 1470, 42, 23);
-            binding.closeButton = Button("Close backpack", root, "关闭背包", 1270, 885, 380, 40, 21);
+            backpack.previousPage = Button("Previous page", root, "上一页", 1270, 780, 150, 40);
+            backpack.pageLabel = Text("Page", root, "1 / 1 页", 1270, 746, 320, 30, 23); backpack.pageLabel.alignment = TextAnchor.MiddleCenter;
+            backpack.nextPage = Button("Next page", root, "下一页", 1440, 780, 150, 40);
+            binding.discardButton = Button("Discard selected", root, "丢弃选中器官", 1270, 700, 320, 42);
             backpack.dragGhost = Icon(root, "Drag ghost", art, 0, 0, 76, false);
             backpack.dragGhost.GetComponent<RectTransform>().pivot = new Vector2(.5f, .5f);
             backpack.dragGhost.gameObject.SetActive(false);

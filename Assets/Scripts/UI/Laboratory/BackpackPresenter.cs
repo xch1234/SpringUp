@@ -71,13 +71,13 @@ namespace SpringUp.Laboratory
         public void BeginDrag(OrganDragSlot source, PointerEventData e)
         {
             CancelDrag(); Select(source.Item?.InstanceId);
-            if (ReadOnly) { message.text = "战斗中仅可查看，休整期间才能调整装备。"; return; }
+            if (ReadOnly) { if (message != null) message.text = "战斗中仅可查看，休整期间才能调整装备。"; return; }
             if (source.Item == null) return;
             draggingId = source.Item.InstanceId; draggingItem = source.Item;
             fromInventory = source.inventory; fromPart = source.part; fromIndex = source.index;
             dragGhost.Bind(draggingItem); dragGhost.gameObject.SetActive(true); dragGhost.transform.SetAsLastSibling();
             foreach (var slot in equipmentSlots.Concat(inventorySlots)) slot.view.SetDropHint(CanDrop(slot) ? true : (bool?)null);
-            message.text = "拖到亮起的槽位放置；拖回背包卸下；松开在其他区域取消。";
+            if (message != null) message.text = "拖到亮起的槽位放置；拖回背包卸下；松开在其他区域取消。";
             MoveDrag(e);
         }
         public void MoveDrag(PointerEventData e)
@@ -121,7 +121,7 @@ namespace SpringUp.Laboratory
         {
             CancelDrag();
             if (ok) { SelectedInstanceId = id; Refresh(); }
-            message.text = ok ? "装备已更新。" : error;
+            if (message != null) message.text = ok ? "装备已更新。" : error;
         }
         public void CancelDrag()
         {
