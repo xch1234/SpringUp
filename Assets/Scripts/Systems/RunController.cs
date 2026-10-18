@@ -47,6 +47,22 @@ namespace Tideflesh.Systems
         { Accepted = accepted; HasMarrow = hasMarrow; Marrow = marrow; OrganInstanceId = organInstanceId; }
     }
 
+    // Shop tuning: prices are marrow; refresh count resets when the next wave starts.
+    public static class ShopSettings
+    {
+        public const int OfferCount = 4;
+        public const int InitialRefreshPrice = 30;
+        public const int RefreshPriceIncrement = 20;
+    }
+
+    public sealed class ShopOffer
+    {
+        public string OrganId { get; }
+        public int Price { get; }
+        public bool Purchased { get; internal set; }
+        internal ShopOffer(string organId, int price) { OrganId = organId; Price = price; }
+    }
+
     public enum RunPhase { Boot, Combat, Settling, Rest, Won, Lost }
 
     public sealed class RunController
@@ -59,6 +75,11 @@ namespace Tideflesh.Systems
         readonly Dictionary<int, WaveDefinition> _waves;
         readonly HashSet<string> _activeOrganIds;
         readonly int _maxWave;
+        readonly int _shopOfferCount, _shopRefreshBasePrice, _shopRefreshPriceIncrement;
+        IReadOnlyList<ShopOffer> _shopOffers;
+        public int ShopRefreshCount { get; private set; }
+        public int ShopRefreshPrice => (int)Math.Min(int.MaxValue,
+            (long)_shopRefreshBasePrice + (long)ShopRefreshCount * _shopRefreshPriceIncrement);
         readonly Emit _emit;
         readonly Func<double> _nextUnit;
 
@@ -119,8 +140,17 @@ namespace Tideflesh.Systems
             List<WaveDefinition> waves,
             Emit emit,
             Func<double> nextUnit = null,
-            IEnumerable<string> activeOrganIds = null)
+            IEnumerable<string> activeOrganIds = null,
+            int shopRefreshBasePrice = ShopSettings.InitialRefreshPrice,
+            int shopRefreshPriceIncrement = ShopSettings.RefreshPriceIncrement,
+            int shopOfferCount = ShopSettings.OfferCount)
         {
+            if (shopRefreshBasePrice <= 0) throw new ArgumentOutOfRangeException(nameof(shopRefreshBasePrice));
+            if (shopRefreshPriceIncrement <= 0) throw new ArgumentOutOfRangeException(nameof(shopRefreshPriceIncrement));
+            if (shopOfferCount <= 0) throw new ArgumentOutOfRangeException(nameof(shopOfferCount));
+            _shopRefreshBasePrice = shopRefreshBasePrice;
+            _shopRefreshPriceIncrement = shopRefreshPriceIncrement;
+            _shopOfferCount = shopOfferCount;
             _catalog = catalog;
             _activeOrganIds = new HashSet<string>(activeOrganIds ?? catalog.Keys);
             _waves = new Dictionary<int, WaveDefinition>();
@@ -205,6 +235,8 @@ namespace Tideflesh.Systems
                 throw new RunException("cannot start next wave");
             Wave += 1;
             WaveKillMarrow = 0;
+            _shopOffers = null;
+            ShopRefreshCount = 0;
             Stage = RunPhase.Combat;
             WaveStarted?.Invoke(Wave);
             _emit?.Invoke("RunStarted", new RunStartedPayload { Wave = Wave });
@@ -251,6 +283,68 @@ namespace Tideflesh.Systems
             RequireLab();
             Inventory.Discard(instanceId);
             EmitLoadout();
+        }
+
+        // The run owns stock, quotes and sold flags so closing the window cannot reroll it.
+        public IReadOnlyList<ShopOffer> GetShopOffers()
+        {
+            RequireLab();
+            return _shopOffers ??= GenerateShopOffers();
+        }
+
+        IReadOnlyList<ShopOffer> GenerateShopOffers()
+        {
+            var offers = new List<ShopOffer>();
+            foreach (var id in SelectShopOffers(_shopOfferCount))
+                offers.Add(new ShopOffer(id, QuotePurchasePrice(id)));
+            return offers.AsReadOnly();
+        }
+
+        public ShopResult TryRefreshShop()
+        {
+            if (Stage != RunPhase.Rest) return new ShopResult { Reason = "rest_only" };
+            int price = ShopRefreshPrice;
+            if (Marrow < price) return new ShopResult { Reason = "insufficient_marrow" };
+            if (ShopRefreshCount == int.MaxValue) return new ShopResult { Reason = "refresh_limit" };
+            var offers = GenerateShopOffers();
+            if (offers.Count == 0) return new ShopResult { Reason = "no_shop_items" };
+            // Commit only after a complete replacement has been generated.
+            _shopOffers = offers;
+            Marrow -= price;
+            ShopRefreshCount++;
+            return new ShopResult { Ok = true };
+        }
+
+        public ShopResult TryPurchaseShopOffer(ShopOffer offer)
+        {
+            if (Stage != RunPhase.Rest) return new ShopResult { Reason = "rest_only" };
+            if (offer == null || _shopOffers == null) return new ShopResult { Reason = "stale_offer" };
+            bool current = false;
+            foreach (var candidate in _shopOffers) if (ReferenceEquals(candidate, offer)) { current = true; break; }
+            if (!current) return new ShopResult { Reason = "stale_offer" };
+            if (offer.Purchased) return new ShopResult { Reason = "sold_out" };
+            // Set before purchase notifications to prevent a repeated purchase through callbacks.
+            offer.Purchased = true;
+            var result = TryPurchase(offer.OrganId, offer.Price);
+            if (!result.Ok) offer.Purchased = false;
+            return result;
+        }
+
+        // Draw only implemented, priced organs, without duplicates in one batch.
+        public List<string> SelectShopOffers(int count)
+        {
+            var pool = new List<string>();
+            foreach (var entry in _catalog)
+                if (_activeOrganIds.Contains(entry.Key) && entry.Value.shop_price > 0)
+                    pool.Add(entry.Key);
+            var result = new List<string>();
+            while (pool.Count > 0 && result.Count < count)
+            {
+                int index = Math.Min(pool.Count - 1, (int)(NextUnit() * pool.Count));
+                result.Add(pool[index]);
+                pool.RemoveAt(index);
+            }
+            return result;
         }
 
         public int QuotePurchasePrice(string organId)

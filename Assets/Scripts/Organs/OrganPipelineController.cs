@@ -37,6 +37,9 @@ namespace SpringUp.Organs
         public event Action<BodyRuntime, int, OrganInstance, CastContext> TriggeredSlotExecuted;
 
         // 所有形状的普通攻击都需要目标。接入方负责范围内索敌和出手前的实时校验。
+        // Range-aware adapters take precedence; legacy delegates remain for isolated test clients.
+        public Func<float, string> TargetSelectorInRange { get; set; }
+        public Func<string, float, AttackTarget?> TargetSnapshotInRange { get; set; }
         public Func<string> TargetSelector { get; set; }
         public Func<string, bool> TargetValidator { get; set; }
         public Func<string, AttackTarget?> TargetSnapshotProvider { get; set; }
@@ -101,11 +104,17 @@ namespace SpringUp.Organs
             if (!isActiveAndEnabled) return false;
             var body = GetBody(part);
             var organ = body.GetSlot(index);
-            if (organ == null) return false;
+            if (organ == null || !body.IsAutomaticSlot(index)) return false;
             bool produced = ExecuteAttack(organ, null, part, index);
             if (produced) SlotExecuted?.Invoke(body, index, organ);
             return produced;
         }
+
+        private string SelectTargetFor(OrganDefinition definition)
+            => TargetSelectorInRange != null ? TargetSelectorInRange(definition.TargetingRange) : TargetSelector?.Invoke();
+
+        private AttackTarget? SnapshotFor(string id, OrganDefinition definition)
+            => TargetSnapshotInRange != null ? TargetSnapshotInRange(id, definition.TargetingRange) : TargetSnapshotProvider?.Invoke(id);
 
         private bool ExecuteAttack(OrganInstance organ, CastContext context, BodyPart part, int slot,
             string causeTargetId = null, Vector2? causePosition = null)
@@ -116,8 +125,8 @@ namespace SpringUp.Organs
             {
                 var origin = OriginProvider?.Invoke();
                 if (!origin.HasValue || !CastEvent.IsFinite(origin.Value) || ActuatorProduced == null) return false;
-                string selected = TargetSelector?.Invoke();
-                var target = selected == null ? null : TargetSnapshotProvider?.Invoke(selected);
+                string selected = SelectTargetFor(organ.Definition);
+                var target = selected == null ? null : SnapshotFor(selected, organ.Definition);
                 Vector2 direction = target.HasValue ? target.Value.Position - origin.Value : Vector2.up;
                 if (direction.sqrMagnitude < .000001f) direction = Vector2.up;
                 var cause = new CastEvent(selected ?? "owner", organ.Definition.Damage, organ.Definition.Id,
@@ -129,14 +138,14 @@ namespace SpringUp.Organs
             // 已成立的击杀链允许范围效果沿用触发敌人的身份（它可能已死亡）。
             // 普通攻击，以及追加的单体攻击，必须重新索敌并校验，不能打已回池的目标。
             bool inheritedArea = context != null && causeTargetId != null && causeTargetId != "owner" && organ.Definition.Shape != AttackShape.SingleTarget;
-            string targetId = inheritedArea ? causeTargetId : TargetSelector?.Invoke();
+            string targetId = inheritedArea ? causeTargetId : SelectTargetFor(organ.Definition);
             if (string.IsNullOrWhiteSpace(targetId)) return false;
-            if (!inheritedArea && TargetValidator != null && !TargetValidator(targetId)) return false;
+            if (!inheritedArea && TargetSnapshotInRange == null && TargetValidator != null && !TargetValidator(targetId)) return false;
             Vector2? center = causePosition;
             if (!inheritedArea)
             {
-                var target = TargetSnapshotProvider?.Invoke(targetId);
-                if (TargetSnapshotProvider != null && (!target.HasValue || !target.Value.IsAlive
+                var target = SnapshotFor(targetId, organ.Definition);
+                if ((TargetSnapshotInRange != null || TargetSnapshotProvider != null) && (!target.HasValue || !target.Value.IsAlive
                     || target.Value.Id != targetId || !CastEvent.IsFinite(target.Value.Position))) return false;
                 center = target?.Position;
             }
@@ -193,25 +202,7 @@ namespace SpringUp.Organs
                     if (!isActiveAndEnabled || epoch != triggerEpoch) return;
                     OrganInstance trigger = body.GetSlot(index);
                     if (trigger == null || !ParameterisedBehaviour.Matches(signal, trigger.Definition)) continue;
-                    if (trigger.Definition.Trigger != null)
-                    { ProcessConfiguredTrigger(body, index, trigger, signal); continue; }
-                    if (trigger.Definition.TriggerTarget != TriggerTargetKind.SelfSlots) continue;
-
-                    if (!signal.Cause.Context.TryEnterTrigger(trigger.InstanceId,
-                        out CastContext child, out TriggerBlockReason reason))
-                    {
-                        TriggerBlocked?.Invoke(body, index, trigger, signal.Cause.Context, reason);
-                        continue;
-                    }
-
-                    TriggerActivated?.Invoke(body, index, trigger, child);
-                    body.ExecuteAllSlots((slotIndex, organ) =>
-                    {
-                        if (!isActiveAndEnabled || epoch != triggerEpoch) return;
-                        TriggeredSlotExecuted?.Invoke(body, slotIndex, organ, child);
-                        // 扫到触发器不等于条件满足。这里只会让执行器产出攻击。
-                        ExecuteAttack(organ, child, body.Part, slotIndex, signal.Cause.TargetId, signal.Position);
-                    });
+                    ProcessConfiguredTrigger(body, index, trigger, signal);
                 }
             }
         }

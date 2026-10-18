@@ -35,15 +35,15 @@ namespace SpringUp.EditorChecks
             }
             public Instance Executor(int slot)
             { var organ = new Instance(new Definition("fist", "fist", OrganType.Actuator, 5)); Body.SetSlot(slot, organ); return organ; }
-            public Instance Trigger(TriggerOn kind, int slot = 0, float probability = 1)
+            public Instance Trigger(TriggerOn kind, int slot = 1, float probability = 1)
             {
                 var settings = new TriggerSettings(kind, probability);
                 var organ = new Instance(new Definition("test_trigger", "trigger", OrganType.Trigger, triggerOn: kind,
-                    triggerTarget: TriggerTargetKind.FollowingSlots, trigger: settings));
+                    triggerTarget: TriggerTargetKind.NextSlot, trigger: settings));
                 Body.SetSlot(slot, organ); return organ;
             }
-            public CastEvent Cause(string source = "external", CastContext chain = null)
-                => new CastEvent("target", 5, "fist", source, chain ?? new CastContext(), effectCenter: Vector2.right);
+            public CastEvent Cause(string source = null, CastContext chain = null)
+                => new CastEvent("target", 5, "fist", source ?? Body.GetSlot(0)?.InstanceId ?? "external", chain ?? new CastContext(), effectCenter: Vector2.right);
             public void Signal(TriggerOn kind, CastEvent? cause = null) => Pipeline.PublishSignal(new TriggerSignal(kind, cause ?? Cause(), Vector2.right));
             public void Dispose() => Object.DestroyImmediate(Go);
         }
@@ -67,7 +67,7 @@ namespace SpringUp.EditorChecks
         {
             using (var r = new Rig())
             {
-                r.Trigger(TriggerOn.Hit, probability: .3f); r.Executor(1);
+                r.Executor(0); r.Trigger(TriggerOn.Hit, probability: .3f); r.Executor(2);
                 r.Pipeline.TriggerRandom = () => .3f; r.Signal(TriggerOn.Hit); Assert.IsEmpty(r.Attacks);
                 r.Pipeline.TriggerRandom = () => .299f;
                 var cause = r.Cause(); r.Signal(TriggerOn.Hit, cause); r.Signal(TriggerOn.Hit, cause);
@@ -78,31 +78,32 @@ namespace SpringUp.EditorChecks
                 Assert.AreEqual(2, r.Attacks.Count);
             }
         }
-        [Test] public void MigratedTentacleKeepsWholePipeScope()
+        [Test] public void AllTriggerAssetsUseSingleSuccessorScope()
         {
             var definitions = OrganCatalog.LoadDefault().CreateDefinitions();
+            Assert.IsTrue(definitions.Where(d => d.Type == OrganType.Trigger).All(d => d.TriggerTarget == TriggerTargetKind.NextSlot));
             var tentacle = definitions.Single(d => d.Id == "multi_tentacle");
             Assert.AreEqual(1, tentacle.Trigger.KillThreshold);
-            Assert.AreEqual(TriggerTargetKind.SelfSlots, tentacle.TriggerTarget);
+            Assert.AreEqual(TriggerTargetKind.NextSlot, tentacle.TriggerTarget);
             var item = new LaboratoryItem("scope", tentacle);
-            Assert.AreEqual(LaboratoryTriggerTarget.SelfSlots, item.TriggerTarget);
+            Assert.AreEqual(LaboratoryTriggerTarget.NextSlot, item.TriggerTarget);
             using (var r = new Rig())
             {
                 r.Executor(0); r.Body.SetSlot(1, new Instance(tentacle)); r.Executor(2);
                 var cause = r.Cause(); r.Signal(TriggerOn.Kill, cause);
-                Assert.AreEqual(2, r.Attacks.Count, "Tentacle must include slots before and after itself.");
+                Assert.AreEqual(1, r.Attacks.Count, "Tentacle must execute only the adjacent successor.");
                 r.Signal(TriggerOn.Kill, cause);
-                Assert.AreEqual(2, r.Attacks.Count, "Same-chain guard still applies after migration.");
+                Assert.AreEqual(1, r.Attacks.Count, "Same-chain guard still applies after migration.");
             }
             var count = definitions.Single(d => d.Trigger != null && d.TriggerOn == TriggerOn.Kill && d.Id != tentacle.Id);
             Assert.AreEqual(10, count.Trigger.KillThreshold);
-            Assert.AreEqual(TriggerTargetKind.FollowingSlots, count.TriggerTarget);
+            Assert.AreEqual(TriggerTargetKind.NextSlot, count.TriggerTarget);
         }
         [Test] public void ResetDuringActivationStopsRemainingWork()
         {
             using (var r = new Rig())
             {
-                r.Trigger(TriggerOn.Hit); r.Executor(1); r.Trigger(TriggerOn.Ended, 2); r.Executor(3);
+                r.Executor(0); r.Trigger(TriggerOn.Hit); r.Executor(2); r.Trigger(TriggerOn.Ended, 3); r.Executor(4);
                 r.Pipeline.AttackProduced += _ => r.Pipeline.ResetTriggers();
                 r.Signal(TriggerOn.Hit); Assert.AreEqual(1, r.Attacks.Count);
             }
@@ -111,20 +112,20 @@ namespace SpringUp.EditorChecks
         {
             using (var r = new Rig())
             {
-                r.Trigger(TriggerOn.Kill); r.Executor(1);
+                r.Executor(0); r.Trigger(TriggerOn.Kill); r.Executor(2);
                 for (int i = 0; i < 9; i++) r.Signal(TriggerOn.Kill);
-                Assert.IsEmpty(r.Attacks); Assert.AreEqual(9, r.Pipeline.TriggerProgress(Part.Head, 0));
+                Assert.IsEmpty(r.Attacks); Assert.AreEqual(9, r.Pipeline.TriggerProgress(Part.Head, 1));
                 r.Signal(TriggerOn.Kill); Assert.AreEqual(1, r.Attacks.Count);
-                Assert.AreEqual(0, r.Pipeline.TriggerProgress(Part.Head, 0));
+                Assert.AreEqual(0, r.Pipeline.TriggerProgress(Part.Head, 1));
                 r.Signal(TriggerOn.Kill); r.Pipeline.ResetTriggers();
-                Assert.AreEqual(0, r.Pipeline.TriggerProgress(Part.Head, 0));
+                Assert.AreEqual(0, r.Pipeline.TriggerProgress(Part.Head, 1));
             }
         }
-        [Test] public void DelayNearestPredecessorAndCancellation()
+        [Test] public void DelayAdjacentPredecessorAndCancellation()
         {
             using (var r = new Rig())
             {
-                var first = r.Executor(0); var previous = r.Executor(2); r.Trigger(TriggerOn.Started, 3); r.Executor(5);
+                var first = r.Executor(0); var previous = r.Executor(2); r.Trigger(TriggerOn.Started, 3); r.Executor(4);
                 r.Signal(TriggerOn.Started, r.Cause(first.InstanceId)); Assert.AreEqual(0, r.Pipeline.PendingTriggerCount);
                 r.Signal(TriggerOn.Started, r.Cause(previous.InstanceId));
                 r.Pipeline.AdvanceTriggers(.49f); Assert.IsEmpty(r.Attacks);
@@ -140,9 +141,9 @@ namespace SpringUp.EditorChecks
         {
             using (var r = new Rig())
             {
-                var previous = r.Executor(0); r.Trigger(TriggerOn.Ended, 2); r.Executor(3);
+                var previous = r.Executor(0); r.Trigger(TriggerOn.Ended, 1); r.Executor(2);
                 r.Pipeline.NotifyExecutionEnded(r.Cause(previous.InstanceId), true); Assert.IsEmpty(r.Attacks);
-                r.Pipeline.NotifyExecutionEnded(r.Cause()); Assert.IsEmpty(r.Attacks);
+                r.Pipeline.NotifyExecutionEnded(r.Cause("external")); Assert.IsEmpty(r.Attacks);
                 r.Pipeline.NotifyExecutionEnded(r.Cause(previous.InstanceId)); Assert.AreEqual(1, r.Attacks.Count);
                 r.Pipeline.TryExecuteSlot(Part.Head, 0); Assert.AreEqual(3, r.Attacks.Count, "instant executor starts/ends too");
             }
@@ -151,13 +152,119 @@ namespace SpringUp.EditorChecks
         {
             using (var r = new Rig())
             {
-                r.Trigger(TriggerOn.Stationary); r.Executor(1);
+                r.Trigger(TriggerOn.Stationary); r.Executor(2);
                 r.Pipeline.AdvanceTriggers(9); Assert.IsEmpty(r.Attacks);
-                Assert.AreEqual(9, r.Pipeline.TriggerProgress(Part.Head, 0));
+                Assert.AreEqual(9, r.Pipeline.TriggerProgress(Part.Head, 1));
                 r.Pipeline.MovingProvider = () => true; r.Pipeline.AdvanceTriggers(1);
-                Assert.AreEqual(0, r.Pipeline.TriggerProgress(Part.Head, 0));
+                Assert.AreEqual(0, r.Pipeline.TriggerProgress(Part.Head, 1));
                 r.Pipeline.MovingProvider = () => false; r.Pipeline.AdvanceTriggers(10);
-                Assert.AreEqual(1, r.Attacks.Count); Assert.AreEqual(0, r.Pipeline.TriggerProgress(Part.Head, 0));
+                Assert.AreEqual(1, r.Attacks.Count); Assert.AreEqual(0, r.Pipeline.TriggerProgress(Part.Head, 1));
+            }
+        }
+        [Test] public void AutomaticLoopSkipsTriggerAndBoundExecutorInBothTimingModes()
+        {
+            foreach (float period in new[] { 0f, 1f })
+                using (var r = new Rig())
+                {
+                    r.Executor(0); r.Trigger(TriggerOn.Hit); r.Executor(2);
+                    r.Executor(3); r.Executor(4); r.Executor(5);
+                    var slots = new List<int>();
+                    r.Pipeline.SlotExecuted += (_, slot, __) => slots.Add(slot);
+                    r.Pipeline.AutomaticExecution = true;
+                    r.Pipeline.StepInterval = .125f;
+                    r.Pipeline.CycleDurationProvider = _ => period;
+                    r.Pipeline.AdvanceAutomatic(period > 0 ? 1.5f : 1f);
+                    CollectionAssert.AreEqual(new[] { 0, 3, 4, 5, 0, 3, 4, 5 }, slots);
+                    Assert.AreEqual(8, r.Attacks.Count);
+                    Assert.IsFalse(r.Pipeline.TryExecuteSlot(Part.Head, 2));
+                    var source = r.Cause(); r.Signal(TriggerOn.Hit, source);
+                    Assert.AreEqual(9, r.Attacks.Count);
+                    Assert.AreEqual(r.Body.GetSlot(2).InstanceId, r.Attacks[8].OriginInstanceId);
+                    Assert.AreEqual(source.ChainId, r.Attacks[8].ChainId);
+                }
+        }
+        [Test] public void AttackConditionsIgnoreOtherSlotsBodiesAndSameDefinitionInstances()
+        {
+            foreach (var kind in new[] { TriggerOn.Hit, TriggerOn.Kill, TriggerOn.Debuff, TriggerOn.Critical, TriggerOn.Started, TriggerOn.Ended })
+                using (var r = new Rig())
+                {
+                    r.Executor(0); r.Trigger(kind); r.Executor(2); var other = r.Executor(3);
+                    var otherBody = new Instance(r.Body.GetSlot(0).Definition);
+                    r.Pipeline.GetBody(Part.Leg).SetSlot(0, otherBody);
+                    for (int i = 0; i < 10; i++)
+                    {
+                        r.Signal(kind, r.Cause(other.InstanceId));
+                        r.Signal(kind, r.Cause(otherBody.InstanceId));
+                        r.Signal(kind, r.Cause(r.Body.GetSlot(2).InstanceId));
+                    }
+                    r.Pipeline.AdvanceTriggers(1);
+                    Assert.IsEmpty(r.Attacks, kind.ToString());
+                    Assert.AreEqual(0, r.Pipeline.TriggerProgress(Part.Head, 1));
+                    for (int i = 0; i < (kind == TriggerOn.Kill ? 10 : 1); i++) r.Signal(kind);
+                    r.Pipeline.AdvanceTriggers(1);
+                    Assert.AreEqual(1, r.Attacks.Count, kind.ToString());
+                    Assert.AreEqual(r.Body.GetSlot(2).InstanceId, r.Attacks[0].OriginInstanceId);
+                }
+        }
+        [Test] public void ChainedBindingsExecuteOnlyTheirOwnSuccessors()
+        {
+            using (var r = new Rig())
+            {
+                var first = r.Executor(0); r.Trigger(TriggerOn.Hit); var second = r.Executor(2);
+                r.Trigger(TriggerOn.Ended, 3); var third = r.Executor(4); r.Executor(5);
+                r.Signal(TriggerOn.Hit);
+                CollectionAssert.AreEqual(new[] { second.InstanceId, third.InstanceId }, r.Attacks.Select(a => a.OriginInstanceId));
+                CollectionAssert.AreEqual(new[] { 1, 2 }, r.Attacks.Select(a => a.ChainDepth));
+                Assert.AreEqual(r.Attacks[0].ChainId, r.Attacks[1].ChainId);
+                r.Attacks.Clear(); r.Body.Tick(2);
+                CollectionAssert.AreEqual(new[] { first.InstanceId, r.Body.GetSlot(5).InstanceId }, r.Attacks.Select(a => a.OriginInstanceId));
+            }
+        }
+        [Test] public void BindingsDoNotSkipEmptySlotsOrWrapAtBoundary()
+        {
+            using (var r = new Rig())
+            {
+                var first = r.Executor(0); r.Trigger(TriggerOn.Hit, 2); r.Executor(3);
+                r.Signal(TriggerOn.Hit); Assert.IsEmpty(r.Attacks, "An empty predecessor breaks the source binding.");
+                r.Body.SetSlot(2, null); r.Trigger(TriggerOn.Hit, 1); r.Executor(4);
+                r.Signal(TriggerOn.Hit); Assert.IsEmpty(r.Attacks, "An empty successor must not forward to slot 4 or 5.");
+                r.Body.SetSlot(1, null); r.Trigger(TriggerOn.Hit, 5);
+                r.Signal(TriggerOn.Hit, r.Cause(r.Body.GetSlot(4).InstanceId));
+                Assert.IsEmpty(r.Attacks, "Slot 6 does not bind slot 1.");
+                Assert.IsTrue(r.Body.IsAutomaticSlot(0));
+            }
+        }
+        [Test] public void RemovingTriggerRestoresSuccessorAndCancelsPendingWork()
+        {
+            using (var r = new Rig())
+            {
+                r.Executor(0); r.Trigger(TriggerOn.Started); var successor = r.Executor(2);
+                r.Signal(TriggerOn.Started); Assert.AreEqual(1, r.Pipeline.PendingTriggerCount);
+                r.Body.SetSlot(1, null); r.Pipeline.AdvanceTriggers(1);
+                Assert.IsEmpty(r.Attacks); Assert.AreEqual(0, r.Pipeline.PendingTriggerCount);
+                Assert.IsTrue(r.Pipeline.TryExecuteSlot(Part.Head, 2));
+                Assert.AreEqual(successor.InstanceId, r.Attacks[0].OriginInstanceId);
+            }
+        }
+        [Test] public void FullyBoundPipeDoesNotBankAutomaticTime()
+        {
+            foreach (float period in new[] { 0f, 1f })
+                using (var r = new Rig())
+                {
+                    r.Trigger(TriggerOn.Stationary, 0); r.Executor(1);
+                    r.Body.CycleDuration = period; r.Body.Tick(100);
+                    Assert.IsEmpty(r.Attacks);
+                    r.Body.SetSlot(0, null); r.Body.Tick(.5f); Assert.IsEmpty(r.Attacks);
+                    r.Body.Tick(.5f); Assert.AreEqual(1, r.Attacks.Count);
+                }
+        }
+        [Test] public void LoadoutChangeDuringActivationCannotFireStaleSuccessor()
+        {
+            using (var r = new Rig())
+            {
+                r.Executor(0); r.Trigger(TriggerOn.Hit); r.Executor(2);
+                r.Pipeline.TriggerActivated += (_, __, ___, ____) => r.Body.SetSlot(2, null);
+                r.Signal(TriggerOn.Hit); Assert.IsEmpty(r.Attacks);
             }
         }
         [Test] public void ActualHealthAndCriticalDamage()
@@ -187,7 +294,7 @@ namespace SpringUp.EditorChecks
                 var checks = new OrganTriggerChecks();
                 foreach (var method in typeof(OrganTriggerChecks).GetMethods().Where(m => Attribute.IsDefined(m, typeof(TestAttribute)))) method.Invoke(checks, null);
                 CheckPreview();
-                Debug.Log("[Triggers] LOGIC PASS: 8 groups, 9 conditions, chain guards, actual health, timing, reset, critical damage.");
+                Debug.Log("[Triggers] LOGIC PASS: adjacent binding, automatic exclusion, source identity, conditions, chain guards, health, timing and reset.");
                 PatternActuatorChecks.RunBatch();
             }
             catch (Exception ex) { Debug.LogException(ex); EditorApplication.Exit(1); }
@@ -256,7 +363,7 @@ namespace SpringUp.EditorChecks
                     driver.combat.Clear(); for (int i = 0; i < 6; i++) body.SetSlot(i, null);
                     var settings = new TriggerSettings(kind, 1, killThreshold: 1);
                     body.SetSlot(1, new Instance(new Definition("test", "test", OrganType.Trigger, triggerOn: kind,
-                        triggerTarget: TriggerTargetKind.FollowingSlots, trigger: settings)));
+                        triggerTarget: TriggerTargetKind.NextSlot, trigger: settings)));
                     body.SetSlot(2, new Instance(driver.Definitions["fist"]));
                     body.SetSlot(0, new Instance(driver.Definitions[kind == TriggerOn.Debuff ? "octopus_sucker" : "straight_projectile"]));
                     int activated = 0;
@@ -269,7 +376,7 @@ namespace SpringUp.EditorChecks
                         else if (kind == TriggerOn.Heal) { driver.player.TakeDamage(2); driver.player.Heal(1); }
                         else if (kind == TriggerOn.Stationary) { driver.pipeline.MovingProvider = () => false; driver.combat.Advance(10); }
                         else if (kind == TriggerOn.Kill)
-                            driver.combat.Resolve(new CastEvent(enemy.TargetId, 20000, "test", "test"));
+                            driver.combat.Resolve(new CastEvent(enemy.TargetId, 20000, body.GetSlot(0).Definition.Id, body.GetSlot(0).InstanceId));
                         else { Assert.IsTrue(driver.pipeline.TryExecuteSlot(Part.Head, 0), "Start " + kind); driver.combat.Advance(.6f); }
                         Assert.Greater(activated, 0, "Play " + kind);
                         if (kind == TriggerOn.Started)

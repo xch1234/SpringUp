@@ -75,6 +75,41 @@ namespace SpringUp.Organs
             return slots[index];
         }
 
+        // Binding is positional: no skipping empty slots and no wrapping between 6 and 1.
+        public bool IsTriggerBoundSlot(int index)
+        {
+            ValidateIndex(index);
+            return index > 0 && slots[index - 1]?.Definition.Type == OrganType.Trigger;
+        }
+
+        public bool IsTriggerSource(int triggerSlot, string sourceInstanceId)
+        {
+            ValidateIndex(triggerSlot);
+            var previous = triggerSlot > 0 ? slots[triggerSlot - 1] : null;
+            return slots[triggerSlot]?.Definition.Type == OrganType.Trigger
+                && previous?.Definition.CanAttack == true && previous.InstanceId == sourceInstanceId;
+        }
+
+        public OrganInstance GetTriggerSuccessor(int triggerSlot)
+        {
+            ValidateIndex(triggerSlot);
+            var next = triggerSlot + 1 < SlotCount ? slots[triggerSlot + 1] : null;
+            return slots[triggerSlot]?.Definition.Type == OrganType.Trigger
+                && next?.Definition.CanAttack == true ? next : null;
+        }
+
+        public bool IsAutomaticSlot(int index)
+        {
+            ValidateIndex(index);
+            return slots[index]?.Definition.Type == OrganType.Actuator && !IsTriggerBoundSlot(index);
+        }
+
+        private bool HasAutomaticSlots()
+        {
+            for (int i = 0; i < SlotCount; i++) if (IsAutomaticSlot(i)) return true;
+            return false;
+        }
+
         public void SetSlot(int index, OrganInstance organ)
         {
             ValidateIndex(index);
@@ -103,7 +138,7 @@ namespace SpringUp.Organs
             if (float.IsNaN(deltaTime) || float.IsInfinity(deltaTime) || deltaTime < 0)
                 throw new ArgumentOutOfRangeException(nameof(deltaTime));
 
-            if (occupiedCount == 0)
+            if (!HasAutomaticSlots())
             {
                 elapsed = 0;
                 cycleInitialized = false;
@@ -117,7 +152,7 @@ namespace SpringUp.Organs
             }
 
             elapsed += deltaTime;
-            while (elapsed >= stepInterval && occupiedCount > 0)
+            while (elapsed >= stepInterval && HasAutomaticSlots())
             {
                 elapsed -= stepInterval;
                 StepOnce();
@@ -133,14 +168,14 @@ namespace SpringUp.Organs
                 BeginRound();
             }
             cycleClock += deltaTime;
-            while (occupiedCount > 0 && cycleClock + 0.0000001 >= nextSlotTime)
+            while (HasAutomaticSlots() && cycleClock + 0.0000001 >= nextSlotTime)
             {
                 if (roundCursor == 0 && roundCount == 0)
                 {
                     roundStep = stepInterval;
                     roundPeriod = cycleDuration;
                 }
-                while (roundCursor < SlotCount && slots[roundCursor] == null) roundCursor++;
+                while (roundCursor < SlotCount && !IsAutomaticSlot(roundCursor)) roundCursor++;
                 if (roundCursor == SlotCount)
                 {
                     // A round cannot overlap itself, even after extreme speed modifiers.
@@ -184,7 +219,7 @@ namespace SpringUp.Organs
                 int index = cursor;
                 cursor = (cursor + 1) % SlotCount;
                 OrganInstance organ = slots[index];
-                if (organ == null) continue;
+                if (!IsAutomaticSlot(index)) continue;
 
                 LastExecutedSlot = index;
                 ExecutedStepCount++;

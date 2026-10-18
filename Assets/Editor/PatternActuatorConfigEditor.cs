@@ -10,7 +10,7 @@ namespace SpringUp.EditorChecks
         {
             serializedObject.Update();
             void Fields(params string[] names) { foreach (var name in names) EditorGUILayout.PropertyField(serializedObject.FindProperty(name)); }
-            Fields("organId", "displayName", "pattern");
+            Fields("organId", "displayName", "targetingRange", "pattern");
             var pattern = (ActuatorPattern)serializedObject.FindProperty("pattern").enumValueIndex;
             if (pattern != ActuatorPattern.Summon) Fields("damage");
             if (pattern != ActuatorPattern.Laser && pattern != ActuatorPattern.ChargedLaser && pattern != ActuatorPattern.Fog) Fields("speed");

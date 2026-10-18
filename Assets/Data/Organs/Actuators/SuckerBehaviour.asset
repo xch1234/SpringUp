@@ -15,6 +15,7 @@ MonoBehaviour:
   organId: octopus_sucker
   displayName: 章鱼吸盘
   damage: 2
+  targetingRange: 10
   chargeCost: 20
   pattern: 7
   speed: 8

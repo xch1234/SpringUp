@@ -7,7 +7,11 @@ namespace SpringUp.UI
         {
             "rest_only" or "lab actions only in lab" => "仅可在休整期间操作。",
             "capacity" => "背包容量不足，请先出售或丢弃物品。",
-            "insufficient_marrow" => "骨髓不足，无法购买。",
+            "insufficient_marrow" => "骨髓不足，无法完成操作。",
+            "sold_out" => "该商品已购买，请刷新商品或等待下一波。",
+            "stale_offer" => "商品已刷新，请重新选择。",
+            "no_shop_items" => "暂无可刷新的商品。",
+            "refresh_limit" => "已达到刷新次数上限。",
             "unknown_item" => "商品不存在。",
             "not_open" => "该功能暂未开放。",
             "equip only from unequipped" => "请先将物品从装备槽拆下。",

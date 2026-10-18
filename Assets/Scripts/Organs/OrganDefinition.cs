@@ -13,6 +13,7 @@ namespace SpringUp.Organs
         public OrganMountKind MountKind => Type == OrganType.Torso ? OrganMountKind.Torso : OrganMountKind.Pipeline;
         public OrganType Type { get; }
         public float Damage { get; }
+        public float TargetingRange { get; }
         public TriggerOn TriggerOn { get; }
         public TriggerTargetKind TriggerTarget { get; }
         public StatusEffectData Status { get; }
@@ -26,15 +27,15 @@ namespace SpringUp.Organs
         public bool CanAttack => Type == OrganType.Actuator && (Damage > 0f || Shape == AttackShape.BlackHole || Projectile != null);
 
         public OrganDefinition(string id, string displayName, OrganType type, float damage = 0f,
-            TriggerOn triggerOn = TriggerOn.Kill, TriggerTargetKind triggerTarget = TriggerTargetKind.SelfSlots,
+            TriggerOn triggerOn = TriggerOn.Kill, TriggerTargetKind triggerTarget = TriggerTargetKind.NextSlot,
             StatusEffectData status = null, AttackShape shape = AttackShape.SingleTarget, float radius = 0f,
-            BlackHoleData blackHole = null, float chargeCost = 20f, StraightProjectileSettings projectile = null, TriggerSettings trigger = null, TorsoSettings torso = null)
-            : this(id, displayName, BodyPart.Hand, type, damage, triggerOn, triggerTarget, status, shape, radius, blackHole, chargeCost, projectile, trigger, torso) { }
+            BlackHoleData blackHole = null, float chargeCost = 20f, StraightProjectileSettings projectile = null, TriggerSettings trigger = null, TorsoSettings torso = null, float targetingRange = AttackTargeting.DefaultRange)
+            : this(id, displayName, BodyPart.Hand, type, damage, triggerOn, triggerTarget, status, shape, radius, blackHole, chargeCost, projectile, trigger, torso, targetingRange) { }
 
         public OrganDefinition(string id, string displayName, BodyPart part, OrganType type, float damage = 0f,
-            TriggerOn triggerOn = TriggerOn.Kill, TriggerTargetKind triggerTarget = TriggerTargetKind.SelfSlots,
+            TriggerOn triggerOn = TriggerOn.Kill, TriggerTargetKind triggerTarget = TriggerTargetKind.NextSlot,
             StatusEffectData status = null, AttackShape shape = AttackShape.SingleTarget, float radius = 0f,
-            BlackHoleData blackHole = null, float chargeCost = 20f, StraightProjectileSettings projectile = null, TriggerSettings trigger = null, TorsoSettings torso = null)
+            BlackHoleData blackHole = null, float chargeCost = 20f, StraightProjectileSettings projectile = null, TriggerSettings trigger = null, TorsoSettings torso = null, float targetingRange = AttackTargeting.DefaultRange)
         {
             if (string.IsNullOrWhiteSpace(id))
                 throw new ArgumentException("器官配置编号不能为空。", nameof(id));
@@ -59,9 +60,12 @@ namespace SpringUp.Organs
             DisplayName = string.IsNullOrWhiteSpace(displayName) ? id : displayName;
             Part = part;
             Type = type;
+            if (float.IsNaN(targetingRange) || float.IsInfinity(targetingRange) || targetingRange <= 0f)
+                throw new ArgumentOutOfRangeException(nameof(targetingRange), "索敌范围必须是有限的正数。");
+            TargetingRange = targetingRange;
             Damage = damage;
             TriggerOn = triggerOn;
-            TriggerTarget = triggerTarget;
+            TriggerTarget = type == OrganType.Trigger ? TriggerTargetKind.NextSlot : triggerTarget;
             Status = status;
             Shape = shape;
             Radius = radius;

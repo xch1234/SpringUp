@@ -15,6 +15,7 @@ MonoBehaviour:
   organId: straight_projectile
   displayName: 直线子弹
   damage: 5
+  targetingRange: 12
   chargeCost: 20
   speed: 8
   hitRadius: 0.12

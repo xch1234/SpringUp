@@ -26,7 +26,7 @@ namespace SpringUp.Organs
                 status: status, shape: shape,
                 radius: hole ? blackHoleRadius : shape == AttackShape.Explosion ? explosionRadius : 0,
                 blackHole: hole ? new BlackHoleData(blackHoleDuration, blackHolePullSpeed) : null,
-                chargeCost: ChargeCost);
+                chargeCost: ChargeCost, targetingRange: TargetingRange);
         }
     }
 }

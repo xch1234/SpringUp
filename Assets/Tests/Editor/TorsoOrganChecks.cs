@@ -104,6 +104,7 @@ namespace SpringUp.EditorChecks
                 var body = pipeline.GetBody(SpringUp.Organs.BodyPart.Head);
                 var source = new SpringUp.Organs.OrganInstance(new SpringUp.Organs.OrganDefinition("source", "source", OrganType.Actuator, 5));
                 body.SetSlot(0, source);
+                body.SetSlot(2, new SpringUp.Organs.OrganInstance(source.Definition));
                 void SetTrigger(TriggerOn kind) => body.SetSlot(1, new SpringUp.Organs.OrganInstance(new SpringUp.Organs.OrganDefinition("trigger", "trigger", OrganType.Trigger,
                     triggerOn: kind, triggerTarget: TriggerTargetKind.FollowingSlots, trigger: new TriggerSettings(kind, .3f))));
                 var cause = new CastEvent("target", 5, "source", source.InstanceId);

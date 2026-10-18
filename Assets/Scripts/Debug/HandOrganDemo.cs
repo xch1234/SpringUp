@@ -11,7 +11,7 @@ namespace SpringUp.Organs
         private OrganConfig[] slots = new OrganConfig[BodyRuntime.SlotCount];
         [SerializeField, Tooltip("单体攻击的候选目标。范围器官还可从本场景启用的敌人中索敌。敌人编号必须唯一。")]
         private DemoTarget[] targets = new DemoTarget[0];
-        [SerializeField, Min(0f), Tooltip("自动攻击索敌距离，独立于爆炸/黑洞效果半径。")]
+        [SerializeField, HideInInspector]
         private float attackRange = AttackTargeting.DefaultRange;
         [SerializeField, Tooltip("旧版场景保留字段；效果中心由攻击目标快照决定。")]
         private Transform explosionOrigin;
@@ -62,7 +62,8 @@ namespace SpringUp.Organs
             error = null;
             if (controller == null || !controller.isActiveAndEnabled)
                 error = "请启用 OrganPipelineController。";
-            else if (controller.TargetSelector != null || controller.TargetValidator != null || controller.TargetSnapshotProvider != null)
+            else if (controller.TargetSelector != null || controller.TargetValidator != null || controller.TargetSnapshotProvider != null
+                || controller.TargetSelectorInRange != null || controller.TargetSnapshotInRange != null)
                 error = "管道已有其他目标选择器，请使用独立的测试物体。";
             else if (slots == null || slots.Length != BodyRuntime.SlotCount)
                 error = "Slots 的 Size 必须为 6。";
@@ -133,6 +134,8 @@ namespace SpringUp.Organs
             controller.TargetSelector = SelectTarget;
             controller.TargetValidator = ValidateTarget;
             controller.TargetSnapshotProvider = Snapshot;
+            controller.TargetSelectorInRange = SelectTargetInRange;
+            controller.TargetSnapshotInRange = SnapshotInRange;
             controller.AttackProduced += ApplyAttack;
             controller.TriggerActivated += OnTrigger;
             controller.TriggerBlocked += OnBlocked;
@@ -175,6 +178,8 @@ namespace SpringUp.Organs
                 if (controller.TargetSelector == SelectTarget) controller.TargetSelector = null;
                 if (controller.TargetValidator == ValidateTarget) controller.TargetValidator = null;
                 if (controller.TargetSnapshotProvider == Snapshot) controller.TargetSnapshotProvider = null;
+                if (controller.TargetSelectorInRange == SelectTargetInRange) controller.TargetSelectorInRange = null;
+                if (controller.TargetSnapshotInRange == SnapshotInRange) controller.TargetSnapshotInRange = null;
                 BodyRuntime hand = controller.GetBody(BodyPart.Hand);
                 for (int i = 0; i < installed.Length; i++)
                 {
@@ -203,13 +208,15 @@ namespace SpringUp.Organs
 
         private List<DemoTarget> TargetCandidates() => searchSceneTargets ? CollectBattleTargets() : connectedTargets;
 
-        private string SelectTarget()
+        private string SelectTarget() => SelectTargetInRange(attackRange);
+
+        private string SelectTargetInRange(float range)
         {
             targetingSnapshot.Clear();
             foreach (var target in TargetCandidates())
                 if (target != null && target.gameObject.scene == gameObject.scene)
                     targetingSnapshot.Add(new AttackTarget(target.TargetId, target.transform.position, target.IsAlive));
-            var selected = AttackTargeting.SelectNearest(targetingSnapshot, transform.position, attackRange);
+            var selected = AttackTargeting.SelectNearest(targetingSnapshot, transform.position, range);
             if (selected == null) message = "索敌范围内没有存活目标，等待目标靠近。";
             return selected;
         }
@@ -217,13 +224,15 @@ namespace SpringUp.Organs
         private bool ValidateTarget(string id)
             => Snapshot(id).HasValue;
 
-        private AttackTarget? Snapshot(string id)
+        private AttackTarget? Snapshot(string id) => SnapshotInRange(id, attackRange);
+
+        private AttackTarget? SnapshotInRange(string id, float range)
         {
             foreach (var target in TargetCandidates())
                 if (target != null && target.TargetId == id && target.gameObject.scene == gameObject.scene)
                 {
                     var snapshot = new AttackTarget(id, target.transform.position, target.IsAlive);
-                    if (AttackTargeting.IsInRange(snapshot, transform.position, attackRange)) return snapshot;
+                    if (AttackTargeting.IsInRange(snapshot, transform.position, range)) return snapshot;
                 }
             return null;
         }

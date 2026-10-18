@@ -15,6 +15,7 @@ MonoBehaviour:
   organId: tnt
   displayName: TNT
   damage: 10
+  targetingRange: 8
   chargeCost: 50
   shape: 1
   explosionRadius: 2

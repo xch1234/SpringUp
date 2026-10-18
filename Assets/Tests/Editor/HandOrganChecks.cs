@@ -143,17 +143,17 @@ namespace SpringUp.EditorChecks
         {
             DemoTarget a = Target(5f, "chain_a");
             DemoTarget b = Target(20f, "chain_b");
-            HandOrganDemo demo = Demo(new[] { Config(HandOrganKind.Fist, 5f), null, null,
-                Config(HandOrganKind.MultiTentacle, 0f), null, null }, a, b);
+            HandOrganDemo demo = Demo(new[] { Config(HandOrganKind.Fist, 5f), Config(HandOrganKind.MultiTentacle, 0f),
+                Config(HandOrganKind.Fist, 5f), null, null, null }, a, b);
             Require(demo.TryStartDemo(out _), "拳头和触手应能运行。");
             BodyRuntime hand = Hand(demo);
             hand.Tick(1f);
             Require(a.CurrentHealth == 0f && b.CurrentHealth == 15f && demo.TriggerCount == 1,
                 "击杀 A 应立刻追加攻击 B，且触手发动一次。");
             hand.Tick(1f);
-            Require(b.CurrentHealth == 15f && hand.LastExecutedSlot == 3, "额外扫描不能移动正常游标。");
+            Require(b.CurrentHealth == 10f && hand.LastExecutedSlot == 0, "额外扫描不能移动正常游标。");
             hand.Tick(1f);
-            Require(b.CurrentHealth == 10f, "下一个拳头节拍继续正常攻击。");
+            Require(b.CurrentHealth == 5f, "下一个拳头节拍继续正常攻击。");
         }
 
         private static void CheckRestartAndCleanup()

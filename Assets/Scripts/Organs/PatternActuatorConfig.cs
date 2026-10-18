@@ -18,7 +18,7 @@ namespace SpringUp.Organs
         protected override OrganDefinition CreateDefinition() => new OrganDefinition(OrganId, DisplayName,
             OrganType.Actuator, Damage, chargeCost: ChargeCost, projectile: new PatternActuatorSettings(pattern,
                 speed, hitRadius, lifetime, orbitRadius, angularSpeed, range, areaRadius, interval,
-                lifeSteal, slowMultiplier, spreadAngle, explosionDamage, chargeTime, driftDuration, health, healthDecay, followDistance));
+                lifeSteal, slowMultiplier, spreadAngle, explosionDamage, chargeTime, driftDuration, health, healthDecay, followDistance), targetingRange: TargetingRange);
     }
 
     public sealed class PatternActuatorSettings : StraightProjectileSettings

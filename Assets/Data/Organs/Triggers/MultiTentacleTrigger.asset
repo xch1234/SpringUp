@@ -15,7 +15,7 @@ MonoBehaviour:
   organId: multi_tentacle
   displayName: 多肢触手
   condition: 0
-  triggerTarget: 0
+  triggerTarget: 2
   probability: 1
   delay: 0.5
   killThreshold: 1

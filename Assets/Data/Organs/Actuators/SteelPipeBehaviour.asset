@@ -15,6 +15,7 @@ MonoBehaviour:
   organId: steel_pipe
   displayName: 钢管
   damage: 8
+  targetingRange: 5
   chargeCost: 30
   shape: 0
   explosionRadius: 2

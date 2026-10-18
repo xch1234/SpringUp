@@ -60,8 +60,8 @@ namespace SpringUp.Organs
             switch (preset)
             {
                 case OrganDemoPreset.DoubleTentacle:
-                    kinds = new[] { "fist", "rust_knife", "slime_gland",
-                        "tnt", "multi_tentacle", "multi_tentacle" }; break;
+                    kinds = new[] { "fist", "multi_tentacle", "tnt",
+                        "multi_tentacle", "rust_knife", "slime_gland" }; break;
                 case OrganDemoPreset.Fist: kinds = new[] { "fist" }; break;
                 case OrganDemoPreset.Statuses:
                     kinds = new[] { "steel_pipe", "rust_knife", "slime_gland",
@@ -70,7 +70,7 @@ namespace SpringUp.Organs
                 case OrganDemoPreset.BlackHole: kinds = new[] { "collapse_body" }; break;
                 default:
                     kinds = new[] { "collapse_body", "steel_pipe", "rust_knife",
-                        "slime_gland", "tnt", "multi_tentacle" }; break;
+                        "slime_gland", "multi_tentacle", "tnt" }; break;
             }
             var slots = new OrganConfig[BodyRuntime.SlotCount];
             for (int i = 0; i < kinds.Length; i++) slots[i] = library[kinds[i]];

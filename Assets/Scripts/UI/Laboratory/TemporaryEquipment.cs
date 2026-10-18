@@ -12,7 +12,7 @@ namespace SpringUp.Laboratory
     // 这里只描述样例规则，实际攻击和触发执行由 A 的管道负责。
     // None 表示缺少规则信息，不等同于策划中不触发其他器官的 NONE。
     public enum LaboratoryTriggerCondition { None, Kill, Hit, Started, Hurt, Heal, Ended, Debuff, Critical, Stationary }
-    public enum LaboratoryTriggerTarget { None, SelfSlots, FollowingSlots }
+    public enum LaboratoryTriggerTarget { None, SelfSlots, FollowingSlots, NextSlot }
 
     public sealed class LaboratoryItem
     {
@@ -22,15 +22,15 @@ namespace SpringUp.Laboratory
             : this(instanceId, definition.Id, definition.DisplayName, definition.Type == OrganType.Torso ? LaboratoryPart.Torso : LaboratoryPart.Hand,
                 definition.Type == OrganType.Torso ? LaboratoryOrganKind.TorsoSpecial : definition.Type == OrganType.Trigger ? LaboratoryOrganKind.Trigger : LaboratoryOrganKind.Actuator,
                 Describe(definition), definition.Type == OrganType.Trigger ? (LaboratoryTriggerCondition)((int)definition.TriggerOn + 1) : LaboratoryTriggerCondition.None,
-                definition.Type == OrganType.Trigger ? (definition.TriggerTarget == TriggerTargetKind.SelfSlots ? LaboratoryTriggerTarget.SelfSlots : LaboratoryTriggerTarget.FollowingSlots) : LaboratoryTriggerTarget.None)
+                definition.Type == OrganType.Trigger ? LaboratoryTriggerTarget.NextSlot : LaboratoryTriggerTarget.None)
         { Definition = definition; }
         private static string Describe(OrganDefinition d)
-            => d.Torso != null ? d.Torso.Description : (d.Type == OrganType.Trigger ? "满足条件后追加发动。" : "按管道节拍自动发动。") + DescribeEffect(d);
+            => d.Torso != null ? d.Torso.Description : (d.Type == OrganType.Trigger ? "满足条件后追加发动。" :  $"按管道节拍自动发动；紧跟触发器时仅由触发器发动。索敌范围 {d.TargetingRange:g}。") + DescribeEffect(d);
 
         private static string DescribeEffect(OrganDefinition d)
         {
             if (d.Trigger != null) return d.Trigger.Description
-                + (d.TriggerTarget == TriggerTargetKind.SelfSlots ? "发动同管道全部执行器；" : "发动同管道后续执行器；")
+                + "只发动紧邻后一个执行器，该执行器不自动攻击；"
                 + "同链每实例一次，深度上限 4。";
             if (d.Projectile is PatternActuatorSettings p)
             {
@@ -52,7 +52,7 @@ namespace SpringUp.Laboratory
                 }
             }
             if (d.Projectile != null) return $"直线子弹，命中伤害 {d.Damage:g}，速度 {d.Projectile.Speed:g}，寿命 {d.Projectile.Lifetime:g}s；碰敌消失，实战撞墙消失。";
-            if (d.Type == OrganType.Trigger) return "击杀追加执行本部位；同链每实例最多一次，深度上限 4。";
+            if (d.Type == OrganType.Trigger) return "前一个器官击杀后只发动紧邻后一个执行器；后者不自动攻击，同链每实例最多一次，深度上限 4。";
             if (d.BlackHole != null) return $"黑洞半径 {d.Radius:g}，持续 {d.BlackHole.Duration:g}秒，吸引速度 {d.BlackHole.PullSpeed:g}；预览不展示位移。";
             string text = d.Shape == AttackShape.Explosion ? $"范围伤害 {d.Damage:g}，半径 {d.Radius:g}。" : $"单目标伤害 {d.Damage:g}。";
             var s = d.Status;

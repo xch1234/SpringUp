@@ -15,6 +15,7 @@ MonoBehaviour:
   organId: spiral_projectile
   displayName: 螺旋子弹
   damage: 5
+  targetingRange: 10
   chargeCost: 20
   pattern: 1
   speed: 3

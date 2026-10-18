@@ -48,25 +48,23 @@ namespace SpringUp.Organs
             if (organ == null || !triggerStates.TryGetValue(organ.InstanceId, out var state)) return 0;
             return organ.Definition.TriggerOn == TriggerOn.Kill ? state.Kills : state.Charge;
         }
-        private bool IsPrevious(BodyRuntime body, int slot, string source)
-        {
-            for (int i = slot - 1; i >= 0; i--)
-            {
-                var organ = body.GetSlot(i);
-                if (organ != null && organ.Definition.CanAttack) return organ.InstanceId == source;
-            }
-            return false;
-        }
         private void ProcessConfiguredTrigger(BodyRuntime body, int slot, OrganInstance organ, TriggerSignal signal)
         {
-            var settings = organ.Definition.Trigger;
-            if (settings.Condition != signal.Kind) return;
+            // Legacy definitions without settings use the same binding rules.
+            var settings = organ.Definition.Trigger ?? new TriggerSettings(organ.Definition.TriggerOn, 1, killThreshold: 1);
+            if (settings.Condition != signal.Kind || signal.Kind == TriggerOn.Stationary) return;
+            // Hurt/heal are owner events; stationary is driven by AdvanceTriggers.
+            // Every attack event (including delayed damage) must come from the adjacent predecessor.
+            if (signal.Kind != TriggerOn.Hurt && signal.Kind != TriggerOn.Heal
+                && !body.IsTriggerSource(slot, signal.Cause.OriginInstanceId)) return;
             var state = StateFor(body, slot, organ);
-            // All kills count, but one chain can activate this instance only once.
+            if (!signal.Cause.Context.CanEnterTrigger(organ.InstanceId))
+            {
+                signal.Cause.Context.TryEnterTrigger(organ.InstanceId, out _, out var reason);
+                TriggerBlocked?.Invoke(body, slot, organ, signal.Cause.Context, reason);
+                return;
+            }
             if (signal.Kind == TriggerOn.Kill) state.Kills++;
-            if (!signal.Cause.Context.CanEnterTrigger(organ.InstanceId)) return;
-            if ((signal.Kind == TriggerOn.Started || signal.Kind == TriggerOn.Ended)
-                && !IsPrevious(body, slot, signal.Cause.OriginInstanceId)) return;
             if (signal.Kind == TriggerOn.Started)
             {
                 scheduledTriggers.Add(new ScheduledTrigger { State = state, Signal = signal, Remaining = settings.Delay / Mathf.Max(.01f, TriggerFrequencyMultiplier) });
@@ -87,18 +85,18 @@ namespace SpringUp.Organs
         private void ActivateConfigured(TriggerState state, TriggerSignal signal)
         {
             if (!isActiveAndEnabled || !StillEquipped(state)) return;
+            var body = GetBody(state.Part);
+            int nextSlot = state.Slot + 1;
+            if (nextSlot >= BodyRuntime.SlotCount) return;
+            var organ = body.GetTriggerSuccessor(state.Slot);
+            if (organ == null) return;
             if (!signal.Cause.Context.TryEnterTrigger(state.Organ.InstanceId, out var child, out var reason))
             { TriggerBlocked?.Invoke(GetBody(state.Part), state.Slot, state.Organ, signal.Cause.Context, reason); return; }
-            var body = GetBody(state.Part);
             TriggerActivated?.Invoke(body, state.Slot, state.Organ, child);
-            int firstSlot = state.Organ.Definition.TriggerTarget == TriggerTargetKind.SelfSlots ? 0 : state.Slot + 1;
-            for (int i = firstSlot; i < BodyRuntime.SlotCount && isActiveAndEnabled && StillEquipped(state); i++)
-            {
-                var organ = body.GetSlot(i);
-                if (organ == null || !organ.Definition.CanAttack) continue;
-                TriggeredSlotExecuted?.Invoke(body, i, organ, child);
-                ExecuteAttack(organ, child, body.Part, i, signal.Cause.TargetId, signal.Position);
-            }
+            if (!isActiveAndEnabled || !StillEquipped(state)) return;
+            TriggeredSlotExecuted?.Invoke(body, nextSlot, organ, child);
+            if (!isActiveAndEnabled || !StillEquipped(state)) return;
+            ExecuteAttack(organ, child, body.Part, nextSlot, signal.Cause.TargetId, signal.Position);
         }
         public void NotifyExecutionStarted(CastEvent cause) => PublishSignal(new TriggerSignal(TriggerOn.Started, cause, cause.EffectCenter));
         public void NotifyExecutionEnded(CastEvent cause, bool cancelled = false)

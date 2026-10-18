@@ -74,8 +74,9 @@ namespace SpringUp.EditorChecks
                 hand.SetSlot(0, new OrganInstance(new OrganDefinition("tnt", "TNT", BodyPart.Hand, OrganType.Actuator, 5,
                     shape: AttackShape.Explosion, radius: 1)));
                 hand.SetSlot(1, new OrganInstance(new OrganDefinition("tentacle", "触手", BodyPart.Hand, OrganType.Trigger)));
+                hand.SetSlot(2, new OrganInstance(hand.GetSlot(0).Definition));
                 pipeline.enabled = true;
-                var bleed = new CastEvent(dying.TargetId, 1, "knife", "knife", status: new StatusEffectData(StatusEffectKind.Bleed, 1, 3, tickDamage: 1));
+                var bleed = new CastEvent(dying.TargetId, 1, "knife", hand.GetSlot(0).InstanceId, status: new StatusEffectData(StatusEffectKind.Bleed, 1, 3, tickDamage: 1));
                 CastEvent extra = default; int triggers = 0;
                 pipeline.AttackProduced += attack => extra = attack;
                 pipeline.TriggerActivated += (_, __, ___, ____) => triggers++;

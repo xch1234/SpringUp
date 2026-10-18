@@ -40,7 +40,7 @@ public class ProgramDTests
         Assert.AreEqual(50, waves[0].marrow_reward);
         Assert.AreEqual(0, waves[0].guaranteed_drops.Length);
         Assert.AreEqual(0, waves[0].optional_drops.Length);
-        Assert.AreEqual(4, waves[0].random_drop_pool.Length);
+        Assert.AreEqual(35, waves[0].random_drop_pool.Length);
         Assert.AreEqual(1, waves[0].random_drop_count);
         Assert.AreEqual(0, waves[6].marrow_reward);
     }
@@ -114,8 +114,8 @@ public class ProgramDTests
         high.StartRun(); high.CombatTimerFinished();
         Assert.AreEqual("lab", low.Phase);
         Assert.AreEqual(50, low.Marrow);
-        CollectionAssert.AreEquivalent(new[] { "multi_tentacle" }, BagOrganIds(low));
-        CollectionAssert.AreEquivalent(new[] { "slime_gland" }, BagOrganIds(high));
+        CollectionAssert.AreEquivalent(new[] { "straight_projectile" }, BagOrganIds(low));
+        CollectionAssert.AreEquivalent(new[] { "torso_shortguard" }, BagOrganIds(high));
         Assert.AreNotEqual(string.Join(",", BagOrganIds(low)), string.Join(",", BagOrganIds(high)));
     }
 

@@ -10,6 +10,9 @@ namespace SpringUp.Organs
         [SerializeField] private string displayName = "直线子弹";
         [SerializeField, Min(0f)] private float damage = 5f;
         [SerializeField, HideInInspector] private float chargeCost = 20f;
+        [SerializeField, Min(.1f), Tooltip("索敌范围：以玩家位置为中心的世界单位距离。只决定选谁攻击，不改变爆炸半径、弹体寿命或激光长度。")]
+        private float targetingRange = 6f;
+        protected float TargetingRange => targetingRange;
         public string DisplayName => displayName;
         protected string OrganId => organId;
         protected float Damage => damage;

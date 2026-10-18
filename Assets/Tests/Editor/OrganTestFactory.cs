@@ -28,12 +28,14 @@ namespace SpringUp.EditorChecks
             if (trigger)
             {
                 data.FindProperty("condition").intValue = (int)TriggerOn.Kill;
-                data.FindProperty("triggerTarget").intValue = (int)TriggerTargetKind.SelfSlots;
+                data.FindProperty("triggerTarget").intValue = (int)TriggerTargetKind.NextSlot;
                 data.FindProperty("killThreshold").intValue = 1;
             }
             else
             {
                 data.FindProperty("damage").floatValue = damage;
+                // Historical fixture geometry; real assets have individual ranges.
+                data.FindProperty("targetingRange").floatValue = 3f;
                 data.FindProperty("shape").intValue = !Enum.IsDefined(typeof(HandOrganKind), kind) ? 999
                     : (int)(kind == HandOrganKind.Tnt ? AttackShape.Explosion : kind == HandOrganKind.CollapseBody ? AttackShape.BlackHole : AttackShape.SingleTarget);
             }
