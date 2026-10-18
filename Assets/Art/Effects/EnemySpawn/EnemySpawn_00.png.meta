@@ -1,0 +1,715 @@
+fileFormatVersion: 2
+guid: f1e3269f730a644468df35ad036f47b2
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 8893097354123582356
+    second: EnemySpawn_00_0
+  - first:
+      213: -3047651183794816260
+    second: EnemySpawn_00_1
+  - first:
+      213: -5511955056423851857
+    second: EnemySpawn_00_2
+  - first:
+      213: -5220556130126151054
+    second: EnemySpawn_00_3
+  - first:
+      213: 3497227526484212407
+    second: EnemySpawn_00_4
+  - first:
+      213: 6868824979329190530
+    second: EnemySpawn_00_5
+  - first:
+      213: -6746049338098740880
+    second: EnemySpawn_00_6
+  - first:
+      213: 1121619918694038717
+    second: EnemySpawn_00_7
+  - first:
+      213: -1483680653149977212
+    second: EnemySpawn_00_8
+  - first:
+      213: 8134567051672582158
+    second: EnemySpawn_00_9
+  - first:
+      213: 5898818431107857181
+    second: EnemySpawn_00_10
+  - first:
+      213: 1202593835725991112
+    second: EnemySpawn_00_11
+  - first:
+      213: -2337620442617417514
+    second: EnemySpawn_00_12
+  - first:
+      213: -1649347801148139455
+    second: EnemySpawn_00_13
+  - first:
+      213: -4637966543712995394
+    second: EnemySpawn_00_14
+  - first:
+      213: -6579907211334953765
+    second: EnemySpawn_00_15
+  - first:
+      213: -3952445378155127907
+    second: EnemySpawn_00_16
+  - first:
+      213: -6847266875174342302
+    second: EnemySpawn_00_17
+  - first:
+      213: -5674952957333439190
+    second: EnemySpawn_00_18
+  - first:
+      213: -4350428462812413234
+    second: EnemySpawn_00_19
+  - first:
+      213: -1594061166640951506
+    second: EnemySpawn_00_20
+  - first:
+      213: 7583388186530128118
+    second: EnemySpawn_00_21
+  - first:
+      213: 1592182918714670811
+    second: EnemySpawn_00_22
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 375
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: EnemySpawn_00_0
+      rect:
+        serializedVersion: 2
+        x: 426
+        y: 584
+        width: 17
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 49b90890de0aa6b70800000000000000
+      internalID: 8893097354123582356
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_1
+      rect:
+        serializedVersion: 2
+        x: 419
+        y: 517
+        width: 17
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cfa7c9e356194b5d0800000000000000
+      internalID: -3047651183794816260
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_2
+      rect:
+        serializedVersion: 2
+        x: 194
+        y: 382
+        width: 17
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fa820fb641a9183b0800000000000000
+      internalID: -5511955056423851857
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_3
+      rect:
+        serializedVersion: 2
+        x: 224
+        y: 382
+        width: 9
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 272c7ddfbdbdc87b0800000000000000
+      internalID: -5220556130126151054
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_4
+      rect:
+        serializedVersion: 2
+        x: 561
+        y: 389
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ba3fcef7e5a88030800000000000000
+      internalID: 3497227526484212407
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_5
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 397
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 28a0f351de7f25f50800000000000000
+      internalID: 6868824979329190530
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_6
+      rect:
+        serializedVersion: 2
+        x: 201
+        y: 359
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0719d5d7ed73162a0800000000000000
+      internalID: -6746049338098740880
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_7
+      rect:
+        serializedVersion: 2
+        x: 374
+        y: 352
+        width: 24
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dbcb2ca9f5bc09f00800000000000000
+      internalID: 1121619918694038717
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_8
+      rect:
+        serializedVersion: 2
+        x: 426
+        y: 367
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48540ec8e48e86be0800000000000000
+      internalID: -1483680653149977212
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_9
+      rect:
+        serializedVersion: 2
+        x: 291
+        y: 344
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e087a8c72a9c3e070800000000000000
+      internalID: 8134567051672582158
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_10
+      rect:
+        serializedVersion: 2
+        x: 486
+        y: 352
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d1bf5bc1c10dcd150800000000000000
+      internalID: 5898818431107857181
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_11
+      rect:
+        serializedVersion: 2
+        x: 224
+        y: 329
+        width: 9
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8cca583d8b870b010800000000000000
+      internalID: 1202593835725991112
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_12
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 254
+        width: 17
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d0f81ab79a1f8fd0800000000000000
+      internalID: -2337620442617417514
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_13
+      rect:
+        serializedVersion: 2
+        x: 561
+        y: 277
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1485e79d9e65c19e0800000000000000
+      internalID: -1649347801148139455
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_14
+      rect:
+        serializedVersion: 2
+        x: 44
+        y: 239
+        width: 9
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eb737d16002a2afb0800000000000000
+      internalID: -4637966543712995394
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_15
+      rect:
+        serializedVersion: 2
+        x: 59
+        y: 232
+        width: 9
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bd4595dc0497fa4a0800000000000000
+      internalID: -6579907211334953765
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_16
+      rect:
+        serializedVersion: 2
+        x: 591
+        y: 232
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d9bdde89ed71629c0800000000000000
+      internalID: -3952445378155127907
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_17
+      rect:
+        serializedVersion: 2
+        x: 719
+        y: 232
+        width: 31
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2613fee2e0f99f0a0800000000000000
+      internalID: -6847266875174342302
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_18
+      rect:
+        serializedVersion: 2
+        x: 216
+        y: 37
+        width: 355
+        height: 197
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a2d761d3a548e31b0800000000000000
+      internalID: -5674952957333439190
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_19
+      rect:
+        serializedVersion: 2
+        x: 606
+        y: 157
+        width: 17
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ec24155dc5c20a3c0800000000000000
+      internalID: -4350428462812413234
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_20
+      rect:
+        serializedVersion: 2
+        x: 629
+        y: 97
+        width: 84
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e2f0f1c80d1c0e9e0800000000000000
+      internalID: -1594061166640951506
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_21
+      rect:
+        serializedVersion: 2
+        x: 6
+        y: 127
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6f0a50c806b9d3960800000000000000
+      internalID: 7583388186530128118
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EnemySpawn_00_22
+      rect:
+        serializedVersion: 2
+        x: 681
+        y: 44
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bdebe67cde1981610800000000000000
+      internalID: 1592182918714670811
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      EnemySpawn_00_0: 8893097354123582356
+      EnemySpawn_00_1: -3047651183794816260
+      EnemySpawn_00_10: 5898818431107857181
+      EnemySpawn_00_11: 1202593835725991112
+      EnemySpawn_00_12: -2337620442617417514
+      EnemySpawn_00_13: -1649347801148139455
+      EnemySpawn_00_14: -4637966543712995394
+      EnemySpawn_00_15: -6579907211334953765
+      EnemySpawn_00_16: -3952445378155127907
+      EnemySpawn_00_17: -6847266875174342302
+      EnemySpawn_00_18: -5674952957333439190
+      EnemySpawn_00_19: -4350428462812413234
+      EnemySpawn_00_2: -5511955056423851857
+      EnemySpawn_00_20: -1594061166640951506
+      EnemySpawn_00_21: 7583388186530128118
+      EnemySpawn_00_22: 1592182918714670811
+      EnemySpawn_00_3: -5220556130126151054
+      EnemySpawn_00_4: 3497227526484212407
+      EnemySpawn_00_5: 6868824979329190530
+      EnemySpawn_00_6: -6746049338098740880
+      EnemySpawn_00_7: 1121619918694038717
+      EnemySpawn_00_8: -1483680653149977212
+      EnemySpawn_00_9: 8134567051672582158
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

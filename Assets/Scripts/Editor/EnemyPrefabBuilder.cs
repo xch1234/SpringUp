@@ -43,8 +43,13 @@ namespace TideBorne.EditorTools
         ///      **4 版漏了这一步**：加分层代码时 prefab 已经是 4 版生成的，
         ///      版本号没动 → 没有重建 → prefab 还留在 Default(0) 层，
         ///      于是"角色穿过敌人"不生效，仍然能推着敌人走
+        /// 6 → **有美术就用美术**：`Assets/Art/Enemies/&lt;原型&gt;/` 下存在
+        ///      `<原型>_00.png` 与 `<原型>.controller` 时，prefab 的精灵改用美术首帧、
+        ///      颜色改白并挂 Animator；没有美术的原型继续走灰盒方块。
+        ///      同时给开火型敌人补回 `EnemyAttackFlash`（此前漏加，重建会丢开火闪黄）。
+        /// 7 → 复核「美术接入」真的生效（含 RangedChaser 1.5 倍尺寸与 Animator）。
         /// </summary>
-        private const int PrefabVersion = 5;
+        private const int PrefabVersion = 7;
 
         private static bool s_AutoBuildAttempted;
 
@@ -293,7 +298,26 @@ namespace TideBorne.EditorTools
             if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null)
                 AssetDatabase.DeleteAsset(path);
 
-            var instance = EnemyFactory.CreateGreyboxEnemy(config.displayName, sprite, config.color);
+            var art = FindArt(config.displayName);
+            var instance = EnemyFactory.CreateGreyboxEnemy(
+                config.displayName,
+                art != null ? art.firstFrame : sprite,
+                art != null ? Color.white : config.color);
+
+            // 视觉缩放乘在基础尺寸上。没有美术时保持原来的灰盒尺寸。
+            var scale = GreyboxAssets.EnemyWorldSize * VisualScaleOf(config);
+            instance.transform.localScale = new Vector3(scale, scale, 1f);
+
+            if (art != null)
+            {
+                var animator = instance.AddComponent<Animator>();
+                animator.runtimeAnimatorController = art.controller;
+                animator.applyRootMotion = false;
+            }
+            else
+            {
+                RemoveComponent<Animator>(instance);
+            }
 
             // 敌人一律放「敌人层」：与玩家层互不相碰（角色穿过敌人），
             // 但敌人彼此保留碰撞体积。碰撞矩阵见 BattleLayers。
@@ -322,6 +346,65 @@ namespace TideBorne.EditorTools
             }
         }
 
+        /// <summary>美术目录根：每种原型一个子目录，目录名与 <see cref="EnemyDefinition.displayName"/> 相同。</summary>
+        private const string ArtRoot = "Assets/Art/Enemies";
+
+        /// <summary>一种原型的美术：首帧精灵 + 循环动画控制器。</summary>
+        private sealed class EnemyArt
+        {
+            public Sprite firstFrame;
+            public RuntimeAnimatorController controller;
+        }
+
+        /// <summary>
+        /// 找某个原型的美术。目录里同时有 <c>&lt;原型&gt;.controller</c> 和至少一张精灵才算数，
+        /// 缺一样就退回灰盒，避免生成一个"有控制器但没图"的半成品 prefab。
+        /// </summary>
+        private static EnemyArt FindArt(string displayName)
+        {
+            var folder = ArtRoot + "/" + displayName;
+            if (!AssetDatabase.IsValidFolder(folder))
+                return null;
+
+            var controller = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(
+                folder + "/" + displayName + ".controller");
+            if (controller == null)
+                return null;
+
+            var guids = AssetDatabase.FindAssets("t:Texture2D", new[] { folder });
+            if (guids == null || guids.Length == 0)
+                return null;
+
+            var paths = new List<string>(guids.Length);
+            for (var i = 0; i < guids.Length; i++)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                if (!string.IsNullOrEmpty(path))
+                    paths.Add(path);
+            }
+
+            paths.Sort(System.StringComparer.Ordinal);
+
+            for (var i = 0; i < paths.Count; i++)
+            {
+                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(paths[i]);
+                if (sprite != null)
+                    return new EnemyArt { firstFrame = sprite, controller = controller };
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 每种原型的视觉缩放（乘在基础尺寸上）。
+        /// 目前只有 RangedChaser 有美术、且策划要求先放大 1.5 倍观察；
+        /// 等美术规模上来再搬进 <see cref="EnemyDefinition"/>，现在给八个 .asset 补字段不划算。
+        /// </summary>
+        private static float VisualScaleOf(EnemyDefinition config)
+        {
+            return config != null && config.id == "RangedChaser" ? 1.5f : 1f;
+        }
+
         /// <summary>按配置给实例装配行为组件与数值。</summary>
         private static void ConfigureInstance(GameObject instance, EnemyDefinition config)
         {
@@ -336,6 +419,10 @@ namespace TideBorne.EditorTools
             {
                 if (instance.GetComponent<EnemyAttack>() == null) instance.AddComponent<EnemyAttack>();
                 ApplyRangedAttack(instance, config);
+
+                // 开火闪黄的可读性提示。此前只存在于旧 prefab 里，重建会丢，这里补回来。
+                if (instance.GetComponent<EnemyAttackFlash>() == null)
+                    instance.AddComponent<EnemyAttackFlash>();
             }
             if (config.hasProducer) instance.AddComponent<EnemyProducer>();
             if (config.hasHealer) instance.AddComponent<EnemyHealer>();
@@ -409,6 +496,13 @@ namespace TideBorne.EditorTools
             if (!config.hasContactDamage && prefab.GetComponent<EnemyContactDamage>() != null)
             {
                 Debug.LogError("[EnemyPrefabBuilder] " + path + " 上不该有 EnemyContactDamage，但它存在。");
+            }
+
+            // 有美术就必须挂上 Animator，否则 prefab 只会显示第 0 帧、不会动。
+            if (FindArt(config.displayName) != null && prefab.GetComponent<Animator>() == null)
+            {
+                Debug.LogError("[EnemyPrefabBuilder] " + path + " 有美术却没有 Animator，" +
+                               "场景里会一直停在第一帧。");
             }
 
             // 层也要核对。**加分层时漏掉这一步的后果很难反推**：

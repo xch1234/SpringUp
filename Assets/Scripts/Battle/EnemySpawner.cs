@@ -70,6 +70,9 @@ namespace TideBorne.Battle
         private bool _reportedPoolUsage;
         private int _designedCursor;
 
+        /// <summary>本波是否仍在刷怪。水花延迟期间波次结束的话，回调里就不再放敌人出来。</summary>
+        private bool _waveActive = true;
+
         /// <summary>本波预期生成的敌人总数，由 <see cref="WaveDirector"/> 设定。</summary>
         public int PlannedSpawnCount { get; private set; }
 
@@ -82,6 +85,7 @@ namespace TideBorne.Battle
         /// <summary>开始新一波：重置计数。</summary>
         public void BeginWave(int plannedCount, float waveDuration)
         {
+            _waveActive = true;
             PlannedSpawnCount = Mathf.Max(0, plannedCount);
             SpawnedCount = 0;
             _accumulatedSpawnDelay = 0f;
@@ -91,6 +95,7 @@ namespace TideBorne.Battle
         /// <summary>结束本波：丢弃未使用的生成计划。</summary>
         public void EndWave()
         {
+            _waveActive = false;
             PlannedSpawnCount = 0;
             SpawnedCount = 0;
             _accumulatedSpawnDelay = 0f;
@@ -120,13 +125,30 @@ namespace TideBorne.Battle
         {
             var position = PickSpawnPosition();
 
+            // 先把这一笔算进「本波已生成」：水花要播大约 1 秒，这期间 Tick 若仍以为欠一个，
+            // 下一帧会再补一个，实际生成数就会超过计划。
+            SpawnedCount++;
+
+            // 先在生成点放水花，播完才把敌人放出来；若这期间本波已经结束，就不再放出来。
+            if (EnemySpawnEffect.TryPlay(position, () =>
+            {
+                if (_waveActive)
+                    SpawnAt(position);
+            }))
+                return true;
+
+            return SpawnAt(position);
+        }
+
+        /// <summary>真正把敌人放到场上。水花播完后由回调调用。</summary>
+        private bool SpawnAt(Vector2 position)
+        {
             var enemy = RentEnemy(out var poolKey);
             if (enemy == null)
                 return false;
 
             enemy.transform.position = new Vector3(position.x, position.y, 0f);
             enemy.transform.rotation = Quaternion.identity;
-            SpawnedCount++;
 
             if (verboseLogging && !_reportedPoolUsage)
             {

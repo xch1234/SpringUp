@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using SpringUp.Organs;
+using TideBorne.Audio;
 using TideBorne.Battle;
 using Tideflesh.Systems;
 using UnityEngine;
@@ -219,6 +220,8 @@ namespace SpringUp.Flow
             menuCamera.gameObject.SetActive(Content.kind == ContentKind.MainMenu);
             Content.Initialize(this, Session);
             Content.Begin();
+            // 场景切换完成后切 BGM：战斗用战场曲，标题/休整用休整曲。
+            GameAudio.Instance?.SetBattle(Content.kind == ContentKind.Battle);
             ShowContentActions();
         }
         void ShowFailure(Exception error)

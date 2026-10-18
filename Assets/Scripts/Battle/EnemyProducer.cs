@@ -85,6 +85,33 @@ namespace TideBorne.Battle
                 return null;
             }
 
+            var offset = spawnJitter > 0.01f
+                ? Random.insideUnitCircle * spawnJitter
+                : Vector2.zero;
+            var origin = (Vector2)transform.position + offset;
+
+            _producedCount++;
+
+            if (logProductions)
+            {
+                Debug.Log("[EnemyProducer] 产出第 " + _producedCount + " 个 " + productArchetype +
+                          "（生成水花播完后出现），场上现有 " + EnemyRuntime.ActiveCount + " 个敌人。");
+            }
+
+            // 与主刷怪一致：先放水花，播完再把敌人放出来；产兵者若在水花期间死了，就不再产出。
+            if (EnemySpawnEffect.TryPlay(origin, () =>
+            {
+                if (_self == null || _self.IsAlive)
+                    SpawnAt(prototype, origin);
+            }))
+                return null;
+
+            return SpawnAt(prototype, origin);
+        }
+
+        /// <summary>真正把产出物放到场上。水花播完后由回调调用。</summary>
+        private GameObject SpawnAt(GameObject prototype, Vector2 origin)
+        {
             var instance = SimplePool.Rent(prototype, prototype.name);
             if (instance == null)
                 return null;
@@ -93,21 +120,8 @@ namespace TideBorne.Battle
             if (runtime != null)
                 runtime.MarkPooled(prototype.name);
 
-            var offset = spawnJitter > 0.01f
-                ? Random.insideUnitCircle * spawnJitter
-                : Vector2.zero;
-            var origin = (Vector2)transform.position + offset;
-
             instance.transform.position = new Vector3(origin.x, origin.y, 0f);
             instance.transform.rotation = Quaternion.identity;
-            _producedCount++;
-
-            if (logProductions)
-            {
-                Debug.Log("[EnemyProducer] 产出第 " + _producedCount + " 个 " + productArchetype +
-                          "，场上现有 " + EnemyRuntime.ActiveCount + " 个敌人。");
-            }
-
             return instance;
         }
     }

@@ -20,6 +20,7 @@ namespace SpringUp.Flow
         public BattleOrganCombat combat;
         public BattleOrganEffects effects;
         public EnemyRuntime dummy;
+        private readonly List<EnemyRuntime> trainingDummies = new List<EnemyRuntime>();
         public TorsoEquipmentRuntime Torso { get; private set; }
         public OrganCombatReport CombatReport { get; private set; }
         public RunLaboratoryEquipment Equipment { get; private set; }
@@ -67,6 +68,34 @@ namespace SpringUp.Flow
             if (session.Health.HasValue) player.RestoreHealth(session.Health.Value);
             else player.ResetHealthToMax();
             if (dummy != null) { dummy.TrainingTarget = true; dummy.ResetTrainingTarget(); }
+            if (kind == ContentKind.Rest) BindTrainingTargets();
+        }
+
+        /// <summary>
+        /// 休整场景里所有木桩都按训练靶处理（含船头新增的三根）：打不死、可反复试器官。
+        /// 只找场景里已激活的实例，不会影响战斗场景的敌人。
+        /// </summary>
+        private void BindTrainingTargets()
+        {
+            trainingDummies.Clear();
+            var dummies = FindObjectsByType<EnemyRuntime>(FindObjectsInactive.Exclude);
+            for (var i = 0; i < dummies.Length; i++)
+            {
+                var candidate = dummies[i];
+                if (candidate == null || candidate.Data == null)
+                    continue;
+
+                if (candidate.Data.Definition.archetype != EnemyArchetype.Dummy)
+                    continue;
+
+                candidate.TrainingTarget = true;
+                candidate.ResetTrainingTarget();
+                trainingDummies.Add(candidate);
+            }
+
+            // 场景里原来的单根 Training dummy 已被删除，这里把 HUD/状态栏用的引用补到第一根上。
+            if (dummy == null && trainingDummies.Count > 0)
+                dummy = trainingDummies[0];
         }
         // Created by the shared scene entry, so regenerated Rest scenes retain the interaction.
         public void EnsureMerchant()
@@ -98,9 +127,15 @@ namespace SpringUp.Flow
         }
         public void Begin()
         {
-            if (kind == ContentKind.Battle &&
-                !director.StartExternalWave(session.Run.Wave, session.Run.MaxWave, session.Run.WaveDuration))
-                throw new InvalidOperationException("Wave did not start");
+            if (kind == ContentKind.Battle)
+            {
+                // 每个战斗波次开始时满血。跨波次沿用血量会让后面的波次一开局就带伤，
+                // 与「每波重新布阵、重新打」的节奏不符；休整期仍然沿用上一波结束时的血量。
+                if (player != null) player.ResetHealthToMax();
+
+                if (!director.StartExternalWave(session.Run.Wave, session.Run.MaxWave, session.Run.WaveDuration))
+                    throw new InvalidOperationException("Wave did not start");
+            }
             if (player != null) PlayerLocator.Bind(player.transform);
         }
         void Completed(int wave, int cleared)
@@ -142,8 +177,17 @@ namespace SpringUp.Flow
         {
             if (kind != ContentKind.Rest || !app.WorldInputAllowed) return;
             ClearAttacks();
-            dummy.ResetTrainingTarget();
-            dummy.transform.position = player.transform.position + Vector3.right * 2;
+
+            if (trainingDummies.Count == 0 && dummy != null)
+                trainingDummies.Add(dummy);
+
+            // 三根木桩固定在船头，不再像以前那样把木桩搬到玩家旁边；这里只复位血量。
+            for (var i = 0; i < trainingDummies.Count; i++)
+            {
+                var target = trainingDummies[i];
+                if (target != null)
+                    target.ResetTrainingTarget();
+            }
         }
         public void Stop()
         {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TideBorne.Audio;
 using UnityEngine;
 
 namespace TideBorne.Battle
@@ -28,6 +29,7 @@ namespace TideBorne.Battle
         public bool TrainingTarget { get; set; }
         public void ResetTrainingTarget() { currentHealth = MaxHealth; OrganSpeedMultiplier = 1f; }
         private bool _isDead;
+        private HitFlashSkin hitFlash;
         private float statusSpeedMultiplier = 1f;
         private readonly Dictionary<string, float> attachedSlows = new Dictionary<string, float>();
         public float OrganSpeedMultiplier
@@ -117,6 +119,23 @@ namespace TideBorne.Battle
 
             // 首次启动把血量夹到上限，避免 prefab 里的初值大于上限。
             currentHealth = Mathf.Clamp(currentHealth, 0f, MaxHealth);
+
+            EnsureHitFlash();
+        }
+
+        /// <summary>
+        /// 拿受击蒙皮；没有就补一个。放在运行时补而不是烘进 prefab：
+        /// prefab 由 <c>EnemyPrefabBuilder</c> 重建，写死在里面的组件会被冲掉，
+        /// 而这里补的组件对所有敌人（含场景兜底 prefab 与池化复用）都生效。
+        /// </summary>
+        private void EnsureHitFlash()
+        {
+            if (hitFlash != null)
+                return;
+
+            hitFlash = GetComponent<HitFlashSkin>();
+            if (hitFlash == null)
+                hitFlash = gameObject.AddComponent<HitFlashSkin>();
         }
 
         private void OnEnable()
@@ -174,6 +193,14 @@ namespace TideBorne.Battle
             var applied = Mathf.Min(damage, TrainingTarget ? Mathf.Max(0f, currentHealth - 1f) : currentHealth);
             if (applied <= 0f) return 0f;
             currentHealth -= applied;
+
+            EnsureHitFlash();
+            if (hitFlash != null)
+                hitFlash.Flash();
+
+            // 受击音效：所有敌人（含木桩）共用一个 2D 音轨。
+            GameAudio.Instance?.PlayEnemyHit();
+
             Vector2 deathPosition = Position;
             bool lethal = currentHealth <= 0f;
             var killed = new EnemyEvents.KilledInfo

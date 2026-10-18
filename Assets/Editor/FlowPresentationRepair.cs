@@ -101,7 +101,10 @@ namespace SpringUp.EditorChecks
             {
                 var scene = EditorSceneManager.OpenScene(path);
                 var old = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<Transform>(true))
-                    .Single(t => t.name == "MapBackground" || t.name == "ArenaTiles");
+                    .SingleOrDefault(t => t.name == "MapBackground" || t.name == "ArenaTiles");
+                // 休整场景已换成船背景、旧海浪地砖被删掉，这里跳过而不是抛异常。
+                if (old == null)
+                    continue;
                 var parent = old.parent; var position = old.localPosition;
                 Object.DestroyImmediate(old.gameObject);
                 var replacement = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(MapPath), scene);

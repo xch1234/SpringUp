@@ -18,7 +18,6 @@ namespace TideBorne.Battle
         [SerializeField] private EnemyData data;
         private EnemyMoveMode moveMode => GetComponent<EnemyData>().Definition.moveMode;
         private bool faceMoveDirection => GetComponent<EnemyData>().Definition.faceMoveDirection;
-        private float facingLerpSpeed => GetComponent<EnemyData>().Definition.facingLerpSpeed;
 
         private float stopAtAttackRangeRatio => GetComponent<EnemyData>().Definition.stopAtAttackRangeRatio;
         private float minStopDistance => GetComponent<EnemyData>().Definition.minStopDistance;
@@ -28,6 +27,10 @@ namespace TideBorne.Battle
 
         private Rigidbody2D _body;
         private EnemyRuntime _runtime;
+        private SpriteRenderer _renderer;
+
+        [Tooltip("美术默认朝左：勾上时，向右移动会水平翻转精灵。美术若默认朝右则取消勾选。")]
+        [SerializeField] private bool spriteFacesLeft = true;
 
         /// <summary>敌人数据。</summary>
         public EnemyData Data
@@ -81,6 +84,7 @@ namespace TideBorne.Battle
         {
             _body = GetComponent<Rigidbody2D>();
             _runtime = GetComponent<EnemyRuntime>();
+            _renderer = GetComponent<SpriteRenderer>();
 
             if (data == null)
                 data = GetComponent<EnemyData>();
@@ -127,15 +131,25 @@ namespace TideBorne.Battle
             var direction = toPlayer / distance * sign;
             _body.linearVelocity = direction * Data.MoveSpeed * (_runtime != null ? _runtime.OrganSpeedMultiplier : 1f);
 
-            if (faceMoveDirection && _body.linearVelocity.sqrMagnitude > 0.0001f)
-            {
-                var targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-                var nextAngle = facingLerpSpeed <= 0f
-                    ? targetAngle
-                    : Mathf.MoveTowardsAngle(_body.rotation, targetAngle, facingLerpSpeed * Time.fixedDeltaTime);
+            if (faceMoveDirection)
+                FaceDirection(direction);
+        }
 
-                _body.MoveRotation(nextAngle);
-            }
+        /// <summary>
+        /// 只做左右镜像，不旋转刚体。
+        ///
+        /// 旧实现把整个刚体旋到移动方向（<c>MoveRotation</c>），方块时代看不出来；
+        /// 换成美术后会整体倒立。这里改为按水平分量翻 <c>flipX</c>，
+        /// 竖直移动时保留上一次朝向，避免上下抖动时反复翻面。
+        /// </summary>
+        private void FaceDirection(Vector2 direction)
+        {
+            if (_renderer == null || Mathf.Abs(direction.x) < 0.0001f)
+                return;
+
+            var flip = spriteFacesLeft ? direction.x > 0f : direction.x < 0f;
+            if (_renderer.flipX != flip)
+                _renderer.flipX = flip;
         }
 
         /// <summary>

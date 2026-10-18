@@ -42,6 +42,7 @@ namespace TideBorne.Battle
         public event System.Action<float> PlayerDamaged;
         public event System.Action Died;
         [SerializeField, Min(0)] private float baseInvulnerabilityDuration = .3f;
+        private HitFlashSkin hitFlash;
         public float InvulnerabilityMultiplier { get; set; } = 1;
         private float invulnerableUntil;
         public float InvulnerabilityRemaining => Mathf.Max(0, invulnerableUntil - Time.time);
@@ -137,6 +138,11 @@ namespace TideBorne.Battle
 
             var applied = Mathf.Min(amount, currentHealth);
             currentHealth -= applied;
+
+            EnsureHitFlash();
+            if (hitFlash != null)
+                hitFlash.Flash();
+
             PlayerDamaged?.Invoke(applied);
             if (currentHealth <= 0f) Died?.Invoke();
             return applied;
@@ -183,6 +189,23 @@ namespace TideBorne.Battle
             // 首次启动把血量夹到上限，避免 inspector 里的初值超过上限。
             currentHealth = Mathf.Clamp(currentHealth, 0f, MaxHealth);
             PublishSnapshotIfChanged(true);
+
+            EnsureHitFlash();
+        }
+
+        /// <summary>
+        /// 拿受击蒙皮；没有就补一个。放在运行时补而不是写进场景：
+        /// 玩家由 <c>BattleGreyboxBuilder</c> 生成、并烘在多个场景里，写死在场景中的组件
+        /// 改动都要重跑场景构建；运行时补的组件对所有场景（含旧 Demo）都生效。
+        /// </summary>
+        private void EnsureHitFlash()
+        {
+            if (hitFlash != null)
+                return;
+
+            hitFlash = GetComponent<HitFlashSkin>();
+            if (hitFlash == null)
+                hitFlash = gameObject.AddComponent<HitFlashSkin>();
         }
 
         private void OnEnable()
