@@ -119,39 +119,6 @@ namespace SpringUp.EditorChecks
             AssetDatabase.SaveAssets();
             Debug.Log("[Presentation Repair] PASS: three maps tiled 40x40 and laboratory prefab bound.");
         }
-        public static void BuildLaboratory()
-        {
-            var scene = EditorSceneManager.OpenScene("Assets/Scenes/SpringUpDemo.unity");
-            var original = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<LaboratoryPresenter>(true)).Single();
-            var root = Object.Instantiate(original.gameObject); root.name = "Laboratory Window"; root.SetActive(false);
-            var presenter = root.GetComponent<LaboratoryPresenter>(); presenter.source = null;
-            Object.DestroyImmediate(root.GetComponent<GraphicRaycaster>());
-            Object.DestroyImmediate(root.GetComponent<CanvasScaler>());
-            Object.DestroyImmediate(root.GetComponent<Canvas>());
-            var rect = (RectTransform)root.transform;
-            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
-            rect.localScale = Vector3.one; rect.anchoredPosition3D = Vector3.zero; rect.sizeDelta = new Vector2(1440, 900);
-            var layout = (RectTransform)root.transform.GetChild(0); layout.anchoredPosition = Vector2.zero;
-            var preview = root.GetComponentInChildren<LaboratoryCombatDemo>(true);
-            var panel = preview.transform;
-            // The preview script and targets are not dependencies of the production inventory.
-            foreach (Transform child in panel.Cast<Transform>().ToArray()) Object.DestroyImmediate(child.gameObject);
-            Object.DestroyImmediate(preview);
-            var view = root.AddComponent<FlowWindow>();
-            view.group = root.AddComponent<CanvasGroup>(); view.body = panel;
-            view.title = layout.GetComponentsInChildren<Text>(true).First(t => t.gameObject.name == "Title");
-            view.title.text = "实验室 · 装备";
-            var column = panel.gameObject.AddComponent<VerticalLayoutGroup>();
-            column.padding = new RectOffset(20,20,20,20); column.spacing = 16;
-            column.childControlHeight = true; column.childControlWidth = true; column.childForceExpandHeight = false;
-            var binding = root.AddComponent<FlowLaboratoryWindow>(); binding.presenter = presenter;
-            binding.status = view.AddText(""); binding.status.GetComponent<LayoutElement>().preferredHeight = 410;
-            binding.closeButton = view.AddButton("关闭背包 · 返回游戏 [Esc / B / Tab]", () => {});
-
-            binding.discardButton = view.AddButton("丢弃选中物品", () => {});
-            foreach (Transform t in root.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = LayerMask.NameToLayer("UI");
-            PrefabUtility.SaveAsPrefabAsset(root, LabPath);
-            Object.DestroyImmediate(root);
-        }
+        public static void BuildLaboratory() => OrganUiBuilder.Build();
     }
 }

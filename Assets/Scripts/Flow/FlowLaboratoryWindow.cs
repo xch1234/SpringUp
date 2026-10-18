@@ -9,6 +9,7 @@ namespace SpringUp.Flow
     public sealed class FlowLaboratoryWindow : MonoBehaviour
     {
         public LaboratoryPresenter presenter;
+        public BackpackPresenter backpack;
         public Text status;
         public Button closeButton, sellButton, discardButton;
         RunController run;
@@ -17,9 +18,12 @@ namespace SpringUp.Flow
         {
             run = app.Session.Run;
             equipment = new RunLaboratoryEquipment(run, app.Configuration.Definitions);
+            foreach (var text in GetComponentsInChildren<Text>(true)) text.font = app.hud.font;
             run.LoadoutChanged += Changed;
-            presenter.ReadOnly = run.Stage != RunPhase.Rest;
-            presenter.Bind(equipment);
+            if (backpack != null)
+            { backpack.ReadOnly = run.Stage != RunPhase.Rest; backpack.Bind(equipment); }
+            else
+            { presenter.ReadOnly = run.Stage != RunPhase.Rest; presenter.Bind(equipment); }
             closeButton.GetComponentInChildren<Text>().text = "关闭背包 · 返回游戏 [Esc / B / Tab]";
             closeButton.onClick.AddListener(app.CloseTop);
             if (sellButton != null) sellButton.gameObject.SetActive(false);
@@ -29,10 +33,11 @@ namespace SpringUp.Flow
         }
         void Changed(InventorySnapshot snapshot) { equipment.Refresh(); RefreshStatus(); }
         public void RefreshInventory() { equipment?.Refresh(); if (run != null) RefreshStatus(); }
-        void RefreshStatus() => status.text = (run.Stage == RunPhase.Rest ? "休整期：允许装卸、替换、丢弃。\n" : "战斗只读：休整期才能装卸、替换、丢弃。\n") + $"背包 {run.Inventory.UnequippedIds().Count}/{run.Inventory.UnequippedCapacity()} · 骨髓 {run.Marrow}\n超限时请找商人出售或在休整期丢弃物品，再进入下一波。\n\n选择背包物品，再选择对应部位槽位，点击安装/替换。\n只选择已装备槽位可拆卸。\n\n关闭背包后在休整地图攻击木桩，测试新构筑。\n背包打开期间世界暂停。";
+        void RefreshStatus() => status.text = (run.Stage == RunPhase.Rest ? "休整期 · 拖动调整装备" : "战斗中 · 仅可查看")
+            + $" · 背包 {run.Inventory.UnequippedIds().Count} 件 · 骨髓 {run.Marrow}\n背包打开期间世界暂停；关闭后可攻击休整区木桩测试构筑。";
         void RemoveSelected()
         {
-            var id = presenter.SelectedInstanceId;
+            var id = backpack != null ? backpack.SelectedInstanceId : presenter.SelectedInstanceId;
             if (id == null) { status.text = "请先选择物品。"; return; }
             string error;
             bool ok = equipment.TryDiscard(id, out error);

@@ -62,29 +62,27 @@ namespace SpringUp.EditorChecks
                 AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Waves/waves.json").text, OrganCatalog.LoadDefault());
             var run = config.CreateRun(); run.StartRun(); run.CombatTimerFinished();
             for (int i = 0; i < 30; i++) run.Inventory.Spawn("rust_knife");
-            lab.presenter.Bind(new RunLaboratoryEquipment(run, config.Definitions));
-            lab.status.text = "背包超限测试 · 请选择物品和对应槽位安装。\n\n关闭背包后在休整地图攻击木桩。\n打开背包时世界暂停。";
+            lab.backpack.Bind(new RunLaboratoryEquipment(run, config.Definitions));
+            lab.status.text = "背包分页测试 · 拖动器官调整装备。\n\n关闭背包后在休整地图攻击木桩。\n打开背包时世界暂停。";
             lab.gameObject.SetActive(true);
             foreach (var size in new[] {new Vector2Int(1440,900),new Vector2Int(1280,720),new Vector2Int(1024,768)})
             {
                 canvas.scaleFactor = Mathf.Min(size.x / 1440f, size.y / 900f);
                 Capture(camera,size.x,size.y,$"laboratory-{size.x}.png", () => {
-                    var scroll = lab.presenter.inventoryRoot.GetComponentInParent<ScrollRect>();
-                    Require(lab.presenter.inventoryRoot.childCount == run.Inventory.UnequippedIds().Count,"Every inventory item has a card");
+                    Require(lab.backpack.inventorySlots.Length == 14, "Fourteen visible inventory cells");
                     var corners = new Vector3[4];
-                    foreach (var rect in new[] {scroll.viewport, (RectTransform)lab.closeButton.transform, (RectTransform)lab.presenter.installButton.transform})
+                    foreach (var rect in new[] { (RectTransform)lab.backpack.inventorySlots[13].transform, (RectTransform)lab.closeButton.transform })
                     {
                         rect.GetWorldCorners(corners);
-                        foreach (var corner in corners) { var p = camera.WorldToViewportPoint(corner); Require(p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1,"UI stays on screen: " + rect.name + " at " + p + " resolution " + size); }
+                        foreach (var corner in corners) { var p = camera.WorldToViewportPoint(corner); Require(p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1, "UI stays on screen: " + rect.name); }
                     }
-                    scroll.verticalNormalizedPosition = 0; Canvas.ForceUpdateCanvases();
-                    var last = (RectTransform)lab.presenter.inventoryRoot.GetChild(lab.presenter.inventoryRoot.childCount-1);
-                    last.GetWorldCorners(corners);
-                    foreach (var corner in corners) { var p=scroll.viewport.InverseTransformPoint(corner); Require(p.y >= scroll.viewport.rect.yMin-1 && p.y <= scroll.viewport.rect.yMax+1,"Overflow last card reachable"); }
-                    scroll.verticalNormalizedPosition = 1;
+                    lab.backpack.ChangePage(100);
+                    Require(!lab.backpack.nextPage.interactable, "Last inventory page reachable");
+                    Require(lab.backpack.inventorySlots.Any(slot => slot.Item?.InstanceId == run.Inventory.UnequippedIds().Last()), "Last item reachable");
+                    lab.backpack.ChangePage(-100);
                 });
             }
-            Debug.Log("[Presentation Checks] PASS: tile counts, sizes, UI bounds and overflow scrolling at three resolutions; captures saved.");
+            Debug.Log("[Presentation Checks] PASS: tile counts, sizes, UI bounds and inventory pagination at three resolutions; captures saved.");
         }
         static void Capture(Camera camera, int width, int height, string name, Action validate = null)
         {
