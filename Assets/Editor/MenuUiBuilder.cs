@@ -19,7 +19,7 @@ namespace SpringUp.EditorChecks
         {
             backdrop = Import("Backdrop"); button = Import("Button"); pause = Import("ESC");
             Directory.CreateDirectory("Assets/Resources/Menus");
-            MainMenu(); Pause(); Settings(); AssetDatabase.SaveAssets(); AssetDatabase.Refresh();
+            MainMenu(); Pause(); Settings(); Confirm(); AssetDatabase.SaveAssets(); AssetDatabase.Refresh();
             Debug.Log("MENU_UI_BUILD_OK");
         }
         static Sprite Import(string name)
@@ -75,7 +75,7 @@ namespace SpringUp.EditorChecks
         {
             var rect = Rect(name, parent, size, pos);
             var image = Picture(rect, art ? button : null, art ? Color.white : Color.clear); image.raycastTarget = true;
-            var control = rect.gameObject.AddComponent<Button>(); control.targetGraphic = image;
+            var control = rect.gameObject.AddComponent<MenuButton>(); control.targetGraphic = image;
             var colors = control.colors; colors.normalColor = Color.white;
             colors.highlightedColor = art ? new Color(.78f, .9f, 1) : new Color(.55f, .78f, 1, .15f);
             colors.selectedColor = colors.highlightedColor; colors.pressedColor = art ? new Color(.5f, .7f, .9f) : new Color(.4f, .7f, 1, .28f);
@@ -108,7 +108,7 @@ namespace SpringUp.EditorChecks
         }
         static void Pause()
         {
-            var view = Root("Pause", new Vector2(620, 620 * 1369f / 1149), .82f);
+            var view = Root("Pause", new Vector2(620, 620 * 1369f / 1149), .64f);
             Picture(view.panel, pause, Color.white);
             view.buttons = new Button[3]; string[] names = { "继续游戏", "设置", "回到主菜单" };
             float[] centers = { .29f, .516f, .742f };
@@ -127,8 +127,20 @@ namespace SpringUp.EditorChecks
             var handleArea = Rect("Handle area", rect, new Vector2(270, 0), Vector2.zero);
             var handle = Rect("Handle", handleArea, new Vector2(18, 28), Vector2.zero); var image = Picture(handle, null, Ink); image.raycastTarget = true;
             slider.fillRect = fill; slider.handleRect = handle; slider.targetGraphic = image;
-            value = Label(name + " value", parent, "100%", new Vector2(80, 40), new Vector2(285, y), 22);
+            slider.value = .5f;
+            value = Label(name + " value", parent, "50%", new Vector2(80, 40), new Vector2(285, y), 22);
             return slider;
+        }
+        static void Confirm()
+        {
+            var view = Root("Confirm", new Vector2(660, 330), .7f);
+            Picture(view.panel, backdrop, Color.white);
+            view.GetComponent<FlowWindow>().title = Label("Title", view.panel, "确认放弃", new Vector2(540, 50), new Vector2(0, 95), 30);
+            Label("Message", view.panel, "确定放弃本局并返回主菜单吗？\n当前进度不会保存。", new Vector2(560, 90), new Vector2(0, 15), 24);
+            view.buttons = new[] {
+                Button("取消", view.panel, new Vector2(240, 52), new Vector2(-145, -95)),
+                Button("放弃本局", view.panel, new Vector2(240, 52), new Vector2(145, -95)) };
+            Save(view, "Confirm");
         }
         static void Settings()
         {

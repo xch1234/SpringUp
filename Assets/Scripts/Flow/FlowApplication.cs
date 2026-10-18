@@ -359,8 +359,7 @@ namespace SpringUp.Flow
                 case WindowKind.Settings:
                     view.GetComponent<MenuSettingsView>().BindSettings(CloseTop); break;
                 case WindowKind.Confirm:
-                    view.AddText("确定放弃本局吗？当前进度不会保存。");
-                    view.AddButton("取消", CloseTop); view.AddButton("放弃本局", AbandonRun); break;
+                    view.GetComponent<MenuSettingsView>().BindConfirmation(CloseTop, AbandonRun); break;
                 case WindowKind.Inventory:
                 case WindowKind.Laboratory:
                     view.GetComponent<FlowLaboratoryWindow>().Bind(this);
@@ -458,7 +457,7 @@ namespace SpringUp.Flow
             var focus = eventSystem.currentSelectedGameObject;
             EnsureDimmer(); dimmer.SetActive(true); dimmer.transform.SetAsLastSibling();
             var view = kind == WindowKind.Inventory || kind == WindowKind.Laboratory ? Instantiate(laboratoryPrefab, uiRoot)
-                : kind == WindowKind.Pause || kind == WindowKind.Settings ? CreateMenuView(kind.ToString()) : CreateView();
+                : kind == WindowKind.Pause || kind == WindowKind.Settings || kind == WindowKind.Confirm ? CreateMenuView(kind.ToString()) : CreateView();
             if (view.title != null) view.title.text = title;
             windows.Add(new WindowEntry { Kind = kind, View = view, Lease = Pause.Acquire(), Focus = focus });
             RefreshWindowVisibility();

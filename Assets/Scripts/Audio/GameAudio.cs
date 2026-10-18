@@ -27,8 +27,8 @@ namespace TideBorne.Audio
         [SerializeField] private AudioClip enemyHitSfx;
 
         [Header("音量")]
-        [SerializeField, Range(0f, 1f)] private float musicVolume = 0.55f;
-        [SerializeField, Range(0f, 1f)] private float sfxVolume = 0.85f;
+        [SerializeField, Range(0f, 1f)] private float musicVolume = 0.5f;
+        [SerializeField, Range(0f, 1f)] private float sfxVolume = 0.5f;
 
         /// <summary>同时命中多个敌人时，避免同一帧叠出好几层受击音。</summary>
         private const float HitSfxMinInterval = 0.04f;

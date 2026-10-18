@@ -34,6 +34,8 @@ namespace SpringUp.Flow
         }
         public void BindMenu(Action start, Action settings, Action quit)
         { buttons[0].onClick.AddListener(() => start()); buttons[1].onClick.AddListener(() => settings()); buttons[2].onClick.AddListener(() => quit()); }
+        public void BindConfirmation(Action cancel, Action abandon)
+        { buttons[0].onClick.AddListener(() => cancel()); buttons[1].onClick.AddListener(() => abandon()); }
         public void BindSettings(Action close)
         {
             buttons[0].onClick.AddListener(() => { CancelBinding(); GameSettings.RestoreDefaults(); });

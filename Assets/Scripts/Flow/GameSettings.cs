@@ -12,7 +12,7 @@ namespace SpringUp.Flow
         const string PreferenceKey = "SpringUp.Settings.v1";
         static readonly Key[] Defaults = { Key.W, Key.S, Key.A, Key.D, Key.LeftShift, Key.E, Key.B };
         public static readonly string[] Labels = { "向上移动", "向下移动", "向左移动", "向右移动", "疾跑", "交互", "背包" };
-        [Serializable] sealed class Data { public float music = .55f, sfx = .85f; public Key[] keys = (Key[])Defaults.Clone(); }
+        [Serializable] sealed class Data { public float music = .5f, sfx = .5f; public Key[] keys = (Key[])Defaults.Clone(); }
         static Data data;
         public static event Action Changed;
         static Data Current { get { if (data == null) Load(); return data; } }
@@ -32,8 +32,8 @@ namespace SpringUp.Flow
             try { data = JsonUtility.FromJson<Data>(PlayerPrefs.GetString(PreferenceKey, "")); }
             catch (ArgumentException) { data = null; }
             data ??= new Data();
-            data.music = float.IsNaN(data.music) ? .55f : Mathf.Clamp01(data.music);
-            data.sfx = float.IsNaN(data.sfx) ? .85f : Mathf.Clamp01(data.sfx);
+            data.music = float.IsNaN(data.music) ? .5f : Mathf.Clamp01(data.music);
+            data.sfx = float.IsNaN(data.sfx) ? .5f : Mathf.Clamp01(data.sfx);
             bool valid = data.keys != null && data.keys.Length == Defaults.Length;
             if (valid)
                 for (int i = 0; i < data.keys.Length; i++)
