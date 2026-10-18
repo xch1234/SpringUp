@@ -18,6 +18,22 @@ namespace SpringUp.Flow
         PauseService pause;
         RectTransform layer;
         Canvas canvas;
+        RectTransform receiverTarget;
+        public void SetReceiverTarget(RectTransform target)
+        {
+            receiverTarget = target;
+            UpdateReceiver();
+        }
+        void UpdateReceiver()
+        {
+            if (Receiver == null) return;
+            if (receiverTarget != null) Receiver.position = receiverTarget.TransformPoint(receiverTarget.rect.center);
+            else
+            {
+                Receiver.anchorMin = Receiver.anchorMax = settings.receiverAnchor;
+                Receiver.anchoredPosition = Vector2.zero;
+            }
+        }
         public RectTransform Receiver { get; private set; }
         public int ActiveCount => active.Count;
         public static RewardFlightPresenter Create(Transform uiRoot, RewardFlightSettings settings, PauseService pause)
@@ -92,6 +108,7 @@ namespace SpringUp.Flow
         }
         void Draw(Flight flight)
         {
+            UpdateReceiver();
             var rect = layer.rect;
             var start = new Vector2(Mathf.Lerp(rect.xMin, rect.xMax, flight.startUV.x), Mathf.Lerp(rect.yMin, rect.yMax, flight.startUV.y));
             var end = (Vector2)layer.InverseTransformPoint(Receiver.position);

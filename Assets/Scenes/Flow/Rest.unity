@@ -3443,6 +3443,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Flow.FlowContent
   kind: 2
+  viewSettings: {fileID: 11400000, guid: b87260a630e965449bf3ae1d05109923, type: 2}
   world: {fileID: 230333444}
   player: {fileID: 526739248}
   director: {fileID: 0}

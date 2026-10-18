@@ -28,6 +28,12 @@ namespace TideBorne.Battle
         private Rigidbody2D _body;
         private EnemyRuntime _runtime;
         private SpriteRenderer _renderer;
+        private BattleMapLayout battleMap;
+        private void OnEnable()
+        {
+            var player = PlayerLocator.Player;
+            battleMap = player != null ? player.GetComponentInParent<BattleMapLayout>() : null;
+        }
 
         [Tooltip("美术默认朝左：勾上时，向右移动会水平翻转精灵。美术若默认朝右则取消勾选。")]
         [SerializeField] private bool spriteFacesLeft = true;
@@ -196,7 +202,7 @@ namespace TideBorne.Battle
                 return;
 
             var position = (Vector2)transform.position;
-            var clamped = new Vector2(
+            var clamped = battleMap != null ? battleMap.ClampInside(position) : new Vector2(
                 Mathf.Clamp(position.x, -playAreaHalfWidth + 1f, playAreaHalfWidth - 1f),
                 Mathf.Clamp(position.y, -playAreaHalfHeight + 1f, playAreaHalfHeight - 1f));
 

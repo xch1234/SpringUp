@@ -89,6 +89,9 @@ namespace TideBorne.Battle
                 ? Random.insideUnitCircle * spawnJitter
                 : Vector2.zero;
             var origin = (Vector2)transform.position + offset;
+            var player = PlayerLocator.Player;
+            var map = player != null ? player.GetComponentInParent<BattleMapLayout>() : null;
+            if (map != null) origin = map.ClampInside(origin);
 
             _producedCount++;
 

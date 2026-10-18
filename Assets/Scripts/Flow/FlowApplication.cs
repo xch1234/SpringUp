@@ -27,6 +27,7 @@ namespace SpringUp.Flow
         public Transform uiRoot;
         public RewardFlightSettings rewardFlightSettings;
         public RewardFlightPresenter RewardFlights { get; private set; }
+        public BattleHudPresenter BattleHud { get; private set; }
         public FlowWindow windowPrefab;
         public FlowWindow laboratoryPrefab;
         public GameObject loading;
@@ -68,6 +69,7 @@ namespace SpringUp.Flow
             uiFont = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft YaHei", "SimHei", "Arial" }, 18);
             if (uiFont != null)
                 foreach (var text in hud.GetComponentInParent<Canvas>().GetComponentsInChildren<Text>(true)) text.font = uiFont;
+            BattleHud = BattleHudPresenter.Create(this);
             // Bootstrap stays loaded; every content scene is additive.
         }
         void Start()
@@ -87,6 +89,8 @@ namespace SpringUp.Flow
             if (Pause == null) return;
             if (Keyboard.current?.escapeKey.wasPressedThisFrame == true) HandleEscape();
             else if (Keyboard.current?.bKey.wasPressedThisFrame == true || Keyboard.current?.tabKey.wasPressedThisFrame == true) ToggleInventory();
+            hud.enabled = Content == null || (Content.kind != ContentKind.Battle && Content.kind != ContentKind.Rest);
+            if (!hud.enabled) { hud.text = ""; return; }
             if (Content?.player != null && Session != null)
             {
                 var run = Session.Run;

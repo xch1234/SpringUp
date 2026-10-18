@@ -18,14 +18,25 @@ namespace SpringUp.EditorChecks
 {
     public class SceneFlowCoreTests
     {
+        public static void RunCatalogChecks()
+        {
+            new SceneFlowCoreTests().ExpandedEconomyCoversEveryImplementedPricedOrgan();
+            Debug.Log("[Organ Catalog Checks] PASS: 34 active organs, 33 shop candidates, reward pools match and removed triggers unavailable.");
+        }
         RunConfiguration Config() => new RunConfiguration(
             AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Organs/organs.json").text,
             AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Waves/waves.json").text, OrganCatalog.LoadDefault());
         [Test] public void ExpandedEconomyCoversEveryImplementedPricedOrgan()
         {
             var config = Config();
+            Assert.AreEqual(34, config.Definitions.Count);
+            foreach (var removed in new[] { "trigger_critical", "trigger_stationary" })
+            {
+                Assert.IsFalse(config.Definitions.ContainsKey(removed));
+                Assert.IsFalse(config.Organs.ContainsKey(removed));
+            }
             var eligible = config.Definitions.Keys.Where(id => config.Organs[id].shop_price > 0).ToArray();
-            Assert.AreEqual(35, eligible.Length);
+            Assert.AreEqual(33, eligible.Length);
             foreach (var wave in config.Waves.Where(w => w.wave < 7))
             {
                 CollectionAssert.AreEquivalent(eligible, wave.random_drop_pool);
@@ -456,7 +467,7 @@ namespace SpringUp.EditorChecks
         static void CheckMergedOrgans(FlowApplication app)
         {
             var content = app.Content; var run = app.Session.Run;
-            Require(app.Configuration.Definitions.Count == 36, "All A organ definitions available in Bootstrap");
+            Require(app.Configuration.Definitions.Count == 34, "All A organ definitions available in Bootstrap");
             void Equip(string id, string part, int slot)
             {
                 var previousPosition = content.player.transform.position;
@@ -483,7 +494,7 @@ namespace SpringUp.EditorChecks
             Require(content.dummy.CurrentHealth == 1 && lost <= content.dummy.MaxHealth - 1, "Training dummy reports actual loss");
             Require(content.dummy.TakeDamage(10, "actual-loss-check", content.dummy.Position) == 0, "No phantom damage at immortal floor");
             content.ResetDummy();
-            Debug.Log("[Main + A Integration] PASS: 36 configs, cross-part loadout, immediate torso, effect cancellation, HUD/report and actual dummy damage.");
+            Debug.Log("[Main + A Integration] PASS: 34 configs, cross-part loadout, immediate torso, effect cancellation, HUD/report and actual dummy damage.");
         }
         static void Finish(int code)
         {

@@ -15,7 +15,7 @@ MonoBehaviour:
   organId: spore
   displayName: 孢子
   damage: 6
-  targetingRange: 6
+  targetingRange: 8
   chargeCost: 20
   pattern: 10
   speed: 1.5

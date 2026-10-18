@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dabcf5c3ba04c62b4f8595d8b0b21a5, type: 3}
+  m_Name: BattleMapSettings
+  m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.BattleMapSettings
+  columns: 8
+  rows: 8
+  cellSize: 5
+  cameraHalfHeight: 5
+  randomizeOnEntry: 1
+  seed: 12345
+  centerVariants:
+  - {fileID: 4130640169021434097, guid: 502481bdd9f78a64385b8af3aa5fae86, type: 3}
+  - {fileID: -6767220957258135039, guid: 6bc3b6c3c31817946936d6420e3076e1, type: 3}
+  - {fileID: -5905612902669377182, guid: e2f33ed29dcaf254bb09ba01e16dc9fb, type: 3}
+  borderSprites:
+  - {fileID: -855298285791758126, guid: 37653341774a05946967b8b16dab7e95, type: 3}
+  - {fileID: 6937817954938267909, guid: df59afad2704636489eee2a7f2949101, type: 3}
+  - {fileID: -6470460504253458178, guid: 9367c992cb21f2244afaeef212fc1ee5, type: 3}
+  - {fileID: -4178046375966092550, guid: e23b2d5cd1377914c94ebfecec3d6bea, type: 3}
+  - {fileID: 4130640169021434097, guid: 502481bdd9f78a64385b8af3aa5fae86, type: 3}
+  - {fileID: 3465286685962602723, guid: d054d735189e5424c911836587965625, type: 3}
+  - {fileID: 7028616704906629411, guid: f2ea637751a438d45b9e44f634ad3c7c, type: 3}
+  - {fileID: 8288426215254106694, guid: 1f4a8113faa97054f9283718cc0dea1f, type: 3}
+  - {fileID: 4113829005332862926, guid: 69a20760c48d0c44e800d916f972c0e4, type: 3}
+  tileMaterial: {fileID: 2100000, guid: 4f549c9f9b113e84b9fa519d88380675, type: 2}

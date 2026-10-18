@@ -61,6 +61,14 @@ namespace TideBorne.Battle
 
         [Tooltip("可通行区域半高，米。由场景构建器接线，须与边界墙一致。")]
         [SerializeField] private float playAreaHalfHeight = 9f;
+        [SerializeField] private Vector2 playAreaCenter;
+
+        public void ConfigurePlayArea(Vector2 center, Vector2 halfExtents)
+        {
+            playAreaCenter = center;
+            playAreaHalfWidth = halfExtents.x; playAreaHalfHeight = halfExtents.y;
+            clampInsidePlayArea = true;
+        }
 
         [Tooltip("打印刷怪细节。")]
         [SerializeField] private bool verboseLogging;
@@ -297,11 +305,11 @@ namespace TideBorne.Battle
             if (!clampInsidePlayArea)
                 return float.MaxValue;
 
-            var availableX = Mathf.Max(0.5f, playAreaHalfWidth - playAreaMargin);
-            var availableY = Mathf.Max(0.5f, playAreaHalfHeight - playAreaMargin);
+            var availableX = Mathf.Max(0f, playAreaHalfWidth - playAreaMargin);
+            var availableY = Mathf.Max(0f, playAreaHalfHeight - playAreaMargin);
 
-            var roomX = Mathf.Max(0f, availableX - Mathf.Abs(center.x));
-            var roomY = Mathf.Max(0f, availableY - Mathf.Abs(center.y));
+            var roomX = Mathf.Max(0f, availableX - Mathf.Abs(center.x - playAreaCenter.x));
+            var roomY = Mathf.Max(0f, availableY - Mathf.Abs(center.y - playAreaCenter.y));
             return Mathf.Min(roomX, roomY);
         }
 
@@ -310,12 +318,12 @@ namespace TideBorne.Battle
             if (!clampInsidePlayArea)
                 return position;
 
-            var availableX = Mathf.Max(0.5f, playAreaHalfWidth - playAreaMargin);
-            var availableY = Mathf.Max(0.5f, playAreaHalfHeight - playAreaMargin);
+            var availableX = Mathf.Max(0f, playAreaHalfWidth - playAreaMargin);
+            var availableY = Mathf.Max(0f, playAreaHalfHeight - playAreaMargin);
 
             return new Vector2(
-                Mathf.Clamp(position.x, -availableX, availableX),
-                Mathf.Clamp(position.y, -availableY, availableY));
+                Mathf.Clamp(position.x, playAreaCenter.x - availableX, playAreaCenter.x + availableX),
+                Mathf.Clamp(position.y, playAreaCenter.y - availableY, playAreaCenter.y + availableY));
         }
     }
 }

@@ -15,7 +15,7 @@ MonoBehaviour:
   organId: rust_knife
   displayName: 锈刀
   damage: 1
-  targetingRange: 4.5
+  targetingRange: 5.5
   chargeCost: 25
   shape: 0
   explosionRadius: 2

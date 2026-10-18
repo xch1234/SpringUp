@@ -25,7 +25,11 @@ namespace SpringUp.Flow
         public OrganCombatReport CombatReport { get; private set; }
         public RunLaboratoryEquipment Equipment { get; private set; }
         RunEquipmentHud equipmentHud;
+        public RectTransform EquipmentHudRect => equipmentHud != null ? (RectTransform)equipmentHud.transform : null;
         Camera battleCamera;
+        BattleMapLayout battleMap;
+        [Tooltip("休整区与战斗共用的基础视野配置。")]
+        public BattleMapSettings viewSettings;
         float baseCameraSize;
         [SerializeField] Transform merchant;
         public Transform Merchant => merchant;
@@ -64,6 +68,7 @@ namespace SpringUp.Flow
             equipmentHud = RunEquipmentHud.Create(app.uiRoot, app.hud.font);
             equipmentHud.Bind(Equipment); equipmentHud.BindReport(CombatReport); equipmentHud.BindPipeline(pipeline);
             battleCamera = world.GetComponentInChildren<Camera>(true);
+            battleMap = kind == ContentKind.Battle ? world.GetComponent<BattleMapLayout>() : null;
             if (battleCamera != null) baseCameraSize = battleCamera.orthographicSize;
             if (kind == ContentKind.Rest) EnsureMerchant();
             initialized = true;
@@ -174,8 +179,14 @@ namespace SpringUp.Flow
         void LateUpdate()
         {
             if (battleCamera != null && Torso != null)
-                battleCamera.orthographicSize = baseCameraSize * Torso.Loadout.View;
-            if (equipmentHud != null) equipmentHud.gameObject.SetActive(initialized && !app.HasModal && !app.IsTransitioning);
+                battleCamera.orthographicSize = (battleMap != null && battleMap.settings != null
+                    ? battleMap.settings.CameraHalfHeight : viewSettings != null ? viewSettings.CameraHalfHeight : baseCameraSize) * Torso.Loadout.View;
+        }
+        public void ApplyEquipmentHudLayout(EquipmentHudStyle style)
+        {
+            if (equipmentHud == null) return;
+            equipmentHud.ApplyLayout(style);
+            equipmentHud.gameObject.SetActive(initialized && style.visible && !app.HasModal && !app.IsTransitioning);
         }
         public void Begin()
         {

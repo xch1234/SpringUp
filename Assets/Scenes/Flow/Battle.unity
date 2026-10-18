@@ -153,8 +153,6 @@ MonoBehaviour:
   target: {fileID: 526739253}
   targetTag: Player
   offset: {x: 0, y: 0, z: -10}
-  smoothTime: 0.12
-  maxSpeed: 0
   clampToMapBounds: 1
   mapCenter: {x: 0, y: 0}
   mapHalfExtents: {x: 36, y: 36}
@@ -433,6 +431,7 @@ MonoBehaviour:
   playAreaMargin: 1
   playAreaHalfWidth: 36
   playAreaHalfHeight: 36
+  playAreaCenter: {x: 0, y: 0}
   verboseLogging: 0
 --- !u!4 &144235455
 Transform:
@@ -659,6 +658,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 447803996}
+  - component: {fileID: 447803997}
   m_Layer: 0
   m_Name: World (explicitly activated by entry)
   m_TagString: Untagged
@@ -687,6 +687,24 @@ Transform:
   - {fileID: 169620304}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &447803997
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 447803995}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d3e8e62a1ca4e779ccb389e217e90b4, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.BattleMapLayout
+  settings: {fileID: 11400000, guid: b87260a630e965449bf3ae1d05109923, type: 2}
+  terrain: {fileID: 169620304}
+  walls: {fileID: 542479918}
+  battleCamera: {fileID: 25199921}
+  spawners:
+  - {fileID: 144235454}
 --- !u!1 &526739245
 GameObject:
   m_ObjectHideFlags: 0
@@ -750,6 +768,7 @@ MonoBehaviour:
   - 1
   - 1
   - 1
+  baseInvulnerabilityDuration: 0.3
 --- !u!114 &526739249
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1036,6 +1055,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3032d5a1b9891234d900351fc3ce9f53, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Tideflesh.Systems.BattleOrganCombat
+  criticalMultiplier: 2
 --- !u!114 &850471222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1364,6 +1384,11 @@ MonoBehaviour:
   combat: {fileID: 850471221}
   effects: {fileID: 850471218}
   dummy: {fileID: 0}
+  merchant: {fileID: 0}
+  laboratory: {fileID: 0}
+  interactionRadius: 2
+  shopAnchor: {x: 0.645, y: 0.6}
+  laboratoryAnchor: {x: 0.645, y: 0.38}
 --- !u!4 &1897090100
 Transform:
   m_ObjectHideFlags: 0

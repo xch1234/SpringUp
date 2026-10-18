@@ -1,0 +1,98 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc03788afb444bb49bd1713c3756adcc, type: 3}
+  m_Name: BattleHudSettings
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Flow.BattleHudSettings
+  hideWithWindows: 1
+  wave:
+    visible: 1
+    anchor: 1
+    offset: {x: -24, y: -24}
+    size: {x: 300, y: 40}
+    scale: 1
+    opacity: 1
+    fontSize: 28
+    textColor: {r: 1, g: 1, b: 1, a: 1}
+    backgroundColor: {r: 0.025, g: 0.065, b: 0.09, a: 0.65}
+    alignment: 5
+    bold: 1
+    outline: 1
+    text: "\u6CE2\u6B21 {wave}/{maxWave}"
+  time:
+    visible: 1
+    anchor: 1
+    offset: {x: -24, y: -72}
+    size: {x: 300, y: 40}
+    scale: 1
+    opacity: 1
+    fontSize: 28
+    textColor: {r: 1, g: 1, b: 1, a: 1}
+    backgroundColor: {r: 0.025, g: 0.065, b: 0.09, a: 0.65}
+    alignment: 5
+    bold: 1
+    outline: 1
+    text: "\u5269\u4F59\u65F6\u95F4 {time}"
+  health:
+    visible: 1
+    anchor: 1
+    offset: {x: -24, y: -120}
+    size: {x: 300, y: 40}
+    scale: 1
+    opacity: 1
+    fontSize: 28
+    textColor: {r: 1, g: 1, b: 1, a: 1}
+    backgroundColor: {r: 0.025, g: 0.065, b: 0.09, a: 0.65}
+    alignment: 5
+    bold: 1
+    outline: 1
+    text: "\u751F\u547D {health}/{maxHealth}"
+  healthBar:
+    showValue: 1
+    fillColor: {r: 0.88, g: 0.055, b: 0.075, a: 1}
+    emptyColor: {r: 0.18, g: 0.025, b: 0.035, a: 1}
+    padding: 1.98
+  equipment:
+    visible: 1
+    backgroundSprite: {fileID: 8411360302620295237, guid: 4cce96afdc3ea34448a8abf00b324929, type: 3}
+    anchor: 0
+    offset: {x: 16, y: -10}
+    size: {x: 530, y: 265}
+    scale: 1.08
+    opacity: 1
+  marrow:
+    visible: 1
+    anchor: 5
+    offset: {x: 0, y: -12}
+    size: {x: 300, y: 42}
+    scale: 1
+    opacity: 1
+    fontSize: 28
+    textColor: {r: 1, g: 0.85, b: 0.4, a: 1}
+    backgroundColor: {r: 0.025, g: 0.065, b: 0.09, a: 0.65}
+    alignment: 3
+    bold: 1
+    outline: 1
+    text: "\u9AA8\u9AD3 {marrow}"
+  help:
+    visible: 1
+    anchor: 2
+    offset: {x: 24, y: 20}
+    size: {x: 900, y: 32}
+    scale: 1
+    opacity: 1
+    fontSize: 18
+    textColor: {r: 1, g: 1, b: 1, a: 1}
+    backgroundColor: {r: 0, g: 0, b: 0, a: 0}
+    alignment: 3
+    bold: 0
+    outline: 1
+    text: "\u5668\u5B98\u81EA\u52A8\u653B\u51FB {interaction}  B / Tab\uFF1A\u80CC\u5305  Esc\uFF1A\u83DC\u5355"
