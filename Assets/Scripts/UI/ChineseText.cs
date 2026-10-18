@@ -17,6 +17,7 @@ namespace SpringUp.UI
             "equip only from unequipped" => "请先将物品从装备槽拆下。",
             "part mismatch" => "物品与所选部位不匹配。",
             "empty slot" => "所选槽位没有装备。",
+            "stale source" => "物品位置已变化，请重新拖动。",
             "invalid part" or "invalid slot" => "请选择有效的部位和槽位。",
             "slot occupied" => "所选槽位已有装备。",
             "cannot start next wave" => "暂时无法进入下一波，请检查阶段和背包容量。",

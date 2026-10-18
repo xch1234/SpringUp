@@ -16,7 +16,8 @@ public class RewardFlightTests
         var bootstrapScene = SceneManager.GetActiveScene();
         var canvas = new GameObject("Bootstrap test canvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
         canvas.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
-        var settings = ScriptableObject.CreateInstance<RewardFlightSettings>(); settings.maxConcurrent = 2;
+        var settings = Object.Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<RewardFlightSettings>("Assets/Data/Rewards/RewardFlightSettings.asset"));
+        settings.maxConcurrent = 2;
         using (var pause = new PauseService())
         {
             var presenter = RewardFlightPresenter.Create(canvas.transform, settings, pause); presenter.enabled = false;

@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eddf4f0f6a354f3dad46b17a9c571edc, type: 3}
   m_Name: RewardFlightSettings
   m_EditorClassIdentifier:
-  sprite: {fileID: 0}
-  marrowColor: {r: 1, g: 0.78, b: 0.18, a: 1}
-  organColor: {r: 0.7, g: 0.35, b: 1, a: 1}
+  marrowSprite: {fileID: 6479159477360449753, guid: c48e231cd0f5c8846b9ec7cf6a651bd5, type: 3}
+  organSprite: {fileID: 4506491229477119566, guid: b308ec92e88bac945b69a2bda6f4b73b, type: 3}
+  marrowColor: {r: 1, g: 1, b: 1, a: 1}
+  organColor: {r: 1, g: 1, b: 1, a: 1}
   size: 30
   holdSeconds: 0.3
   flightSeconds: 0.3
