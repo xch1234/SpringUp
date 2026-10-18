@@ -221,7 +221,7 @@ namespace SpringUp.EditorChecks
                         Require(rejected, "Battle equipment locked");
                         app.ToggleInventory();
                         var battleBag = Object.FindFirstObjectByType<FlowLaboratoryWindow>();
-                        Require(battleBag != null && battleBag.presenter.ReadOnly && !battleBag.discardButton.interactable, "Battle inventory read-only");
+                        Require(battleBag != null && battleBag.backpack.ReadOnly && !battleBag.discardButton.interactable, "Battle inventory read-only");
                         Require(battleBag.sellButton == null || !battleBag.sellButton.gameObject.activeSelf, "No inventory selling");
                         app.HandleEscape(); Require(app.WorldInputAllowed, "Inventory Esc returns directly to game");
                         app.ToggleInventory(); app.ToggleInventory(); Require(app.WorldInputAllowed, "Inventory toggle closes");
@@ -266,18 +266,21 @@ namespace SpringUp.EditorChecks
                         knife = run.Inventory.UnequippedIds().FirstOrDefault(id => run.Inventory.OrganOf(id).id == "rust_knife");
                         if (knife == null) { run.Inventory.Spawn("rust_knife"); knife = run.Inventory.UnequippedIds().Single(id => run.Inventory.OrganOf(id).id == "rust_knife"); }
                         var lab = Object.FindFirstObjectByType<FlowLaboratoryWindow>();
-                        Require(lab != null && lab.presenter.source == null, "Real laboratory view without demo bootstrap");
+                        Require(lab != null && lab.backpack != null, "Real laboratory view without demo bootstrap");
                         int beforeSample = run.Inventory.Instances.Count;
                         StraightProjectileSampleMenu.Give();
                         Require(run.Inventory.Instances.Count == beforeSample + 1, "Sample menu supports new rest scene");
-                        Require(lab.presenter.inventoryRoot.childCount == run.Inventory.UnequippedIds().Count, "Open inventory refreshes after sample menu");
+                        Require(lab.backpack.pageLabel.text.Contains(run.Inventory.UnequippedIds().Count + " 件"), "Open inventory refreshes after sample menu");
                         run.Discard(run.Inventory.UnequippedIds().Last(id => run.Inventory.OrganOf(id).id == "straight_projectile"));
                         FlowPresentationChecks.CaptureFlowUI(app, "inventory-zh.png");
                         Require(Object.FindFirstObjectByType<SpringUp.Laboratory.LaboratoryCombatDemo>() == null, "No internal combat preview");
-                        lab.presenter.SelectInventory(knife); lab.presenter.SelectSlot(1, 0);
-                        Require(lab.presenter.installButton.interactable, "Select item and slot enables installation");
-                        lab.presenter.installButton.onClick.Invoke();
-                        Require(lab.presenter.inventoryRoot.childCount == run.Inventory.UnequippedIds().Count, "Inventory refreshes after equip");
+                        lab.backpack.ChangePage(-100);
+                        var sourceSlot = lab.backpack.inventorySlots.First(slot => slot.Item?.InstanceId == knife);
+                        var targetSlot = lab.backpack.equipmentSlots.First(slot => slot.part == SpringUp.Laboratory.LaboratoryPart.Hand && slot.index == 0);
+                        lab.backpack.BeginDrag(sourceSlot, new UnityEngine.EventSystems.PointerEventData(app.eventSystem));
+                        Require(lab.backpack.CanDrop(targetSlot), "Compatible slot accepts dragged organ");
+                        lab.backpack.Drop(targetSlot);
+                        Require(lab.backpack.pageLabel.text.Contains(run.Inventory.UnequippedIds().Count + " 件"), "Inventory refreshes after equip");
                         Require(content.combat.ActiveBlackHoles == 0 && content.combat.Actuators.Active.Count == 0, "Equipment clears old execution");
                         Require(content.pipeline.GetBody(BodyPart.Hand).GetSlot(0).InstanceId == knife, "Rest pipeline updated immediately");
                         app.CloseTop();

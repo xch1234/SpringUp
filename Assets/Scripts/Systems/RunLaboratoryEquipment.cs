@@ -53,6 +53,18 @@ namespace Tideflesh.Systems
             if (index < 0 || index >= SlotCount(part)) { error = "请选择有效槽位。"; return false; }
             return Try(() => run.Unequip(Parts[(int)part], index + 1), out error);
         }
+        public bool TryMove(string id, LaboratoryPart fromPart, int fromIndex, LaboratoryPart toPart, int toIndex, out string error)
+        {
+            if (fromIndex < 0 || fromIndex >= SlotCount(fromPart) || toIndex < 0 || toIndex >= SlotCount(toPart))
+            { error = "请选择有效槽位。"; return false; }
+            return Try(() => run.MoveOrSwap(id, Parts[(int)fromPart], fromIndex + 1, Parts[(int)toPart], toIndex + 1), out error);
+        }
+        public bool TryUnequipInstance(string id, LaboratoryPart part, int index, out string error)
+        {
+            if (GetSlot(part, index)?.InstanceId != id || string.IsNullOrEmpty(id))
+            { error = "物品位置已变化，请重新拖动。"; return false; }
+            return TryUnequip(part, index, out error);
+        }
         public bool TrySell(string id, out string error) => Try(() => run.Sell(id), out error);
         public bool TryDiscard(string id, out string error) => Try(() => run.Discard(id), out error);
         private bool Try(Action action, out string error)

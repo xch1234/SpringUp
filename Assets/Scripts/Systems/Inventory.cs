@@ -134,6 +134,19 @@ namespace Tideflesh.Systems
             if (previous != null) _unequipped.Add(previous);
         }
 
+        // Validate both destinations before changing either slot. No intermediate loadout is observable.
+        public void MoveOrSwap(string instanceId, string fromPart, int fromSlot, string toPart, int toSlot)
+        {
+            int from = SlotIndex(fromPart, fromSlot), to = SlotIndex(toPart, toSlot);
+            if (string.IsNullOrEmpty(instanceId) || _equipped[fromPart][from] != instanceId)
+                throw new InventoryException("stale source");
+            string other = _equipped[toPart][to];
+            if (!OrganOf(instanceId).CanEquip(toPart) || (other != null && !OrganOf(other).CanEquip(fromPart)))
+                throw new InventoryException("part mismatch");
+            _equipped[fromPart][from] = other;
+            _equipped[toPart][to] = instanceId;
+        }
+
         public int SalePrice(string instanceId) => OrganOf(instanceId).shop_price / 2;
 
         public int Sell(string instanceId)

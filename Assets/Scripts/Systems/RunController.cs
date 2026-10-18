@@ -263,6 +263,13 @@ namespace Tideflesh.Systems
             EmitLoadout();
         }
 
+        public void MoveOrSwap(string instanceId, string fromPart, int fromSlot, string toPart, int toSlot)
+        {
+            RequireLab();
+            Inventory.MoveOrSwap(instanceId, fromPart, fromSlot, toPart, toSlot);
+            EmitLoadout();
+        }
+
         public void LoseRun()
         {
             if (Stage != RunPhase.Combat && Stage != RunPhase.Rest) return;

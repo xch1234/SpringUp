@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2428b374b44c40428ab87f3b791b33c, type: 3}
+  m_Name: OrganArtCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Laboratory.OrganArtCatalog
+  entries:
+  - definitionId: fist
+    sprite: {fileID: -5191308225362931239, guid: ecfc6c7a8b876e546bdf44ccc1b391bf, type: 3}
+  - definitionId: steel_pipe
+    sprite: {fileID: -2794209340441566712, guid: bac38d31eb74c1d40883e75e8b234504, type: 3}
+  - definitionId: rust_knife
+    sprite: {fileID: -7603697247306116889, guid: d75ced302cb271147bfc46ef315f8b3e, type: 3}
+  - definitionId: slime_gland
+    sprite: {fileID: -4755339834602207717, guid: 505ba2b3321e63e4b86a5259e709315f, type: 3}
+  - definitionId: multi_tentacle
+    sprite: {fileID: -7066304203038159458, guid: 1921d5fbabe6a9542b350aa08b2521c1, type: 3}
+  - definitionId: collapse_body
+    sprite: {fileID: 4926106958354313883, guid: 4c6f8ce8b0f926d428231bb35381f8ef, type: 3}
+  - definitionId: tnt
+    sprite: {fileID: -8136218936520485124, guid: 773f63d7c87d7cc46aa42b6c3d11ce92, type: 3}

@@ -54,7 +54,7 @@ namespace SpringUp.Flow
             combat.Report = CombatReport;
             Equipment = new RunLaboratoryEquipment(session.Run, app.Configuration.Definitions);
             equipmentHud = RunEquipmentHud.Create(app.uiRoot, app.hud.font);
-            equipmentHud.Bind(Equipment); equipmentHud.BindReport(CombatReport);
+            equipmentHud.Bind(Equipment); equipmentHud.BindReport(CombatReport); equipmentHud.BindPipeline(pipeline);
             battleCamera = world.GetComponentInChildren<Camera>(true);
             if (battleCamera != null) baseCameraSize = battleCamera.orthographicSize;
             if (kind == ContentKind.Rest) EnsureMerchant();

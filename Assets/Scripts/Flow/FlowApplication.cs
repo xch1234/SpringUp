@@ -404,7 +404,7 @@ namespace SpringUp.Flow
             if (windows.Count > 0) windows[windows.Count - 1].View.group.interactable = false;
             var focus = eventSystem.currentSelectedGameObject;
             var view = kind == WindowKind.Inventory ? Instantiate(laboratoryPrefab, uiRoot) : CreateView();
-            view.title.text = title;
+            if (view.title != null) view.title.text = title;
             windows.Add(new WindowEntry { Kind = kind, View = view, Lease = Pause.Acquire(), Focus = focus });
             return view;
         }

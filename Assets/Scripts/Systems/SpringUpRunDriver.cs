@@ -59,7 +59,7 @@ namespace Tideflesh.Systems
             equipmentHud = RunEquipmentHud.Create(runStatus.transform.parent, runStatus.font);
             CombatReport = gameObject.AddComponent<OrganCombatReport>();
             CombatReport.Bind(pipeline); combat.Report = CombatReport;
-            equipmentHud.BindReport(CombatReport);
+            equipmentHud.BindReport(CombatReport); equipmentHud.BindPipeline(pipeline);
             equipmentHud.gameObject.SetActive(false);
             ConfigureTiming(pipeline);
             pipeline.AutomaticExecution = true;

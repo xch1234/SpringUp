@@ -40,6 +40,7 @@ namespace SpringUp.EditorChecks
                 Assert.IsFalse(report.IsFlashing(BodyPart.Hand, 0));
                 var trigger = new SpringUp.Organs.OrganInstance(new SpringUp.Organs.OrganDefinition("trigger", "触发器", OrganType.Trigger));
                 pipeline.GetBody(BodyPart.Hand).SetSlot(1, trigger);
+                pipeline.GetBody(BodyPart.Hand).SetSlot(2, new SpringUp.Organs.OrganInstance(definition));
                 pipeline.PublishSignal(new TriggerSignal(TriggerOn.Kill, hit));
                 Assert.AreEqual(2, report.History.Count, "Trigger and successful follow-up both have records.");
                 foreach (var entry in report.History) Assert.AreEqual(hit.ChainId, entry.Chain);
