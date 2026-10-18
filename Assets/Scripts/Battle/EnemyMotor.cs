@@ -16,29 +16,15 @@ namespace TideBorne.Battle
     {
         [Tooltip("敌人数据。留空则自动取同一物体上的 EnemyData。")]
         [SerializeField] private EnemyData data;
+        private EnemyMoveMode moveMode => GetComponent<EnemyData>().Definition.moveMode;
+        private bool faceMoveDirection => GetComponent<EnemyData>().Definition.faceMoveDirection;
+        private float facingLerpSpeed => GetComponent<EnemyData>().Definition.facingLerpSpeed;
 
-        [Tooltip("移动模式。")]
-        [SerializeField] private EnemyMoveMode moveMode = EnemyMoveMode.Chase;
+        private float stopAtAttackRangeRatio => GetComponent<EnemyData>().Definition.stopAtAttackRangeRatio;
+        private float minStopDistance => GetComponent<EnemyData>().Definition.minStopDistance;
 
-        [Tooltip("是否让敌人朝向移动方向。")]
-        [SerializeField] private bool faceMoveDirection = true;
-
-        [Tooltip("朝向插值速度，度/秒。0 表示立即转向。")]
-        [SerializeField] private float facingLerpSpeed = 720f;
-
-        [Header("停靠距离（按攻击距离的比例）")]
-        [Tooltip("停靠距离占攻击距离的比例。敌人停在这个位置，不会贴到玩家脸上。")]
-        [SerializeField] private float stopAtAttackRangeRatio = 0.9f;
-
-        [Tooltip("停靠距离下限，米。防止 attackRange 被设得很小时敌人重叠在玩家身上。")]
-        [SerializeField] private float minStopDistance = 0.5f;
-
-        [Header("保持距离模式")]
-        [Tooltip("保持距离的目标距离，米。留 0 则用「停靠距离」。")]
-        [SerializeField] private float preferredDistance = 5f;
-
-        [Tooltip("距离容差，米。在目标距离 ± 容差内就不动，避免来回抖动。")]
-        [SerializeField] private float distanceTolerance = 0.8f;
+        private float preferredDistance => GetComponent<EnemyData>().Definition.preferredDistance;
+        private float distanceTolerance => GetComponent<EnemyData>().Definition.distanceTolerance;
 
         private Rigidbody2D _body;
         private EnemyRuntime _runtime;
@@ -59,7 +45,6 @@ namespace TideBorne.Battle
         public EnemyMoveMode MoveMode
         {
             get { return moveMode; }
-            set { moveMode = value; }
         }
 
         /// <summary>
@@ -87,7 +72,6 @@ namespace TideBorne.Battle
         public float PreferredDistance
         {
             get { return preferredDistance > 0.01f ? preferredDistance : StopDistance; }
-            set { preferredDistance = value; }
         }
 
         /// <summary>本帧到玩家的距离。</summary>

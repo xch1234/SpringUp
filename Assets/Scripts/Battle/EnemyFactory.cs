@@ -12,13 +12,13 @@ namespace TideBorne.Battle
     public static class EnemyFactory
     {
         /// <summary>灰盒敌人的默认血量，够玩家侧验证「会死」。</summary>
-        public const float DefaultHealth = 20f;
+        public static float DefaultHealth => EnemyArchetypeConfig.Get(EnemyArchetype.Normal).maxHealth;
 
         /// <summary>灰盒敌人的默认移速，比玩家 5 慢，保证能拉开距离。</summary>
-        public const float DefaultMoveSpeed = 2.5f;
+        public static float DefaultMoveSpeed => EnemyArchetypeConfig.Get(EnemyArchetype.Normal).moveSpeed;
 
         /// <summary>灰盒敌人的默认攻击力。</summary>
-        public const float DefaultAttackPower = 5f;
+        public static float DefaultAttackPower => EnemyArchetypeConfig.Get(EnemyArchetype.Normal).attackPower;
 
         /// <summary>
         /// 灰盒敌人的视觉边长，世界单位。
@@ -30,13 +30,13 @@ namespace TideBorne.Battle
         public const float VisualSize = GreyboxAssets.EnemyWorldSize;
 
         /// <summary>灰盒敌人的攻击距离，米。默认 1.2 米太近，弹道一闪而过看不见。</summary>
-        public const float GreyboxAttackRange = 6f;
+        public static float GreyboxAttackRange => EnemyArchetypeConfig.Get(EnemyArchetype.Normal).attackRange;
 
         /// <summary>灰盒敌人的弹速，米/秒。默认 8 太快，配合 6 米射程约飞 1 秒。</summary>
-        public const float GreyboxProjectileSpeed = 4f;
+        public static float GreyboxProjectileSpeed => EnemyArchetypeConfig.Get(EnemyArchetype.Normal).projectileSpeed;
 
         /// <summary>灰盒敌人的攻击冷却，秒。</summary>
-        public const float GreyboxAttackCooldown = 1.5f;
+        public static float GreyboxAttackCooldown => EnemyArchetypeConfig.Get(EnemyArchetype.Normal).attackCooldown;
 
         /// <summary>灰盒敌人 prefab 的存放路径。美术接手时替换它即可，代码不用改。</summary>
         public const string GreyboxEnemyPrefabPath = "Assets/Prefabs/Enemy_Greybox.prefab";
@@ -101,6 +101,7 @@ namespace TideBorne.Battle
         public static GameObject CreateGreyboxEnemy(string name, Sprite sprite, Color color)
         {
             var enemy = new GameObject(name);
+            enemy.SetActive(false);
 
             // 敌人层：与玩家层互不相碰，与敌人层和墙层相碰。见 BattleLayers。
             enemy.layer = BattleLayers.Resolve(BattleLayers.Enemy);
@@ -125,12 +126,13 @@ namespace TideBorne.Battle
             enemy.AddComponent<EnemyData>();
             enemy.AddComponent<EnemyRuntime>();
             enemy.AddComponent<EnemyMotor>();
-            enemy.AddComponent<EnemyAttack>();
+            enemy.AddComponent<EnemyContactDamage>();
             // 灰盒表现：出手时闪一下，否则"看不到敌人开火、只看到自己掉血"。
-            enemy.AddComponent<EnemyAttackFlash>();
+
 
             ApplyGreyboxDefaults(enemy);
 
+            enemy.SetActive(true);
             return enemy;
         }
 
@@ -149,31 +151,7 @@ namespace TideBorne.Battle
         /// </summary>
         private static void ApplyGreyboxDefaults(GameObject enemy)
         {
-            var data = enemy.GetComponent<EnemyData>();
-            if (data == null)
-                return;
-
-#if UNITY_EDITOR
-            var serialized = new SerializedObject(data);
-            SetFloat(serialized, "attackRange", GreyboxAttackRange);
-            SetFloat(serialized, "projectileSpeed", GreyboxProjectileSpeed);
-            SetFloat(serialized, "attackCooldown", GreyboxAttackCooldown);
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-#else
-            // 发行版里没有 UnityEditor：直接写公开访问器（字段本身带默认值，够用）。
-            data.ApplyGreyboxTuning(GreyboxAttackRange, GreyboxProjectileSpeed, GreyboxAttackCooldown);
-#endif
+            enemy.GetComponent<EnemyData>().Configure(EnemyCatalog.Load().Get(EnemyArchetype.Normal));
         }
-
-#if UNITY_EDITOR
-        private static void SetFloat(SerializedObject serialized, string fieldName, float value)
-        {
-            var property = serialized.FindProperty(fieldName);
-            if (property == null)
-                return;
-
-            property.floatValue = value;
-        }
-#endif
     }
 }

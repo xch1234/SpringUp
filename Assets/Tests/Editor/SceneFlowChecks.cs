@@ -29,7 +29,7 @@ namespace SpringUp.EditorChecks
             foreach (var wave in config.Waves.Where(w => w.wave < 7))
             {
                 CollectionAssert.AreEquivalent(eligible, wave.random_drop_pool);
-                Assert.AreEqual(wave.wave == 1 || wave.wave == 6 ? 2 : 1, wave.random_drop_count);
+                Assert.AreEqual(1, wave.random_drop_count);
             }
             Assert.IsEmpty(config.Waves.Last().random_drop_pool);
             var run = new RunController(config.Organs, config.Waves, null, () => 0, config.Definitions.Keys);
@@ -90,13 +90,13 @@ namespace SpringUp.EditorChecks
             custom.StartRun(); custom.CombatTimerFinished();
             Check(custom.GetShopOffers().Count == 2 && custom.ShopRefreshPrice == 7, "Custom settings used.");
             Check(custom.TryRefreshShop().Ok && custom.ShopRefreshPrice == 10, "Custom increment used.");
-            // Exact balance, full inventory, failed purchase, and empty candidate pool.
-            var exact = new RunController(catalog, waves, null, () => .5, shopRefreshBasePrice: 450);
+            // Unlimited inventory, exact refresh balance, and empty candidate pool.
+            var exact = new RunController(catalog, waves, null, () => .5, shopRefreshBasePrice: 440);
             exact.StartRun(); exact.CombatTimerFinished();
             var exactOffer = exact.GetShopOffers()[0];
-            for (int i = 0; i < 5; i++) exact.Inventory.Spawn("one");
-            Check(!exact.TryPurchaseShopOffer(exactOffer).Ok && !exactOffer.Purchased && exact.Marrow == 450, "Full bag purchase preserves stock and balance.");
-            Check(exact.TryRefreshShop().Ok && exact.Marrow == 0, "Full bag can refresh with exact funds.");
+            for (int i = 0; i < 200; i++) exact.Inventory.Spawn("one");
+            Check(exact.TryPurchaseShopOffer(exactOffer).Ok && exactOffer.Purchased && exact.Marrow == 440, "Large inventory permits purchasing and charges once.");
+            Check(exact.TryRefreshShop().Ok && exact.Marrow == 0, "Large inventory can refresh with exact funds.");
             var empty = new RunController(catalog, waves, null, () => .5, new[] { "fist" });
             empty.StartRun(); empty.CombatTimerFinished();
             Check(!empty.TryRefreshShop().Ok && empty.Marrow == 450 && empty.ShopRefreshCount == 0, "Empty stock never charges.");
@@ -123,17 +123,13 @@ namespace SpringUp.EditorChecks
         {
             var run = Config().CreateRun(); run.StartRun();
             Assert.Throws<RunException>(() => run.Unequip("hand", 1));
+            run.CreditKill("purchase-test", 500);
             run.CombatTimerFinished();
             int reward = run.Marrow;
             Assert.Throws<RunException>(() => run.CombatTimerFinished());
             Assert.AreEqual(reward, run.Marrow);
-            while (run.Inventory.UnequippedWithinCap()) run.Inventory.Spawn("fist");
-            int count = run.Inventory.Instances.Count;
-            Assert.IsFalse(run.TryPurchase("rust_knife").Ok);
-            Assert.AreEqual(reward, run.Marrow); Assert.AreEqual(count, run.Inventory.Instances.Count);
-            Assert.Throws<RunException>(() => run.StartNextWave());
-            while (!run.CanStartNextWave()) run.Discard(run.Inventory.UnequippedIds()[0]);
-            run.Discard(run.Inventory.UnequippedIds()[0]);
+            for (int i = 0; i < 200; i++) run.Inventory.Spawn("fist");
+            Assert.IsTrue(run.CanStartNextWave());
             Assert.IsTrue(run.TryPurchase("rust_knife").Ok);
             int paid = reward - run.Marrow;
             int list = run.Inventory.Catalog["rust_knife"].shop_price;
@@ -371,9 +367,8 @@ namespace SpringUp.EditorChecks
                         Require(Time.timeScale == 0, "Esc closes settings before pause");
                         app.HandleEscape(); Require(Time.timeScale == 1, "Pause closes next");
                         InputSystem.RemoveDevice(keyboard); keyboard = null;
-                        while (run.Inventory.UnequippedWithinCap()) run.Inventory.Spawn("fist");
-                        app.NextWave(); Require(!app.IsTransitioning && run.Stage == RunPhase.Rest, "Overflow blocks transition");
-                        while (!run.CanStartNextWave()) run.Discard(run.Inventory.UnequippedIds().Last());
+                        for (int i = 0; i < 20; i++) run.Inventory.Spawn("fist");
+                        Require(run.CanStartNextWave(), "Large inventory permits transition");
                         app.NextWave(); app.NextWave(); stage++; break;
                     case 6:
                         Require(run.Wave == 2 && content.director.CurrentWave == 2, "Repeated next request starts only wave 2");

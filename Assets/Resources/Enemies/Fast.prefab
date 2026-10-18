@@ -183,18 +183,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00cd6da56cd64e7ba7f64597a09ee1e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyData
-  id: Fast
-  rank: 0
-  moveSpeed: 3.25
-  maxHealth: 14
-  attackPower: 5
-  attackCooldown: 1.5
-  attackRange: 6
-  projectileCount: 1
-  projectileSpeed: 4
-  attackRadius: 1
-  dropTableId: 
-  canBeDisplaced: 1
+  definition: {fileID: 11400000, guid: 207e8801073d44a881eca1bd7c24f868, type: 2}
 --- !u!114 &7867700287147640535
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -222,13 +211,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyMotor
   data: {fileID: 0}
-  moveMode: 0
-  faceMoveDirection: 1
-  facingLerpSpeed: 720
-  stopAtAttackRangeRatio: 0.9
-  minStopDistance: 0.5
-  preferredDistance: 5
-  distanceTolerance: 0.8
   clampToPlayArea: 1
   playAreaHalfWidth: 32
   playAreaHalfHeight: 18
@@ -244,5 +226,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56151ca8470e4ff397fab5c20c916fbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyContactDamage
-  contactRadius: 0.7
-  damageIntervalOverride: 0

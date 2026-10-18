@@ -39,13 +39,8 @@ namespace Tideflesh.Systems
             // 七波闭环的临时奖励：尚未实现的蜘蛛巢换成可用 TNT，不修改原波次表。
             foreach (var wave in waves)
             {
-                wave.guaranteed_drops = wave.guaranteed_drops.Select(id => id == "spider_nest" ? "tnt" : id).ToArray();
-                wave.optional_drops = wave.optional_drops.Select(id => id == "spider_nest" ? "tnt" : id).ToArray();
                 if (wave.random_drop_pool != null)
                     wave.random_drop_pool = wave.random_drop_pool.Select(id => id == "spider_nest" ? "tnt" : id).ToArray();
-                foreach (var id in wave.guaranteed_drops.Concat(wave.optional_drops)
-                    .Concat(wave.random_drop_pool ?? Array.Empty<string>()))
-                    if (!definitions.ContainsKey(id)) throw new InvalidOperationException("奖励缺少战斗定义：" + id);
             }
             Organs = catalog;
             Waves = waves;

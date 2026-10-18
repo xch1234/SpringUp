@@ -7,16 +7,20 @@ namespace SpringUp.Flow
     public sealed class PauseService : IDisposable
     {
         readonly HashSet<object> reasons = new();
+        readonly HashSet<object> animationReasons = new();
+        public bool PausesRewardAnimations => animationReasons.Count != 0;
         bool disposed;
         public bool IsPaused => reasons.Count != 0;
-        public IDisposable Acquire()
+        public IDisposable Acquire(bool pauseRewardAnimations = true)
         {
             if (disposed) throw new ObjectDisposedException(nameof(PauseService));
-            var key = new object(); reasons.Add(key); Apply();
-            return new Lease(() => { if (disposed) return; reasons.Remove(key); Apply(); });
+            var key = new object(); reasons.Add(key);
+            if (pauseRewardAnimations) animationReasons.Add(key);
+            Apply();
+            return new Lease(() => { if (disposed) return; reasons.Remove(key); animationReasons.Remove(key); Apply(); });
         }
         void Apply() => Time.timeScale = IsPaused ? 0 : 1;
-        public void Dispose() { if (disposed) return; reasons.Clear(); Apply(); disposed = true; }
+        public void Dispose() { if (disposed) return; reasons.Clear(); animationReasons.Clear(); Apply(); disposed = true; }
         sealed class Lease : IDisposable
         {
             Action release;

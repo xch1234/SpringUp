@@ -263,8 +263,10 @@ namespace SpringUp.EditorChecks
             EnemyRuntime.ClearBattlefield();
             var target = new GameObject("All actuator integration target"); target.SetActive(false);
             target.transform.position = driver.player.transform.position + Vector3.right * .6f;
-            var data = target.AddComponent<EnemyData>(); var edit = new SerializedObject(data);
-            edit.FindProperty("maxHealth").floatValue = 1000; edit.ApplyModifiedPropertiesWithoutUndo();
+            var data = target.AddComponent<EnemyData>();
+            var enemyDefinition = Object.Instantiate(EnemyCatalog.Load().Get(EnemyArchetype.Normal));
+            enemyDefinition.maxHealth = 1000; enemyDefinition.hasContactDamage = false;
+            data.Configure(enemyDefinition);
             var enemy = target.AddComponent<EnemyRuntime>(); target.AddComponent<CircleCollider2D>().radius = .2f;
             target.AddComponent<BoxCollider2D>().size = Vector2.one * .4f; target.SetActive(true);
             var body = driver.pipeline.GetBody(BodyPart.Head); var previous = body.GetSlot(0);
@@ -303,7 +305,7 @@ namespace SpringUp.EditorChecks
             finally
             {
                 driver.combat.Clear(); body.SetSlot(0,previous); driver.player.ResetHealthToMax();
-                Object.DestroyImmediate(target);
+                Object.DestroyImmediate(target); Object.DestroyImmediate(enemyDefinition);
             }
             Debug.Log("[All Actuators] PLAY PASS: 13 pipeline starts, real lifesteal, independent slow cleanup, compound-collider beam single damage.");
         }

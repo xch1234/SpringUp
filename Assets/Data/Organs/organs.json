@@ -178,7 +178,7 @@
     {
       "id": "collection_net",
       "name": "收集网",
-      "description": "每波结算的髓质 +10%，移速 −10%。",
+      "description": "击杀与波末保底获得的骨髓 +10%（立即入账），移速 −10%。",
       "part": "torso",
       "type": "torso_special",
       "rarity": "mechanical",

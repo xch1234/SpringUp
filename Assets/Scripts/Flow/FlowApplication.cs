@@ -24,6 +24,8 @@ namespace SpringUp.Flow
         public TextAsset organsJson, wavesJson;
         public OrganCatalog organCatalog;
         public Transform uiRoot;
+        public RewardFlightSettings rewardFlightSettings;
+        public RewardFlightPresenter RewardFlights { get; private set; }
         public FlowWindow windowPrefab;
         public FlowWindow laboratoryPrefab;
         public GameObject loading;
@@ -58,6 +60,7 @@ namespace SpringUp.Flow
             if (IsActive) { Destroy(gameObject); return; }
             IsActive = true;
             Pause = new PauseService();
+            RewardFlights = RewardFlightPresenter.Create(uiRoot, rewardFlightSettings, Pause);
             uiFont = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft YaHei", "SimHei", "Arial" }, 18);
             if (uiFont != null)
                 foreach (var text in hud.GetComponentInParent<Canvas>().GetComponentsInChildren<Text>(true)) text.font = uiFont;
@@ -126,8 +129,16 @@ namespace SpringUp.Flow
             }
             // Stop old content before replacing the session; its last snapshot belongs to the old run.
             Content?.Stop();
+            RewardFlights?.Clear();
             Session = new RunSession(Configuration);
             Switch(BattlePath);
+        }
+        public void ShowKillReward(KillRewardResult reward, Vector2 deathPosition)
+        {
+            if (RewardFlights == null) return;
+            var camera = Camera.main;
+            if (reward.HasMarrow) RewardFlights.Spawn(deathPosition, camera, false);
+            if (reward.OrganInstanceId != null) RewardFlights.Spawn(deathPosition, camera, true);
         }
         public void NextWave()
         {
@@ -151,18 +162,19 @@ namespace SpringUp.Flow
         public void AbandonRun()
         {
             if (IsTransitioning) return;
-            Content?.Stop(); Session = null; Switch(MenuPath);
+            Content?.Stop(); RewardFlights?.Clear(); Session = null; Switch(MenuPath);
         }
         public void Switch(string path)
         {
             if (IsTransitioning) return;
+            if (path == MenuPath) RewardFlights?.Clear();
             retryPath = path;
             IsTransitioning = true;
             StartCoroutine(GuardTransition(path));
         }
         IEnumerator GuardTransition(string path)
         {
-            var lease = Pause.Acquire();
+            var lease = Pause.Acquire(pauseRewardAnimations: false);
             loading.SetActive(true);
             ClearWindows();
             var routine = Transition(path);
@@ -329,7 +341,6 @@ namespace SpringUp.Flow
                     var organ = Configuration.Organs[offer.OrganId];
                     var button = offerButtons[i];
                     button.interactable = !offer.Purchased
-                        && run.Inventory.UnequippedIds().Count < run.Inventory.UnequippedCapacity()
                         && run.Marrow >= offer.Price;
                     button.GetComponentInChildren<Text>().text = offer.Purchased
                         ? $"已购买 {organ.name}"

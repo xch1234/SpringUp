@@ -170,7 +170,7 @@ namespace TideBorne.Battle
         private GameObject NextDesignedPrefab(out string poolKey)
         {
             poolKey = FallbackPoolKey;
-            var archetypes = EnemyArchetypeConfig.AllArchetypes();
+            var archetypes = EnemyArchetypeConfig.SpawnableArchetypes();
             if (archetypes == null || archetypes.Length == 0)
                 return null;
 

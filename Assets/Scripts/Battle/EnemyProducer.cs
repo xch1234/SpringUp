@@ -15,17 +15,10 @@ namespace TideBorne.Battle
     [AddComponentMenu("潮涌之躯/战场/产兵（EnemyProducer）")]
     public class EnemyProducer : MonoBehaviour
     {
-        [Tooltip("产出哪种敌人。")]
-        [SerializeField] private EnemyArchetype productArchetype = EnemyArchetype.Normal;
-
-        [Tooltip("产出间隔，秒。")]
-        [SerializeField] private float produceInterval = 3f;
-
-        [Tooltip("产出点相对自身的位置抖动半径，米。0 表示就在自身位置生成。")]
-        [SerializeField] private float spawnJitter = 1.5f;
-
-        [Tooltip("同时存在的产出物上限。超过就暂停产出，避免无限堆积拖垮性能。")]
-        [SerializeField] private int maxAliveProducts = 12;
+        private EnemyArchetype productArchetype => GetComponent<EnemyData>().Definition.productArchetype;
+        private float produceInterval => GetComponent<EnemyData>().Definition.produceInterval;
+        private float spawnJitter => GetComponent<EnemyData>().Definition.spawnJitter;
+        private int maxAliveProducts => GetComponent<EnemyData>().Definition.maxAliveProducts;
 
         [Tooltip("产出时在 Console 打一行，便于肉眼验收。")]
         [SerializeField] private bool logProductions = true;
@@ -35,16 +28,15 @@ namespace TideBorne.Battle
         private int _producedCount;
 
         /// <summary>产出间隔，秒。</summary>
-        public float ProduceInterval { get { return produceInterval; } set { produceInterval = Mathf.Max(0.1f, value); } }
+        public float ProduceInterval { get { return produceInterval; } }
 
         /// <summary>产出物上限。</summary>
-        public int MaxAliveProducts { get { return maxAliveProducts; } set { maxAliveProducts = Mathf.Max(0, value); } }
+        public int MaxAliveProducts { get { return maxAliveProducts; } }
 
         /// <summary>产出哪种敌人。</summary>
         public EnemyArchetype ProductArchetype
         {
             get { return productArchetype; }
-            set { productArchetype = value; }
         }
 
         /// <summary>已产出的总数，供诊断使用。</summary>
@@ -55,6 +47,8 @@ namespace TideBorne.Battle
             _self = GetComponent<EnemyRuntime>();
             _cooldownRemaining = produceInterval;
         }
+
+        private void OnEnable() { _cooldownRemaining = produceInterval; _producedCount = 0; }
 
         private void Update()
         {
@@ -75,6 +69,7 @@ namespace TideBorne.Battle
         /// <summary>产出一个敌人。达到上限或找不到原型时返回 null。</summary>
         public GameObject TryProduce()
         {
+            if (!isActiveAndEnabled || !GetComponent<EnemyData>().Definition.hasProducer || (_self != null && !_self.IsAlive)) return null;
             if (EnemyRuntime.ActiveCount >= maxAliveProducts + 1)
             {
                 // +1 是把自己算进去：上限说的是"产出物"数量，自身不该占用额度。

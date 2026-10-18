@@ -135,8 +135,10 @@ namespace SpringUp.EditorChecks
         {
             var target = new GameObject("Torso damage target"); target.SetActive(false);
             target.transform.position = driver.player.transform.position + driver.player.transform.right;
-            var data = target.AddComponent<EnemyData>(); var edit = new SerializedObject(data);
-            edit.FindProperty("maxHealth").floatValue = 10000; edit.ApplyModifiedPropertiesWithoutUndo();
+            var data = target.AddComponent<EnemyData>();
+            var enemyDefinition = Object.Instantiate(EnemyCatalog.Load().Get(EnemyArchetype.Normal));
+            enemyDefinition.maxHealth = 10000; enemyDefinition.hasContactDamage = false;
+            data.Configure(enemyDefinition);
             var enemy = target.AddComponent<EnemyRuntime>(); target.SetActive(true);
             var motor = driver.player.GetComponent<PlayerMotor>(); var body = driver.player.GetComponent<Rigidbody2D>();
             float rotation = body.rotation; Vector2 velocity = body.linearVelocity;
@@ -164,7 +166,7 @@ namespace SpringUp.EditorChecks
             {
                 driver.Torso.Apply(null, driver.pipeline); driver.player.ResetHealthToMax(); driver.player.ResetDamageProtection();
                 inputField.SetValue(motor, oldInput); body.rotation = rotation; body.linearVelocity = velocity;
-                driver.combat.Clear(); Object.DestroyImmediate(target);
+                driver.combat.Clear(); Object.DestroyImmediate(target); Object.DestroyImmediate(enemyDefinition);
             }
             Debug.Log("[Torso] PLAY PASS: actual damage/lifesteal/front-back cone, velocity steering and trigger factors.");
         }

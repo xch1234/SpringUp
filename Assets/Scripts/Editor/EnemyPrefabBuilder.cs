@@ -323,81 +323,31 @@ namespace TideBorne.EditorTools
         }
 
         /// <summary>按配置给实例装配行为组件与数值。</summary>
-        private static void ConfigureInstance(GameObject instance, EnemyArchetypeConfig.Config config)
+        private static void ConfigureInstance(GameObject instance, EnemyDefinition config)
         {
             ApplyData(instance, config);
+            if (!config.hasContactDamage && instance.GetComponent<EnemyContactDamage>() != null)
+                Object.DestroyImmediate(instance.GetComponent<EnemyContactDamage>());
 
-            // 移动模式：EnemyMotor 已经在 EnemyFactory 里挂上，这里改模式与参数。
-            var motor = instance.GetComponent<EnemyMotor>();
-            if (motor != null)
-            {
-                var serialized = new SerializedObject(motor);
-                SetEnum(serialized, "moveMode", (int)config.moveMode);
-                if (config.preferredDistance > 0.01f)
-                    SetFloat(serialized, "preferredDistance", config.preferredDistance);
-                serialized.ApplyModifiedPropertiesWithoutUndo();
-            }
-
-            // 接触伤害：按需挂。
-            if (config.hasContactDamage)
+            if (config.hasContactDamage && instance.GetComponent<EnemyContactDamage>() == null)
                 instance.AddComponent<EnemyContactDamage>();
+            if (!config.hasRangedAttack) RemoveAttackIfUnused(instance, config);
             else
-                RemoveAttackIfUnused(instance, config);
-
-            // 远程攻击：EnemyAttack 由 EnemyFactory 默认挂上；不需要就移除，
-            // 避免"静止射击敌人"这类不该射的敌人悄悄射出子弹。
-            if (!config.hasRangedAttack)
-                RemoveAttackIfUnused(instance, config);
-
-            if (config.hasRangedAttack)
+            {
+                if (instance.GetComponent<EnemyAttack>() == null) instance.AddComponent<EnemyAttack>();
                 ApplyRangedAttack(instance, config);
-
-            // 产兵：兵工厂专用能力，通用组件。
-            if (config.hasProducer)
-            {
-                var producer = instance.AddComponent<EnemyProducer>();
-                var serialized = new SerializedObject(producer);
-                SetEnum(serialized, "productArchetype", (int)EnemyArchetype.Normal);
-                SetFloat(serialized, "produceInterval", EnemyArchetypeConfig.ArsenalProduceInterval);
-                SetInt(serialized, "maxAliveProducts", EnemyArchetypeConfig.ArsenalMaxAliveProducts);
-                serialized.ApplyModifiedPropertiesWithoutUndo();
             }
-
-            // 治疗：医疗兵专用能力。
-            if (config.hasHealer)
-            {
-                var healer = instance.AddComponent<EnemyHealer>();
-                var serialized = new SerializedObject(healer);
-                SetFloat(serialized, "healInterval", EnemyArchetypeConfig.MedicHealInterval);
-                SetFloat(serialized, "healRadius", EnemyArchetypeConfig.MedicHealRadius);
-                SetFloat(serialized, "healPercent", EnemyArchetypeConfig.MedicHealPercent);
-                serialized.ApplyModifiedPropertiesWithoutUndo();
-            }
+            if (config.hasProducer) instance.AddComponent<EnemyProducer>();
+            if (config.hasHealer) instance.AddComponent<EnemyHealer>();
         }
 
-        /// <summary>把数值写进 EnemyData。</summary>
-        private static void ApplyData(GameObject instance, EnemyArchetypeConfig.Config config)
+        private static void ApplyData(GameObject instance, EnemyDefinition config)
         {
-            var data = instance.GetComponent<EnemyData>();
-            if (data == null)
-            {
-                Debug.LogError("[EnemyPrefabBuilder] 实例上没有 EnemyData。");
-                return;
-            }
-
-            var serialized = new SerializedObject(data);
-            SetString(serialized, "id", config.displayName);
-            SetFloat(serialized, "moveSpeed", config.moveSpeed);
-            SetFloat(serialized, "maxHealth", config.health);
-            SetFloat(serialized, "attackPower", config.attackPower);
-            SetFloat(serialized, "attackCooldown", config.attackCooldown);
-            SetFloat(serialized, "attackRange", config.hasRangedAttack ? EnemyArchetypeConfig.RangedAttackRange : 0.7f);
-            SetFloat(serialized, "projectileSpeed", EnemyArchetypeConfig.RangedProjectileSpeed);
-            serialized.ApplyModifiedPropertiesWithoutUndo();
+            instance.GetComponent<EnemyData>().Configure(config);
         }
 
         /// <summary>射击敌人：接上弹体精灵，并把发射开关打开。</summary>
-        private static void ApplyRangedAttack(GameObject instance, EnemyArchetypeConfig.Config config)
+        private static void ApplyRangedAttack(GameObject instance, EnemyDefinition config)
         {
             var attack = instance.GetComponent<EnemyAttack>();
             if (attack == null)
@@ -421,7 +371,7 @@ namespace TideBorne.EditorTools
         ///
         /// 所以现在两个一起删，顺序上先删带依赖的那个。
         /// </summary>
-        private static void RemoveAttackIfUnused(GameObject instance, EnemyArchetypeConfig.Config config)
+        private static void RemoveAttackIfUnused(GameObject instance, EnemyDefinition config)
         {
             if (config.hasRangedAttack)
                 return;
@@ -444,7 +394,7 @@ namespace TideBorne.EditorTools
         /// **为什么要在保存之后查**：`RequireComponent` 的自动补挂发生在序列化/保存阶段，
         /// 只检查内存里的实例是查不出来的——上面那个坑正是这么漏过去的。
         /// </summary>
-        private static void VerifySavedPrefab(GameObject prefab, EnemyArchetypeConfig.Config config, string path)
+        private static void VerifySavedPrefab(GameObject prefab, EnemyDefinition config, string path)
         {
             if (prefab == null)
                 return;

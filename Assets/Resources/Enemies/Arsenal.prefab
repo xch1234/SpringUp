@@ -183,18 +183,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00cd6da56cd64e7ba7f64597a09ee1e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyData
-  id: Arsenal
-  rank: 0
-  moveSpeed: 0
-  maxHealth: 40
-  attackPower: 5
-  attackCooldown: 1.5
-  attackRange: 6
-  projectileCount: 1
-  projectileSpeed: 4
-  attackRadius: 1
-  dropTableId: 
-  canBeDisplaced: 1
+  definition: {fileID: 11400000, guid: f3905f77ec584f72963a1ef2ca1ba7c2, type: 2}
 --- !u!114 &7834522428552061787
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -222,13 +211,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyMotor
   data: {fileID: 0}
-  moveMode: 3
-  faceMoveDirection: 1
-  facingLerpSpeed: 720
-  stopAtAttackRangeRatio: 0.9
-  minStopDistance: 0.5
-  preferredDistance: 5
-  distanceTolerance: 0.8
   clampToPlayArea: 1
   playAreaHalfWidth: 32
   playAreaHalfHeight: 18
@@ -244,8 +226,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aaebdf5a1a814bc1a27c0c357d036eea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyProducer
-  productArchetype: 0
-  produceInterval: 3
-  spawnJitter: 1.5
-  maxAliveProducts: 12
   logProductions: 1

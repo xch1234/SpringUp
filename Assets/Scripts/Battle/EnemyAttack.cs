@@ -47,16 +47,10 @@ namespace TideBorne.Battle
 
         [Tooltip("敌人数据。留空则自动取同一物体上的 EnemyData。")]
         [SerializeField] private EnemyData data;
+        private bool attackAutomatically => GetComponent<EnemyData>().Definition.attackAutomatically;
+        private float initialDelay => GetComponent<EnemyData>().Definition.initialDelay;
 
-        [Tooltip("是否在进入攻击距离时自动出手。关掉则只能由外部调用 TryAttack。")]
-        [SerializeField] private bool attackAutomatically = true;
-
-        [Tooltip("开局到第一次出手之间的延迟，秒。避免所有敌人同时打第一下。")]
-        [SerializeField] private float initialDelay = 0.5f;
-
-        [Header("灰盒弹道")]
-        [Tooltip("true = 发射可见弹体（推荐，玩家能看清攻击从哪来）；false = 出手即扣血，无飞行物。")]
-        [SerializeField] private bool useProjectiles = true;
+        private bool useProjectiles => GetComponent<EnemyData>().Definition.useProjectiles;
 
         [Tooltip("弹体视觉边长，世界单位。取自 GreyboxAssets，跟着角色一起放大，" +
                  "否则视野拉大后弹体会小到看不见。")]
@@ -68,9 +62,7 @@ namespace TideBorne.Battle
         [Tooltip("弹体精灵。**发射时会显式赋给实例**——不依赖池原型里的引用能否撑过实例化。" +
                  "留空则弹体不可见。")]
         [SerializeField] private Sprite projectileSprite;
-
-        [Tooltip("多发弹体之间的夹角，度。projectileCount > 1 时按此散开。")]
-        [SerializeField] private float spreadAngleDegrees = 12f;
+        private float spreadAngleDegrees => GetComponent<EnemyData>().Definition.spreadAngleDegrees;
 
         private EnemyRuntime _runtime;
         private float _cooldownRemaining;
@@ -111,6 +103,8 @@ namespace TideBorne.Battle
             _cooldownRemaining = initialDelay;
         }
 
+        private void OnEnable() { _cooldownRemaining = initialDelay; _loggedFirstShot = false; }
+
         private void Update()
         {
             // A ready cooldown / overlapping projectile must not resolve while the world is paused.
@@ -142,7 +136,7 @@ namespace TideBorne.Battle
         /// </summary>
         public bool TryAttack()
         {
-            if (!IsReady)
+            if (!Data.Definition.hasRangedAttack || !isActiveAndEnabled || (_runtime != null && !_runtime.IsAlive) || !IsReady)
                 return false;
 
             var enemyData = Data;

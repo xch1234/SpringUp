@@ -185,18 +185,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00cd6da56cd64e7ba7f64597a09ee1e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyData
-  id: RangedChaser
-  rank: 0
-  moveSpeed: 2.5
-  maxHealth: 24
-  attackPower: 5
-  attackCooldown: 1.5
-  attackRange: 6
-  projectileCount: 1
-  projectileSpeed: 4
-  attackRadius: 1
-  dropTableId: 
-  canBeDisplaced: 1
+  definition: {fileID: 11400000, guid: a39f2d66987c4f3684d4358c8c11e26e, type: 2}
 --- !u!114 &4956484538431869273
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -224,13 +213,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyMotor
   data: {fileID: 0}
-  moveMode: 0
-  faceMoveDirection: 1
-  facingLerpSpeed: 720
-  stopAtAttackRangeRatio: 0.9
-  minStopDistance: 0.5
-  preferredDistance: 5
-  distanceTolerance: 0.8
   clampToPlayArea: 1
   playAreaHalfWidth: 32
   playAreaHalfHeight: 18
@@ -247,13 +229,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyAttack
   data: {fileID: 0}
-  attackAutomatically: 1
-  initialDelay: 0.5
-  useProjectiles: 1
   projectileVisualSize: 0.421875
   projectileColor: {r: 0.7, g: 0.35, b: 0.85, a: 1}
   projectileSprite: {fileID: 21300000, guid: 0ee5d417cee127b42b7ae3311d0d7280, type: 3}
-  spreadAngleDegrees: 12
 --- !u!114 &349638331288578383
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -280,5 +258,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56151ca8470e4ff397fab5c20c916fbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyContactDamage
-  contactRadius: 0.7
-  damageIntervalOverride: 0

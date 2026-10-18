@@ -82,12 +82,12 @@ namespace Tideflesh.Systems
         public int duration_sec;
         public string[] guaranteed_drops;
         public string[] optional_drops;
-        // When present, RunController draws random drops from this pool instead of
-        // replaying guaranteed_drops/optional_drops. The old fields remain a
-        // compatibility fallback for older wave data and tests.
+        // The only active reward pool. Legacy fixed arrays/count remain for deserialization
+        // compatibility, but never add rewards or change the one-organ wave rule.
         public string[] random_drop_pool;
         public int random_drop_count;
-        public int marrow_reward;
+        public int marrow_reward; // Fixed additional reward, waves 1–6 only.
+        public double kill_organ_chance; // Independent Bernoulli trial per real death.
     }
 
     [Serializable]
@@ -141,29 +141,12 @@ namespace Tideflesh.Systems
 
             foreach (var wave in file.waves)
             {
-                if (wave.guaranteed_drops == null)
-                    throw new CatalogException("<unknown>", "guaranteed_drops must be a list of strings");
-                if (wave.optional_drops == null)
-                    throw new CatalogException("<unknown>", "optional_drops must be a list of strings");
-                foreach (var dropId in wave.guaranteed_drops)
-                    RequireDrop(dropId, catalog);
-                foreach (var dropId in wave.optional_drops)
-                    RequireDrop(dropId, catalog);
-                if (wave.random_drop_pool != null)
-                {
-                    if (wave.random_drop_count < 0)
-                        throw new CatalogException("<unknown>", "random_drop_count cannot be negative");
-                    foreach (var dropId in wave.random_drop_pool)
-                        RequireDrop(dropId, catalog);
-                }
+                wave.guaranteed_drops ??= Array.Empty<string>();
+                wave.optional_drops ??= Array.Empty<string>();
+                // Missing/invalid random pool entries are safely skipped by RunController,
+                // which also checks the set of implemented organ definitions.
             }
             return new List<WaveDefinition>(file.waves);
-        }
-
-        static void RequireDrop(string dropId, Dictionary<string, OrganDefinition> catalog)
-        {
-            if (string.IsNullOrEmpty(dropId) || !catalog.ContainsKey(dropId))
-                throw new CatalogException(string.IsNullOrEmpty(dropId) ? "<unknown>" : dropId, "drop id not in catalog");
         }
 
         static void ValidateOrgan(OrganDefinition organ)

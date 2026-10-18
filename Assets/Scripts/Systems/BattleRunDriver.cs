@@ -18,6 +18,7 @@ namespace Tideflesh.Systems
     {
         public BattleRunLink Link { get; private set; }
 
+        KillMarrowBinding killMarrow;
         WaveDirector _director;
         OrganPipelineController _pipeline;
         string _status = "";
@@ -59,6 +60,7 @@ namespace Tideflesh.Systems
                 var catalog = Catalog.LoadOrgans(File.ReadAllText(organsPath));
                 var waves = Catalog.LoadWaves(File.ReadAllText(wavesPath), catalog);
                 Link = new BattleRunLink(new RunController(catalog, waves, OnSignal));
+                killMarrow = new KillMarrowBinding(Link.Run);
                 Link.Begin();
             }
             catch (Exception ex)
@@ -73,6 +75,7 @@ namespace Tideflesh.Systems
 
         void OnDestroy()
         {
+            killMarrow?.Dispose();
             if (_director != null)
                 _director.WaveCompleted -= OnWaveCompleted;
             if (!SpringUp.Flow.FlowApplication.IsActive && Time.timeScale == 0f)

@@ -22,7 +22,9 @@ namespace Tideflesh.Systems
     public sealed class LabOpenedPayload
     {
         public List<OrganInstance> Drops;
+        // Informational wave kill total; already credited, never pay this again.
         public int MarrowDelta;
+        public int WaveEndMarrow;
     }
 
     public sealed class RunEndedPayload
@@ -34,6 +36,15 @@ namespace Tideflesh.Systems
     {
         public bool Ok;
         public string Reason;
+    }
+
+    public readonly struct KillRewardResult
+    {
+        public readonly bool Accepted, HasMarrow;
+        public readonly int Marrow;
+        public readonly string OrganInstanceId;
+        public KillRewardResult(bool accepted, bool hasMarrow, int marrow, string organInstanceId)
+        { Accepted = accepted; HasMarrow = hasMarrow; Marrow = marrow; OrganInstanceId = organInstanceId; }
     }
 
     // Shop tuning: prices are marrow; refresh count resets when the next wave starts.
@@ -84,6 +95,43 @@ namespace Tideflesh.Systems
         public event Action<RunPhase> Ended;
         public int Wave { get; private set; }
         public int Marrow { get; private set; }
+        readonly HashSet<string> rewardedLives = new HashSet<string>();
+        decimal marrowFraction;
+        public int WaveKillMarrow { get; private set; }
+        public event Action<int> BalanceChanged;
+        // A life id is a spawn snapshot, never an object reference that can be reused by a pool.
+        public int CreditKill(string lifeId, int baseMarrow)
+        {
+            TryCreditKill(lifeId, baseMarrow, out int gained);
+            return gained;
+        }
+        public bool TryCreditKill(string lifeId, int baseMarrow, out int gained)
+        {
+            var result = ResolveKill(lifeId, baseMarrow, baseMarrow > 0);
+            gained = result.Marrow;
+            return result.Accepted;
+        }
+        // Commit everything before notifying consumers. Inventory rewards never emit LoadoutChanged.
+        public KillRewardResult ResolveKill(string lifeId, int baseMarrow, bool eligible)
+        {
+            if (!eligible || Stage != RunPhase.Combat || string.IsNullOrEmpty(lifeId) || !rewardedLives.Add(lifeId)) return default;
+            int gained = AddMarrow(baseMarrow);
+            WaveKillMarrow += gained;
+            string instance = null;
+            double chance = _waves[Wave].kill_organ_chance;
+            if (!double.IsNaN(chance) && chance > 0 && NextUnit() < Math.Min(1, chance))
+                instance = DrawOrgan(_waves[Wave]);
+            BalanceChanged?.Invoke(Marrow);
+            return new KillRewardResult(true, baseMarrow > 0, gained, instance);
+        }
+        int AddMarrow(int amount)
+        {
+            decimal exact = Math.Max(0, amount) * (decimal)Inventory.MarrowGainMult() + marrowFraction;
+            int gained = (int)decimal.Floor(exact);
+            marrowFraction = exact - gained;
+            Marrow += gained;
+            return gained;
+        }
         public int MaxWave => _maxWave;
         public int WaveDuration => _waves[Wave].duration_sec;
 
@@ -128,6 +176,9 @@ namespace Tideflesh.Systems
                 throw new RunException("run already started");
             Inventory = new Inventory(_catalog);
             Marrow = 0;
+            marrowFraction = 0;
+            rewardedLives.Clear();
+            WaveKillMarrow = 0;
             Wave = 1;
             Inventory.SpawnEquipped("fist", "hand", 1);
             Stage = RunPhase.Combat;
@@ -144,15 +195,15 @@ namespace Tideflesh.Systems
             WaveFinished?.Invoke(Wave);
             _emit?.Invoke("WaveEnded", new WaveEndedPayload { Wave = Wave, Reason = "timer" });
             var cfg = _waves[Wave];
-            var drops = ResolveDrops(cfg);
             var spawned = new List<string>();
-            foreach (var oid in drops)
-                spawned.Add(Inventory.Spawn(oid));
-            var gained = EconomySwing.Floor(
-                cfg.marrow_reward * (double)Inventory.MarrowGainMult(),
-                _nextUnit(),
-                EconomySwing.MarrowHalfPercent);
-            Marrow += gained;
+            int waveEndMarrow = 0;
+            if (Wave >= 1 && Wave <= 6)
+            {
+                waveEndMarrow = AddMarrow(cfg.marrow_reward);
+                var instance = DrawOrgan(cfg);
+                if (instance != null) spawned.Add(instance);
+            }
+            BalanceChanged?.Invoke(Marrow);
             if (Wave >= _maxWave)
             {
                 Stage = RunPhase.Won;
@@ -171,18 +222,19 @@ namespace Tideflesh.Systems
                     organ_id = inst.organ_id
                 });
             }
-            var reward = new LabOpenedPayload { Drops = payloadDrops, MarrowDelta = gained };
+            var reward = new LabOpenedPayload { Drops = payloadDrops, MarrowDelta = WaveKillMarrow, WaveEndMarrow = waveEndMarrow };
             RestOpened?.Invoke(reward);
             _emit?.Invoke("LabOpened", reward);
         }
 
-        public bool CanStartNextWave() => Stage == RunPhase.Rest && Inventory.UnequippedWithinCap();
+        public bool CanStartNextWave() => Stage == RunPhase.Rest;
 
         public void StartNextWave()
         {
             if (!CanStartNextWave())
                 throw new RunException("cannot start next wave");
             Wave += 1;
+            WaveKillMarrow = 0;
             _shopOffers = null;
             ShopRefreshCount = 0;
             Stage = RunPhase.Combat;
@@ -288,7 +340,7 @@ namespace Tideflesh.Systems
             var result = new List<string>();
             while (pool.Count > 0 && result.Count < count)
             {
-                int index = RandomIndex(pool.Count);
+                int index = Math.Min(pool.Count - 1, (int)(NextUnit() * pool.Count));
                 result.Add(pool[index]);
                 pool.RemoveAt(index);
             }
@@ -310,7 +362,6 @@ namespace Tideflesh.Systems
         {
             if (Stage != RunPhase.Rest) return new ShopResult { Reason = "rest_only" };
             if (!_catalog.TryGetValue(organId, out var item)) return new ShopResult { Reason = "unknown_item" };
-            if (Inventory.UnequippedIds().Count >= Inventory.UnequippedCapacity()) return new ShopResult { Reason = "capacity" };
             int price = quotedPrice ?? QuotePurchasePrice(organId);
             if (!PurchasePriceInBand(item.shop_price, price)) return new ShopResult { Reason = "invalid_price" };
             if (price < 0 || Marrow < price) return new ShopResult { Reason = "insufficient_marrow" };
@@ -330,41 +381,22 @@ namespace Tideflesh.Systems
 
         public ShopResult TryUpgradeTorso(string nodeId) => new() { Ok = false, Reason = "not_open" };
 
-        List<string> ResolveDrops(WaveDefinition cfg)
+        string DrawOrgan(WaveDefinition cfg)
         {
-            if (cfg.random_drop_pool == null || cfg.random_drop_pool.Length == 0)
-            {
-                var fixedDrops = new List<string>();
-                if (cfg.guaranteed_drops != null) fixedDrops.AddRange(cfg.guaranteed_drops);
-                if (cfg.optional_drops != null) fixedDrops.AddRange(cfg.optional_drops);
-                return fixedDrops;
-            }
-
             var pool = new List<string>();
-            foreach (var id in cfg.random_drop_pool)
+            foreach (var id in cfg.random_drop_pool ?? Array.Empty<string>())
             {
-                if (string.IsNullOrEmpty(id) || !_catalog.ContainsKey(id) || !_activeOrganIds.Contains(id)) continue;
-                if (!pool.Contains(id)) pool.Add(id);
+                if (!string.IsNullOrEmpty(id) && _catalog.ContainsKey(id) && _activeOrganIds.Contains(id) && !pool.Contains(id)) pool.Add(id);
             }
-            var count = cfg.random_drop_count > 0 ? cfg.random_drop_count : 1;
-            var result = new List<string>();
-            while (pool.Count > 0 && result.Count < count)
-            {
-                var index = RandomIndex(pool.Count);
-                result.Add(pool[index]);
-                pool.RemoveAt(index);
-            }
-            return result;
+            if (pool.Count == 0) return null;
+            var idToSpawn = pool[Math.Min(pool.Count - 1, (int)(NextUnit() * pool.Count))];
+            return Inventory.Spawn(idToSpawn);
         }
-
-        int RandomIndex(int count)
+        double NextUnit()
         {
-            if (count <= 1) return 0;
             var unit = _nextUnit();
-            if (double.IsNaN(unit) || double.IsNegativeInfinity(unit)) unit = 0;
-            if (double.IsPositiveInfinity(unit) || unit >= 1) unit = 0.999999999999;
-            if (unit < 0) unit = 0;
-            return Math.Min(count - 1, (int)(unit * count));
+            if (double.IsNaN(unit) || double.IsNegativeInfinity(unit) || unit < 0) return 0;
+            return Math.Min(0.999999999999, unit);
         }
 
         void RequireLab()

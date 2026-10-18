@@ -110,10 +110,7 @@ namespace SpringUp.EditorChecks
                 var go = new GameObject("Training dummy"); go.SetActive(false);
                 go.transform.position = player.transform.position + Vector3.right * 2;
                 var data = go.AddComponent<EnemyData>();
-                var serialized = new SerializedObject(data);
-                serialized.FindProperty("maxHealth").floatValue = 10000;
-                serialized.FindProperty("moveSpeed").floatValue = 0;
-                serialized.ApplyModifiedPropertiesWithoutUndo();
+                data.Configure(EnemyCatalog.Load().trainingDummy);
                 dummy = go.AddComponent<EnemyRuntime>();
                 var source = player.GetComponentInChildren<SpriteRenderer>();
                 var renderer = go.AddComponent<SpriteRenderer>(); renderer.sprite = source.sprite; renderer.color = Color.yellow;
@@ -173,6 +170,7 @@ namespace SpringUp.EditorChecks
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var app = new GameObject("Flow Bootstrap").AddComponent<FlowApplication>();
+            app.rewardFlightSettings = AssetDatabase.LoadAssetAtPath<RewardFlightSettings>("Assets/Data/Rewards/RewardFlightSettings.asset");
             app.organsJson = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Organs/organs.json");
             app.wavesJson = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Waves/waves.json");
             app.organCatalog = AssetDatabase.LoadAssetAtPath<OrganCatalog>("Assets/Resources/OrganCatalog.asset");

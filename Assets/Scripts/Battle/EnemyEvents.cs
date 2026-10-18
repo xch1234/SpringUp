@@ -31,6 +31,8 @@ namespace TideBorne.Battle
         public struct KilledInfo
         {
             public SpringUp.Organs.CastEvent? organAttack;
+            public int baseMarrow;
+            public bool rewardEligible;
             public string targetId;
             public string enemyId;
             public Vector2 deathPoint;
@@ -60,6 +62,10 @@ namespace TideBorne.Battle
 
         /// <summary>敌人被击杀。喂给击杀触发。</summary>
         public static event Action<KilledInfo> Killed;
+
+        // Internal settlement signal at lethal damage commit, before any gameplay trigger reentry.
+        internal static event Action<KilledInfo> DeathCommitted;
+        internal static void CommitDeath(KilledInfo info) => DeathCommitted?.Invoke(info);
 
         /// <summary>敌人被施加状态。喂给表现层。</summary>
         public static event Action<StatusAppliedInfo> StatusApplied;
@@ -104,6 +110,7 @@ namespace TideBorne.Battle
         {
             Damaged = null;
             Killed = null;
+            DeathCommitted = null;
             StatusApplied = null;
             PlayerHurt = null;
         }

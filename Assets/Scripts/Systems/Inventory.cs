@@ -27,7 +27,6 @@ namespace Tideflesh.Systems
             { "head", 6 }, { "hand", 6 }, { "leg", 6 }, { "torso", 2 }
         };
 
-        const int DefaultUnequippedCap = 5;
 
         public Dictionary<string, OrganDefinition> Catalog { get; }
         public Dictionary<string, OrganInstance> Instances { get; } = new();
@@ -87,16 +86,8 @@ namespace Tideflesh.Systems
             return _equipped[part][idx];
         }
 
-        public int UnequippedCapacity()
-        {
-            var cap = DefaultUnequippedCap;
-            foreach (var organ in EquippedOrgans())
-            {
-                if (organ.type == "torso_special")
-                    cap += organ.UnequippedCapacityDelta;
-            }
-            return cap;
-        }
+        // null means unlimited; legacy display callers may still show capacity text.
+        public int? UnequippedCapacity() => null;
 
         public float MarrowGainMult()
         {
@@ -109,7 +100,7 @@ namespace Tideflesh.Systems
             return mult;
         }
 
-        public bool UnequippedWithinCap() => _unequipped.Count <= UnequippedCapacity();
+        public bool UnequippedWithinCap() => true;
 
         public void Equip(string instanceId, string part, int slot)
         {
