@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 
 namespace SpringUp.Flow
 {
-    public enum WindowKind { Pause, Inventory, Shop, Settings, Confirm, Settlement, Failure, Laboratory }
+    public enum WindowKind { Pause, Inventory, Shop, Settings, Confirm, Settlement, Failure, Laboratory, Notice }
     [DefaultExecutionOrder(-1000)]
     public sealed class FlowApplication : MonoBehaviour
     {
@@ -46,6 +46,8 @@ namespace SpringUp.Flow
         string retryPath;
         bool quitting;
         Font uiFont;
+        GameObject dimmer;
+        Text controlsHint;
         public bool HasModal => windows.Count > 0;
         public bool CanModifyEquipment => !IsTransitioning && Session?.Run.Stage == RunPhase.Rest
             && Content != null && Content.IsNearCounter(Content.Laboratory)
@@ -64,6 +66,8 @@ namespace SpringUp.Flow
             if (IsActive) { Destroy(gameObject); return; }
             IsActive = true;
             Pause = new PauseService();
+            GameSettings.Load();
+            GameSettings.Changed += RefreshControlsHint;
             RewardFlights = RewardFlightPresenter.Create(uiRoot, rewardFlightSettings, Pause);
             uiFont = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft YaHei", "SimHei", "Arial" }, 18);
             if (uiFont != null)
@@ -85,19 +89,22 @@ namespace SpringUp.Flow
         void Update()
         {
             if (Pause == null) return;
+            var settings = windows.Count > 0 ? windows[windows.Count - 1].View.GetComponent<MenuSettingsView>() : null;
+            if (settings != null && settings.IsListening) { settings.CaptureKey(); return; }
             if (Keyboard.current?.escapeKey.wasPressedThisFrame == true) HandleEscape();
-            else if (Keyboard.current?.bKey.wasPressedThisFrame == true || Keyboard.current?.tabKey.wasPressedThisFrame == true) ToggleInventory();
+            else if (Mouse.current?.rightButton.wasPressedThisFrame == true) HandleBack();
+            else if (GameSettings.Pressed(GameBinding.Inventory) || Keyboard.current?.tabKey.wasPressedThisFrame == true) ToggleInventory();
             if (Content?.player != null && Session != null)
             {
                 var run = Session.Run;
                 hud.text = $"{ContentTitle(Content.kind)}  波次 {run.Wave}/{run.MaxWave}  生命 {Content.player.CurrentHealth:0}/{Content.player.MaxHealth:0}"
                     + $"  骨髓 {run.Marrow}"
-                    + "  器官自动攻击  B/Tab：背包  Esc：菜单";
-                if (CanInteractWithShop()) hud.text += "  E：商店";
-                else if (CanInteractWithLaboratory()) hud.text += "  E：实验室装配";
+                    + $"  器官自动攻击  {GameSettings.InventoryHint}：背包  Esc：菜单";
+                if (CanInteractWithShop()) hud.text += $"  {GameSettings.Display(GameBinding.Interact)}：商店";
+                else if (CanInteractWithLaboratory()) hud.text += $"  {GameSettings.Display(GameBinding.Interact)}：实验室装配";
                 if (Content.dummy != null) hud.text += $"  木桩生命 {Content.dummy.CurrentHealth:0}";
             }
-            else hud.text = "春生 · 流程验证";
+            else hud.text = "";
         }
         public void ToggleInventory()
         {
@@ -120,9 +127,26 @@ namespace SpringUp.Flow
             if (!CanInteractWithShop()) return false;
             OpenWindow(WindowKind.Shop); return true;
         }
+        bool CancelDrag()
+        {
+            if (windows.Count == 0) return false;
+            var backpack = windows[windows.Count - 1].View.GetComponentInChildren<SpringUp.Laboratory.BackpackPresenter>();
+            if (backpack == null || !backpack.IsDragging) return false;
+            backpack.CancelDrag(); return true;
+        }
+        public void HandleBack()
+        {
+            if (IsTransitioning || CancelDrag() || windows.Count == 0) return;
+            var settings = windows[windows.Count - 1].View.GetComponent<MenuSettingsView>();
+            if (settings != null && settings.IsListening) { settings.CancelBinding(); return; }
+            var kind = windows[windows.Count - 1].Kind;
+            if (kind != WindowKind.Settlement && kind != WindowKind.Failure) CloseTop();
+        }
         public void HandleEscape()
         {
-            if (IsTransitioning) return;
+            if (IsTransitioning || CancelDrag()) return;
+            if (windows.Count > 0 && windows[windows.Count - 1].View.TryGetComponent<MenuSettingsView>(out var settings) && settings.IsListening)
+            { settings.CancelBinding(); return; }
             if (windows.Count != 0)
             {
                 var kind = windows[windows.Count - 1].Kind;
@@ -265,10 +289,27 @@ namespace SpringUp.Flow
         void ShowMainMenu()
         {
             ClearActions();
-            actions = CreateView(); actions.title.text = "春生";
-            actions.AddText("开始新局 · 暂不支持存档");
-            actions.AddButton("开始新局", StartNewRun);
+            actions = CreateMenuView("MainMenu");
+            actions.GetComponent<MenuSettingsView>().BindMenu(StartNewRun, () => OpenWindow(WindowKind.Settings), QuitGame);
             FocusFirst(actions);
+        }
+        public void QuitGame()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        }
+        FlowWindow CreateMenuView(string name)
+        {
+            var view = Instantiate(Resources.Load<FlowWindow>("Menus/" + name), uiRoot);
+            if (uiFont != null) foreach (var text in view.GetComponentsInChildren<Text>(true)) text.font = uiFont;
+            return view;
+        }
+        void RefreshControlsHint()
+        {
+            if (controlsHint != null) controlsHint.text = $"{GameSettings.InventoryHint}：查看背包\n靠近 STORE 按 {GameSettings.Display(GameBinding.Interact)}：商店\n靠近 LAB 按 {GameSettings.Display(GameBinding.Interact)}：器官装配";
         }
         void ShowContentActions()
         {
@@ -282,7 +323,7 @@ namespace SpringUp.Flow
             actions.AddButton("暂停［Esc］", () => OpenWindow(WindowKind.Pause));
             if (Content.kind == ContentKind.Rest)
             {
-                actions.AddText("B / Tab：查看背包\n靠近 STORE 按 E：商店\n靠近 LAB 按 E：器官装配");
+                controlsHint = actions.AddText(""); RefreshControlsHint();
                 actions.AddButton("重置木桩", () => Content.ResetDummy());
                 actions.AddButton("进入下一波", NextWave);
             }
@@ -298,7 +339,7 @@ namespace SpringUp.Flow
         }
         void OpenNotice(string text)
         {
-            var view = Push(WindowKind.Settings, "提示"); view.AddText(text);
+            var view = Push(WindowKind.Notice, "提示"); view.AddText(text);
             view.AddButton("关闭", CloseTop); FocusFirst(view);
         }
         public void OpenWindow(WindowKind kind)
@@ -313,13 +354,10 @@ namespace SpringUp.Flow
             switch (kind)
             {
                 case WindowKind.Pause:
-                    view.AddButton("继续游戏", CloseTop);
-                    view.AddButton("设置", () => OpenWindow(WindowKind.Settings));
-                    view.AddButton("返回主菜单（放弃本局）", RequestMainMenu);
+                    view.GetComponent<MenuSettingsView>().BindMenu(CloseTop, () => OpenWindow(WindowKind.Settings), RequestMainMenu);
                     break;
                 case WindowKind.Settings:
-                    view.AddText("器官按管道节拍自动攻击，无需攻击按键或玩家充能。\nB / Tab：查看背包；Esc：返回。\n休整时靠近 STORE / LAB 按 E 交互，仅实验室可装配。\n移动与疾跑沿用 Player/Move、Player/Sprint 输入设置。");
-                    view.AddButton("关闭", CloseTop); break;
+                    view.GetComponent<MenuSettingsView>().BindSettings(CloseTop); break;
                 case WindowKind.Confirm:
                     view.AddText("确定放弃本局吗？当前进度不会保存。");
                     view.AddButton("取消", CloseTop); view.AddButton("放弃本局", AbandonRun); break;
@@ -418,9 +456,12 @@ namespace SpringUp.Flow
             if (actions != null) actions.group.interactable = false;
             if (windows.Count > 0) windows[windows.Count - 1].View.group.interactable = false;
             var focus = eventSystem.currentSelectedGameObject;
-            var view = kind == WindowKind.Inventory || kind == WindowKind.Laboratory ? Instantiate(laboratoryPrefab, uiRoot) : CreateView();
+            EnsureDimmer(); dimmer.SetActive(true); dimmer.transform.SetAsLastSibling();
+            var view = kind == WindowKind.Inventory || kind == WindowKind.Laboratory ? Instantiate(laboratoryPrefab, uiRoot)
+                : kind == WindowKind.Pause || kind == WindowKind.Settings ? CreateMenuView(kind.ToString()) : CreateView();
             if (view.title != null) view.title.text = title;
             windows.Add(new WindowEntry { Kind = kind, View = view, Lease = Pause.Acquire(), Focus = focus });
+            RefreshWindowVisibility();
             return view;
         }
         public void CloseTop()
@@ -429,12 +470,32 @@ namespace SpringUp.Flow
             var last = windows[windows.Count - 1]; windows.RemoveAt(windows.Count - 1);
             if (last.View != null) { last.View.gameObject.SetActive(false); Destroy(last.View.gameObject); }
             last.Lease.Dispose();
+            RefreshWindowVisibility();
             if (windows.Count > 0 && windows[windows.Count - 1].View != null) windows[windows.Count - 1].View.group.interactable = true;
             else if (actions != null) actions.group.interactable = true;
             if (eventSystem == null) return;
             if (last.Focus != null && last.Focus.activeInHierarchy) eventSystem.SetSelectedGameObject(last.Focus);
             else if (windows.Count > 0) FocusFirst(windows[windows.Count - 1].View);
             else if (actions != null) FocusFirst(actions);
+        }
+        void EnsureDimmer()
+        {
+            if (dimmer != null) return;
+            dimmer = new GameObject("Modal dimmer", typeof(RectTransform), typeof(Image));
+            dimmer.transform.SetParent(uiRoot, false);
+            var rect = (RectTransform)dimmer.transform; rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            dimmer.GetComponent<Image>().color = new Color(0, 0, 0, .6f);
+        }
+        void RefreshWindowVisibility()
+        {
+            if (dimmer != null) dimmer.SetActive(windows.Count > 0);
+            for (int i = 0; i < windows.Count; i++)
+            {
+                var group = windows[i].View.group; bool top = i == windows.Count - 1;
+                group.alpha = top ? 1 : 0; group.interactable = top; group.blocksRaycasts = top;
+            }
+            if (windows.Count > 0 && dimmer != null)
+            { dimmer.transform.SetAsLastSibling(); windows[windows.Count - 1].View.transform.SetAsLastSibling(); }
         }
         void ClearWindows() { while (windows.Count > 0) CloseTop(); ClearActions(); }
         void FocusFirst(FlowWindow view)
@@ -447,7 +508,9 @@ namespace SpringUp.Flow
         void OnDestroy()
         {
             if (Pause == null) return;
+            GameSettings.Changed -= RefreshControlsHint;
             Content?.Stop(); ClearWindows(); Pause.Dispose(); IsActive = false;
+            if (dimmer != null) Destroy(dimmer);
             if (uiFont != null) Destroy(uiFont);
             if (!quitting && contentScene.IsValid() && contentScene.isLoaded) SceneManager.UnloadSceneAsync(contentScene);
         }

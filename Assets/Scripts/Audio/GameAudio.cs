@@ -47,6 +47,9 @@ namespace TideBorne.Audio
             }
 
             Instance = this;
+            musicVolume = SpringUp.Flow.GameSettings.Music;
+            sfxVolume = SpringUp.Flow.GameSettings.Sfx;
+            SpringUp.Flow.GameSettings.Changed += ApplyVolumes;
 
             _musicSource = gameObject.AddComponent<AudioSource>();
             _musicSource.playOnAwake = false;
@@ -62,6 +65,7 @@ namespace TideBorne.Audio
 
         private void OnDestroy()
         {
+            SpringUp.Flow.GameSettings.Changed -= ApplyVolumes;
             if (Instance == this)
                 Instance = null;
         }
@@ -82,8 +86,16 @@ namespace TideBorne.Audio
                 return;
 
             _lastHitSfxTime = Time.unscaledTime;
-            _sfxSource.PlayOneShot(enemyHitSfx, sfxVolume);
+            _sfxSource.PlayOneShot(enemyHitSfx);
         }
+
+        void ApplyVolumes()
+        {
+            musicVolume = SpringUp.Flow.GameSettings.Music; sfxVolume = SpringUp.Flow.GameSettings.Sfx;
+            if (_musicSource != null) _musicSource.volume = musicVolume;
+            if (_sfxSource != null) _sfxSource.volume = sfxVolume;
+        }
+        public void PreviewSfx() => PlayEnemyHit();
 
         private void PlayMusic(AudioClip clip)
         {
