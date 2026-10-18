@@ -99,19 +99,36 @@ namespace TideBorne.EditorTools
 
         private static string ProjectRoot => Directory.GetParent(Application.dataPath).FullName;
 
+        /// <summary>Assets 里 12 帧是否齐全。</summary>
+        private static bool AllFramesExist(string directory)
+        {
+            for (var i = 0; i < FrameCount; i++)
+            {
+                if (!File.Exists(Path.Combine(directory, FrameName(i))))
+                    return false;
+            }
+
+            return true;
+        }
+
         private static bool EnsureFramesCopied()
         {
             var sourceDirectory = Path.Combine(ProjectRoot, SourceFolder);
+            var targetDirectory = Path.Combine(ProjectRoot, FrameFolder.Replace('/', Path.DirectorySeparatorChar));
+
             if (!Directory.Exists(sourceDirectory))
             {
-                Debug.LogError("[EnemySpawnEffectSetup] 找不到切好的帧目录：" + sourceDirectory);
+                // 切图用的临时目录可能已被清理：Assets 里 12 帧齐全就直接复用。
+                if (AllFramesExist(targetDirectory))
+                    return true;
+
+                Debug.LogError("[EnemySpawnEffectSetup] 找不到切好的帧目录，且 Assets 里的帧不完整：" + targetDirectory);
                 return false;
             }
 
             EnsureFolder("Assets/Art", "Effects");
             EnsureFolder("Assets/Art/Effects", "EnemySpawn");
 
-            var targetDirectory = Path.Combine(ProjectRoot, FrameFolder.Replace('/', Path.DirectorySeparatorChar));
             Directory.CreateDirectory(targetDirectory);
 
             for (var i = 0; i < FrameCount; i++)

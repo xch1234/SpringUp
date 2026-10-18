@@ -110,15 +110,37 @@ namespace TideBorne.EditorTools
             };
         }
 
-        /// <summary>把 .tmp_art 里切好的帧复制进 Assets。Unity 不导入以 . 开头的目录，所以必须先搬进来。</summary>
+        /// <summary>Assets 里 15 帧是否齐全。</summary>
+        private static bool AllFramesExist(string directory)
+        {
+            for (var i = 0; i < FrameCount; i++)
+            {
+                if (!File.Exists(Path.Combine(directory, FrameName(i))))
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 把切好的帧复制进 Assets（Unity 不导入以 . 开头的目录）。
+        /// 切图用的临时目录可能已被清理：只要 Assets 里的 15 帧都在，就直接复用，不再要求源目录存在。
+        /// </summary>
         private static bool EnsureFramesCopied()
         {
             var projectRoot = Directory.GetParent(Application.dataPath).FullName;
-            var sourceDir = Path.Combine(projectRoot, SourceFolder);
-            if (!Directory.Exists(sourceDir))
-                return false;
-
             var targetDir = Path.Combine(projectRoot, FrameFolder);
+            var sourceDir = Path.Combine(projectRoot, SourceFolder);
+
+            if (!Directory.Exists(sourceDir))
+            {
+                if (AllFramesExist(targetDir))
+                    return true;
+
+                Debug.LogError("[RangedChaserArtSetup] 找不到帧源目录，且 Assets 里的帧不完整：" + targetDir);
+                return false;
+            }
+
             Directory.CreateDirectory(targetDir);
 
             for (var i = 0; i < FrameCount; i++)
