@@ -61,9 +61,9 @@ namespace SpringUp.EditorChecks
             var config = new RunConfiguration(AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Organs/organs.json").text,
                 AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Data/Waves/waves.json").text, OrganCatalog.LoadDefault());
             var run = config.CreateRun(); run.StartRun(); run.CombatTimerFinished();
-            for (int i = 0; i < 30; i++) run.Inventory.Spawn("rust_knife");
+            while (!run.Inventory.IsBackpackFull) run.Inventory.Spawn("rust_knife");
             lab.backpack.Bind(new RunLaboratoryEquipment(run, config.Definitions));
-            lab.status.text = "背包分页测试 · 拖动器官调整装备。\n\n关闭背包后在休整地图攻击木桩。\n打开背包时世界暂停。";
+            lab.status.text = "固定背包测试 · 拖动器官调整装备。\n\n关闭背包后在休整地图攻击木桩。\n打开背包时世界暂停。";
             lab.gameObject.SetActive(true);
             foreach (var size in new[] {new Vector2Int(1440,900),new Vector2Int(1280,720),new Vector2Int(1024,768)})
             {
@@ -76,13 +76,10 @@ namespace SpringUp.EditorChecks
                         rect.GetWorldCorners(corners);
                         foreach (var corner in corners) { var p = camera.WorldToViewportPoint(corner); Require(p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1, "UI stays on screen: " + rect.name); }
                     }
-                    lab.backpack.ChangePage(100);
-                    Require(!lab.backpack.nextPage.interactable, "Last inventory page reachable");
                     Require(lab.backpack.inventorySlots.Any(slot => slot.Item?.InstanceId == run.Inventory.UnequippedIds().Last()), "Last item reachable");
-                    lab.backpack.ChangePage(-100);
                 });
             }
-            Debug.Log("[Presentation Checks] PASS: tile counts, sizes, UI bounds and inventory pagination at three resolutions; captures saved.");
+            Debug.Log("[Presentation Checks] PASS: tile counts, sizes, UI bounds and fixed inventory at three resolutions; captures saved.");
         }
         static void Capture(Camera camera, int width, int height, string name, Action validate = null)
         {

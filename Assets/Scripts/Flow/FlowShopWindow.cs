@@ -13,8 +13,8 @@ namespace SpringUp.Flow
         public Button[] offerButtons = System.Array.Empty<Button>(), inventoryButtons = System.Array.Empty<Button>();
         public Text[] offerNames, offerPrices;
         public OrganIconView detailIcon;
-        public Text balance, pageLabel, inventoryCount, emptyInventory, detailName, detailKind, description, price, feedback;
-        public Button trade, refresh, previous, next;
+        public Text balance, detailName, detailKind, description, price, feedback;
+        public Button trade, refresh;
         public ScrollRect detailsScroll;
         RunController run;
         RunConfiguration configuration;
@@ -23,7 +23,6 @@ namespace SpringUp.Flow
         IReadOnlyList<LaboratoryItem> inventory;
         ShopOffer selectedOffer;
         string selectedInstance;
-        int page;
         bool trading;
         static readonly Color Ink = new Color(.82f, .92f, 1);
         static readonly Color Unaffordable = new Color(1, .48f, .43f);
@@ -36,7 +35,6 @@ namespace SpringUp.Flow
             for (int i = 0; i < offerButtons.Length; i++) { int index = i; offerButtons[i].onClick.AddListener(() => SelectOffer(index)); }
             for (int i = 0; i < inventoryButtons.Length; i++) { int index = i; inventoryButtons[i].onClick.AddListener(() => SelectInventory(index)); }
             trade.onClick.AddListener(Trade); refresh.onClick.AddListener(RefreshOffers);
-            previous.onClick.AddListener(() => ChangePage(-1)); next.onClick.AddListener(() => ChangePage(1));
             run.LoadoutChanged += OnInventoryChanged; run.BalanceChanged += OnBalanceChanged;
             Refresh();
         }
@@ -52,24 +50,18 @@ namespace SpringUp.Flow
         }
         public void SelectInventory(int index)
         {
-            int position = page * inventoryIcons.Length + index;
+            int position = index;
             if (inventory == null || position < 0 || position >= inventory.Count) return;
             selectedInstance = inventory[position].InstanceId; selectedOffer = null; feedback.text = ""; RefreshDetails();
             detailsScroll.verticalNormalizedPosition = 1;
         }
-        public void ChangePage(int offset)
-        { page += offset; selectedInstance = null; feedback.text = ""; Refresh(); }
         public void Refresh()
         {
             if (run == null) return;
             offers = run.GetShopOffers(); inventory = equipment.Inventory;
-            int pages = Mathf.Max(1, Mathf.CeilToInt(inventory.Count / (float)inventoryIcons.Length));
-            page = Mathf.Clamp(page, 0, pages - 1);
-            balance.text = run.Marrow.ToString(); inventoryCount.text = inventory.Count.ToString();
-            emptyInventory.gameObject.SetActive(inventory.Count == 0);
-            pageLabel.text = $"{page + 1} / {pages}"; previous.interactable = page > 0; next.interactable = page + 1 < pages;
+            balance.text = run.Marrow.ToString();
             refresh.interactable = run.Stage == RunPhase.Rest && run.Marrow >= run.ShopRefreshPrice && offers.Count > 0;
-            refresh.GetComponentInChildren<Text>().text = $"刷新  {run.ShopRefreshPrice}";
+            refresh.GetComponentInChildren<Text>().text = run.ShopRefreshPrice.ToString();
             for (int i = 0; i < offerIcons.Length; i++)
             {
                 bool exists = i < offers.Count;
@@ -81,7 +73,7 @@ namespace SpringUp.Flow
             }
             for (int i = 0; i < inventoryIcons.Length; i++)
             {
-                int index = page * inventoryIcons.Length + i;
+                int index = i;
                 inventoryIcons[i].Bind(index < inventory.Count ? inventory[index] : null);
                 inventoryButtons[i].interactable = index < inventory.Count;
             }
@@ -100,8 +92,8 @@ namespace SpringUp.Flow
             price.text = item == null ? "" : buying && selectedOffer.Purchased ? "已售出" : amount.ToString();
             price.color = buying && !selectedOffer.Purchased && amount > run.Marrow ? Unaffordable : Ink;
             trade.gameObject.SetActive(item != null);
-            trade.GetComponentInChildren<Text>().text = buying ? "购买" : "出售";
-            trade.interactable = item != null && run.Stage == RunPhase.Rest && (!buying || (!selectedOffer.Purchased && run.Marrow >= amount));
+            trade.GetComponentInChildren<Text>().text = buying ? (run.Inventory.IsBackpackFull ? "背包已满" : "购买") : "出售";
+            trade.interactable = item != null && run.Stage == RunPhase.Rest && (!buying || (!selectedOffer.Purchased && !run.Inventory.IsBackpackFull && run.Marrow >= amount));
             for (int i = 0; i < offerIcons.Length; i++) offerIcons[i].SetSelected(i < offers.Count && ReferenceEquals(selectedOffer, offers[i]));
             foreach (var icon in inventoryIcons) icon.SetSelected(selectedInstance != null && icon.InstanceId == selectedInstance);
         }
@@ -113,15 +105,9 @@ namespace SpringUp.Flow
             {
                 if (selectedOffer != null)
                 {
-                    var before = new HashSet<string>(run.Inventory.UnequippedIds());
                     var result = run.TryPurchaseShopOffer(selectedOffer);
-                    if (result.Ok)
-                    {
-                        var ids = run.Inventory.UnequippedIds();
-                        int added = ids.FindIndex(id => !before.Contains(id));
-                        if (added >= 0) page = added / inventoryIcons.Length;
-                    }
-                    else if (result.Reason != "insufficient_marrow") feedback.text = SpringUp.UI.ChineseText.Error(result.Reason);
+                    if (!result.Ok && result.Reason != "insufficient_marrow" && result.Reason != "capacity")
+                        feedback.text = SpringUp.UI.ChineseText.Error(result.Reason);
                 }
                 else if (selectedInstance != null && run.Inventory.UnequippedIds().Contains(selectedInstance))
                 {
@@ -147,8 +133,8 @@ namespace SpringUp.Flow
         {
             if (run != null) { run.LoadoutChanged -= OnInventoryChanged; run.BalanceChanged -= OnBalanceChanged; }
             foreach (var button in offerButtons.Concat(inventoryButtons)) button.onClick.RemoveAllListeners();
-            foreach (var button in new[] { trade, refresh, previous, next }) if (button != null) button.onClick.RemoveAllListeners();
-            run = null; selectedOffer = null; selectedInstance = null; page = 0;
+            foreach (var button in new[] { trade, refresh }) if (button != null) button.onClick.RemoveAllListeners();
+            run = null; selectedOffer = null; selectedInstance = null;
         }
         void OnDisable() => Unbind();
         void OnDestroy() => Unbind();

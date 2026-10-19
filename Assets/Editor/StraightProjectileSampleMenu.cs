@@ -38,27 +38,27 @@ namespace SpringUp.EditorChecks
         {
             if (!RestContext(out var run, out var definitions, out var refresh)) return;
             foreach (var definition in definitions.Values)
-                if (definition.Torso != null) run.Inventory.Spawn(definition.Id);
+                if (definition.Torso != null && !AddSample(run, definition.Id)) break;
             refresh();
-            Debug.Log("已添加 7 种躯干样板，只能装入两个躯干槽；出战前仍须满足背包容量限制。");
+            Debug.Log("已按背包剩余空间添加躯干样板，只能装入两个躯干槽。");
         }
         [MenuItem("Tools/SpringUp/样板/休息期添加全部触发器")]
         public static void GiveTriggers()
         {
             if (!RestContext(out var run, out var definitions, out var refresh)) return;
             foreach (var definition in definitions.Values)
-                if (definition.Trigger != null) run.Inventory.Spawn(definition.Id);
+                if (definition.Trigger != null && !AddSample(run, definition.Id)) break;
             refresh();
-            Debug.Log("已添加 10 种触发器（含多肢触手）；全部只发动紧邻后一个执行器，后者不自动攻击。攻击条件只监听紧邻前一个器官。出战前须满足背包容量限制。");
+            Debug.Log("已按背包剩余空间添加触发器；只发动紧邻后一个执行器，后者不自动攻击。攻击条件只监听紧邻前一个器官。");
         }
         [MenuItem("Tools/SpringUp/样板/休息期添加全部执行器")]
         public static void GiveAll()
         {
             if (!RestContext(out var run, out var definitions, out var refresh)) return;
             foreach (var definition in definitions.Values)
-                if (definition.Type == SpringUp.Organs.OrganType.Actuator) run.Inventory.Spawn(definition.Id);
+                if (definition.Type == SpringUp.Organs.OrganType.Actuator && !AddSample(run, definition.Id)) break;
             refresh();
-            Debug.Log("已添加全部 19 种执行器样板；出战前请装备或丢弃多余样板，遵守背包容量限制。");
+            Debug.Log("已按背包剩余空间添加执行器样板。可先装备或丢弃，再添加其他样板。");
         }
         [MenuItem("Tools/SpringUp/样板/休息期添加直线子弹")]
         public static void Give()
@@ -66,8 +66,14 @@ namespace SpringUp.EditorChecks
             if (!RestContext(out var run, out var definitions, out var refresh)) return;
             if (!definitions.ContainsKey("straight_projectile"))
             { Debug.LogWarning("请停止 Play 后重新进入，以加载新的器官目录。"); return; }
-            run.Inventory.Spawn("straight_projectile"); refresh();
+            if (!AddSample(run, "straight_projectile")) return;
+            refresh();
             Debug.Log("直线子弹样板已加入背包，可安装到头、手或腿。样板不加入正式掉落表。");
+        }
+        static bool AddSample(RunController run, string id)
+        {
+            if (run.Inventory.IsBackpackFull) { Debug.LogWarning("背包已满，停止添加样板。"); return false; }
+            run.Inventory.Spawn(id); return true;
         }
     }
 }

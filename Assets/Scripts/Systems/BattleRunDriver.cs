@@ -182,9 +182,7 @@ namespace Tideflesh.Systems
             }
 
             var bag = run.Inventory.UnequippedIds();
-            var cap = run.Inventory.UnequippedCapacity();
             GUILayout.Label("实验室    第 " + run.Wave + " 波结束    髓质 " + run.Marrow, _label);
-            GUILayout.Label("未装备 " + bag.Count + " / " + cap, _label);
             GUILayout.Label("手部槽会写进器官管道。没有对应配置的器官（例如蜘蛛巢）只留在库存。", _label);
 
             _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Height(Mathf.Max(160f, height - 230f)));
@@ -202,11 +200,6 @@ namespace Tideflesh.Systems
             {
                 if (GUILayout.Button("开始下一波", _button))
                     RequestNextWave();
-            }
-            else
-            {
-                var extra = bag.Count - cap;
-                GUILayout.Label("未装备超过 " + cap + "，请再卖掉或丢掉 " + extra + " 件。", _label);
             }
 
             GUILayout.EndArea();

@@ -31,14 +31,20 @@ namespace SpringUp.EditorChecks
             view.trade.onClick.Invoke(); Require(run.Inventory.UnequippedIds().Count == count + 1, "Double purchase ignored");
             view.Unbind(); Object.DestroyImmediate(view.gameObject); view = Create(run, config);
             Require(ReferenceEquals(offer, run.GetShopOffers()[0]) && view.offerPrices[0].text == "已售出", "Reopen preserves sold stock");
-            for (int i = 0; i < 30; i++) run.Inventory.Spawn("rust_knife");
-            view.Refresh(); view.ChangePage(999); Require(!view.next.interactable && view.previous.interactable, "Inventory paging clamps");
+            while (!run.Inventory.IsBackpackFull) run.Inventory.Spawn("rust_knife");
+            view.Refresh(); view.SelectOffer(1);
+            balance = run.Marrow;
+            Require(!view.trade.interactable && view.trade.GetComponentInChildren<Text>().text == "背包已满", "Full bag button explains blocked purchase");
+            view.trade.onClick.Invoke(); Require(run.Marrow == balance && !run.GetShopOffers()[1].Purchased, "Full bag click does not charge or consume stock");
+            Require(!view.GetComponentsInChildren<Transform>(true).Any(t => t.name == "Previous page" || t.name == "Next page" || t.name == "Page" || t.name == "Inventory count"), "No pagination or capacity display");
+            Require(view.inventoryIcons.Length == Inventory.BackpackCapacity && view.inventoryIcons.All(icon => icon.InstanceId != null), "All fourteen items are visible");
+            Capture(view, 1440, 900, "shop-full.png");
             view.SelectInventory(0); string selected = view.inventoryIcons[0].InstanceId;
             balance = run.Marrow; int sale = run.Inventory.SalePrice(selected); count = run.Inventory.UnequippedIds().Count;
             view.trade.onClick.Invoke(); Require(run.Marrow == balance + sale && !run.Inventory.UnequippedIds().Contains(selected), "Sale removes selected instance and credits price");
             Require(!view.trade.gameObject.activeSelf, "Sale clears selection");
             view.trade.onClick.Invoke(); Require(run.Inventory.UnequippedIds().Count == count - 1, "Second click does not sell the next item");
-            view.ChangePage(-999); view.SelectOffer(1); int refreshPrice = run.ShopRefreshPrice; balance = run.Marrow;
+            view.SelectOffer(1); Require(view.trade.interactable && view.trade.GetComponentInChildren<Text>().text == "购买", "Selling restores purchase availability"); int refreshPrice = run.ShopRefreshPrice; balance = run.Marrow;
             view.refresh.onClick.Invoke(); Require(run.Marrow == balance - refreshPrice && !view.trade.gameObject.activeSelf, "Refresh charges once and clears old offer selection");
             Require(!ReferenceEquals(offer, run.GetShopOffers()[0]), "Refresh replaces offers");
             Require(view.GetComponentsInChildren<OrganDragSlot>(true).Length == 0, "No drag handlers in shop");
@@ -54,7 +60,7 @@ namespace SpringUp.EditorChecks
             Require(!view.trade.interactable && !view.refresh.interactable && poor.Marrow == 0, "Insufficient funds disable controls");
             view.trade.onClick.Invoke(); view.refresh.onClick.Invoke(); Require(poor.Marrow == 0 && !poor.GetShopOffers()[0].Purchased, "Disabled transactions cannot mutate state");
             Capture(view, 1440, 900, "shop-empty.png"); view.Unbind(); Object.DestroyImmediate(view.gameObject);
-            Debug.Log("SHOP_UI_CHECKS_PASS: purchase, sale, duplicate clicks, sold-stock persistence, refresh, pagination, insufficient funds, no dragging, layout.");
+            Debug.Log("SHOP_UI_CHECKS_PASS: purchase, sale, duplicate clicks, sold-stock persistence, refresh, full bag, insufficient funds, no dragging, layout.");
         }
         static FlowShopWindow Create(RunController run, RunConfiguration config)
         {

@@ -67,7 +67,7 @@ namespace SpringUp.Flow
         {
             if (status == null) return;
             status.text = (editable ? "实验室 · 拖动调整装备" : "背包 · 仅可查看")
-            + $" · 背包 {run.Inventory.UnequippedIds().Count} 件 · 骨髓 {run.Marrow}\n"
+            + $" · 骨髓 {run.Marrow}\n"
             + (editable ? "装配期间世界暂停；关闭后可前往木桩测试构筑。" : $"仅在休整区靠近 LAB 柜台按 {GameSettings.Display(GameBinding.Interact)}，才能装配、拆卸或交换器官。")
             + $"\nEsc / {GameSettings.InventoryHint} / 鼠标右键：关闭并返回游戏";
         }

@@ -93,11 +93,11 @@ namespace SpringUp.EditorChecks
             Assert.AreEqual(run.Inventory.Instances.Count, ids.Length); Assert.AreEqual(ids.Length, ids.Distinct().Count());
         }
 
-        [Test] public void DragReplaceSwapUnloadCancelAndPagination()
+        [Test] public void DragReplaceSwapUnloadCancelAndFixedInventory()
         {
             var config = Configuration(); var run = config.CreateRun(); run.StartRun(); run.CombatTimerFinished();
             string knife = run.Inventory.Spawn("rust_knife");
-            for (int i = 0; i < 30; i++) run.Inventory.Spawn("fist");
+            while (run.Inventory.UnequippedIds().Count < Inventory.BackpackCapacity - 1) run.Inventory.Spawn("fist");
             var root = Object.Instantiate(AssetDatabase.LoadAssetAtPath<BackpackPresenter>(FlowPresentationRepair.LabPath));
             var events = new GameObject("UI events", typeof(EventSystem));
             var equipment = new RunLaboratoryEquipment(run, config.Definitions);
@@ -121,12 +121,13 @@ namespace SpringUp.EditorChecks
                 root.BeginDrag(head, pointer); root.CancelDrag(); Assert.AreEqual(knife, run.Inventory.EquippedAt("head", 1));
                 root.BeginDrag(head, pointer); root.DropToInventory();
                 Assert.IsNull(run.Inventory.EquippedAt("head", 1)); Assert.Contains(knife, run.Inventory.UnequippedIds());
-                Assert.IsTrue(root.inventorySlots.Any(s => s.Item?.InstanceId == knife), "Unloaded item is shown on its page");
-                root.Select(knife); root.ChangePage(-100); Assert.AreEqual(knife, root.SelectedInstanceId);
-                root.ChangePage(100); Assert.IsFalse(root.nextPage.interactable); Assert.IsTrue(root.previousPage.interactable);
+                Assert.IsTrue(root.inventorySlots.Any(s => s.Item?.InstanceId == knife), "Unloaded item is visible in the fixed backpack");
+                root.Select(knife); root.Refresh(); Assert.AreEqual(knife, root.SelectedInstanceId);
+                Assert.AreEqual(Inventory.BackpackCapacity, root.inventorySlots.Length);
+                Assert.IsFalse(root.GetComponentsInChildren<Transform>(true).Any(t => t.name == "Previous page" || t.name == "Next page" || t.name == "Page"));
                 root.ReadOnly = true; root.BeginDrag(root.inventorySlots.First(s => s.Item != null), pointer); Assert.IsFalse(root.IsDragging);
                 root.ReadOnly = false; root.BeginDrag(root.inventorySlots.First(s => s.Item != null), pointer);
-                root.ChangePage(-1); Assert.IsFalse(root.IsDragging);
+                root.Refresh(); Assert.IsFalse(root.IsDragging);
                 root.BeginDrag(root.inventorySlots.First(s => s.Item != null), pointer); root.CancelDrag();
                 Assert.IsFalse(root.IsDragging); root.gameObject.SetActive(true); root.Bind(equipment); root.Bind(equipment);
                 root.Select(knife); run.Discard(knife); Assert.IsNull(root.SelectedInstanceId);
@@ -176,11 +177,11 @@ namespace SpringUp.EditorChecks
             {
                 var checks = new OrganUiChecks();
                 checks.MoveSwapIsAtomicAndPhaseGuarded();
-                checks.DragReplaceSwapUnloadCancelAndPagination();
+                checks.DragReplaceSwapUnloadCancelAndFixedInventory();
                 checks.ActualActivationAndIsolatedPreviewSharePulses();
                 new OrganCombatReportChecks().BoundedHistoryAttributionAndRebinding();
                 Capture();
-                Debug.Log("[Organ UI] PASS: atomic transactions, read-only, drag/drop, cancellation, selection, pagination, missing art, reusable paused pulses and existing combat report.");
+                Debug.Log("[Organ UI] PASS: atomic transactions, read-only, drag/drop, cancellation, selection, fixed inventory, missing art, reusable paused pulses and existing combat report.");
             }
             catch (Exception e) { Debug.LogException(e); EditorApplication.Exit(1); }
         }
@@ -193,17 +194,17 @@ namespace SpringUp.EditorChecks
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.06f, .09f, .11f);
             canvas.renderMode = RenderMode.ScreenSpaceCamera; canvas.worldCamera = camera; canvas.planeDistance = 10;
             var config = Configuration(); var run = config.CreateRun(); run.StartRun(); run.CombatTimerFinished();
-            foreach (var id in OrganTestFactory.Ids) run.Inventory.Spawn(id);
+            foreach (var id in OrganTestFactory.Ids.Take(8)) run.Inventory.Spawn(id);
             run.Replace(run.Inventory.Spawn("multi_tentacle"), "hand", 2);
             run.Replace(run.Inventory.Spawn("tnt"), "hand", 3);
-            for (int i = 0; i < 30; i++) run.Inventory.Spawn("trigger_hit");
+            while (!run.Inventory.IsBackpackFull) run.Inventory.Spawn("trigger_hit");
             var equipment = new RunLaboratoryEquipment(run, config.Definitions);
             var lab = Object.Instantiate(AssetDatabase.LoadAssetAtPath<FlowLaboratoryWindow>(FlowPresentationRepair.LabPath), canvas.transform);
             var font = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft YaHei", "Arial" }, 24);
             foreach (var text in lab.GetComponentsInChildren<Text>(true)) text.font = font;
             lab.backpack.Bind(equipment); lab.gameObject.SetActive(true);
             lab.backpack.Select(run.Inventory.EquippedAt("hand", 2));
-            lab.status.text = "休整期 · 拖动调整装备 · 背包无限容量\n背包打开期间世界暂停；关闭后可攻击休整区木桩测试构筑。";
+            lab.status.text = "休整期 · 拖动调整装备\n背包打开期间世界暂停；关闭后可攻击休整区木桩测试构筑。";
             Directory.CreateDirectory("Logs/OrganUI");
             foreach (var size in new[] { new Vector2Int(1440, 900), new Vector2Int(1280, 720), new Vector2Int(1024, 768) })
             {
@@ -218,7 +219,6 @@ namespace SpringUp.EditorChecks
                     }
                 });
             }
-            lab.backpack.ChangePage(100); Render(camera, 1440, 900, "backpack-last-page");
             lab.gameObject.SetActive(false); canvas.scaleFactor = 1;
             var hud = RunEquipmentHud.Create(canvas.transform, font); hud.Bind(equipment);
             hud.slots.First(s => s.part == LaboratoryPart.Hand && s.index == 1).view.Pulse();
