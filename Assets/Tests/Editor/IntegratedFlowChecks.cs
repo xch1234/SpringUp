@@ -161,7 +161,7 @@ namespace SpringUp.EditorChecks
                     Require(driver.pipeline.GetBody(BodyPart.Hand).GetSlot(1).InstanceId == knife.InstanceId, "A 保留 D 实例身份。");
                     Require(run.Inventory.OrganOf(knife.InstanceId).damage == knife.Definition.Damage, "D 战斗字段与 A/B 定义一致。");
                     var preview = driver.presenter.GetComponentInChildren<LaboratoryCombatDemo>();
-                    Require(Mathf.Approximately(preview.Pipeline.GetBody(BodyPart.Hand).StepInterval, .15f)
+                    Require(Mathf.Approximately(preview.Pipeline.GetBody(BodyPart.Hand).StepInterval, .25f)
                         && Mathf.Approximately(preview.Pipeline.GetBody(BodyPart.Hand).CycleDuration, 2f), "Shared preview timing.");
                     Require(ReferenceEquals(preview.Pipeline.GetBody(BodyPart.Hand).GetSlot(1).Definition,
                         driver.pipeline.GetBody(BodyPart.Hand).GetSlot(1).Definition), "预览与实战共用战斗定义。");
@@ -313,34 +313,34 @@ namespace SpringUp.EditorChecks
 
         private static void CheckCadence(SpringUpRunDriver driver)
         {
-            Require(Mathf.Approximately(driver.player.GetStepInterval(1), .15f)
-                && Mathf.Approximately(driver.player.GetCycleDuration(1), 2f), "Scene timing must be 0.15 / 2.");
-            var body = new BodyRuntime(BodyPart.Hand, .15f) { CycleDuration = 2f };
+            Require(Mathf.Approximately(driver.player.GetStepInterval(1), .25f)
+                && Mathf.Approximately(driver.player.GetCycleDuration(1), 2f), "Scene timing must be 0.25 / 2.");
+            var body = new BodyRuntime(BodyPart.Hand, .25f) { CycleDuration = 2f };
             for (int i = 0; i < 6; i++) body.SetSlot(i, new OrganInstance(driver.Definitions["fist"]));
-            body.Tick(.14f); Require(body.ExecutedStepCount == 0, "Initial delay.");
-            body.Tick(.01f); Require(body.ExecutedStepCount == 1, "First slot at .15.");
-            body.Tick(.75f); Require(body.ExecutedStepCount == 6, "Six slots spaced .15.");
-            body.Tick(1.24f); Require(body.ExecutedStepCount == 6, "No early wrap.");
+            body.Tick(.24f); Require(body.ExecutedStepCount == 0, "Initial delay.");
+            body.Tick(.01f); Require(body.ExecutedStepCount == 1, "First slot at .25.");
+            body.Tick(1.25f); Require(body.ExecutedStepCount == 6, "Six slots spaced .25.");
+            body.Tick(.74f); Require(body.ExecutedStepCount == 6, "No early wrap.");
             body.Tick(.01f); Require(body.ExecutedStepCount == 7, "Next round begins two seconds after first.");
             int count = body.ExecutedStepCount;
             body.ExecuteAllSlots((_, __) => { });
             Require(body.ExecutedStepCount == count, "Triggered scan must not move normal clock.");
             body.CycleDuration = .05f; body.ResetTiming();
             count = body.ExecutedStepCount;
-            body.Tick(1.05f); Require(body.ExecutedStepCount == count + 7, "No overlapping rounds at extreme speed.");
-            var single = new BodyRuntime(BodyPart.Hand, .15f) { CycleDuration = 2 };
+            body.Tick(1.75f); Require(body.ExecutedStepCount == count + 7, "No overlapping rounds at extreme speed.");
+            var single = new BodyRuntime(BodyPart.Hand, .25f) { CycleDuration = 2 };
             single.SetSlot(5, new OrganInstance(driver.Definitions["fist"]));
-            single.Tick(2.15f); Require(single.ExecutedStepCount == 2, "Sparse and single slot cycle.");
+            single.Tick(2.25f); Require(single.ExecutedStepCount == 2, "Sparse and single slot cycle.");
             single.SetSlot(5, null); single.Tick(100);
             single.SetSlot(0, new OrganInstance(driver.Definitions["fist"]));
-            single.Tick(.14f); Require(single.ExecutedStepCount == 2, "Empty body cannot bank time.");
+            single.Tick(.24f); Require(single.ExecutedStepCount == 2, "Empty body cannot bank time.");
             var stats = new SerializedObject(driver.player.Stats);
             stats.FindProperty("baseCooldown").floatValue = .3f;
             stats.FindProperty("baseCycleDuration").floatValue = 4f;
             stats.ApplyModifiedPropertiesWithoutUndo(); driver.player.Stats.InvalidateModifiers();
             Require(Mathf.Approximately(driver.player.GetStepInterval(1), .3f)
                 && Mathf.Approximately(driver.player.GetCycleDuration(1), 4f), "Invalidated timing values must refresh.");
-            stats.FindProperty("baseCooldown").floatValue = .15f;
+            stats.FindProperty("baseCooldown").floatValue = .25f;
             stats.FindProperty("baseCycleDuration").floatValue = 2f;
             stats.ApplyModifiedPropertiesWithoutUndo(); driver.player.Stats.InvalidateModifiers();
             Debug.Log("[Playtest Regression] EDIT PASS: cadence, sparse slots, empty reset, overlap guard, stat invalidation.");

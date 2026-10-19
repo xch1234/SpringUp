@@ -47,9 +47,9 @@ namespace SpringUp.Organs
             : base(speed, radius, lifetime)
         {
             if (!Enum.IsDefined(typeof(ActuatorPattern), pattern)) throw new ArgumentOutOfRangeException(nameof(pattern));
-            foreach (float value in new[] { orbitRadius, angularSpeed, range, areaRadius, interval, chargeTime, health, healthDecay })
+            foreach (float value in new[] { orbitRadius, angularSpeed, range, areaRadius, interval, chargeTime, health })
                 Validate(value, true);
-            foreach (float value in new[] { lifeSteal, slowMultiplier, spreadAngle, explosionDamage, driftDuration, followDistance })
+            foreach (float value in new[] { lifeSteal, slowMultiplier, spreadAngle, explosionDamage, driftDuration, followDistance, healthDecay })
                 Validate(value, false);
             if (lifeSteal > 1 || slowMultiplier > 1 || spreadAngle > 180 || driftDuration > lifetime)
                 throw new ArgumentException("比例须在 0～1，散射总角度须在 0～180，漂浮时间不能超过寿命。");

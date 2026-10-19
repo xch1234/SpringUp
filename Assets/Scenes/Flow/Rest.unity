@@ -1305,7 +1305,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2dfec4075b044caba3a5d86f5526c46, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.PlayerStatsBase
-  baseCooldown: 0.15
+  baseCooldown: 0.25
   baseCycleDuration: 2
   baseMaxHealth: 100
   moveSpeed: 10

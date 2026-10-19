@@ -17,6 +17,7 @@ namespace Tideflesh.Systems
             public bool Valid => Enemy != null && Enemy.isActiveAndEnabled && Enemy.IsAlive && Enemy.TargetId == Id;
         }
 
+        private static readonly HashSet<BattleOrganCombat> activeCombats = new HashSet<BattleOrganCombat>();
         private OrganPipelineController pipeline;
         private readonly Dictionary<string, TargetState> states = new Dictionary<string, TargetState>();
         private readonly Queue<TriggerSignal> kills = new Queue<TriggerSignal>();
@@ -61,12 +62,24 @@ namespace Tideflesh.Systems
             if (resolving && cause.HasValue) kills.Enqueue(new TriggerSignal(TriggerOn.Heal, cause.Value));
             else pipeline.NotifyOwner(TriggerOn.Heal, cause);
         }
-        private void ExecutionStarted(IActuatorExecution e) => pipeline.NotifyExecutionStarted(e.Context.Cause);
-        private void ExecutionEnded(IActuatorExecution e) { if (!clearing) pipeline.NotifyExecutionEnded(e.Context.Cause, e.EndReason == ActuatorEndReason.Cancelled); }
+        private void ExecutionStarted(IActuatorExecution e)
+        {
+            if (e is SummonExecution summon) summon.Damaged += SummonHurt;
+            pipeline.NotifyExecutionStarted(e.Context.Cause);
+        }
+        private void SummonHurt(SummonExecution summon, float amount)
+        {
+            var source = summon.Context.Cause;
+            var cause = new CastEvent("owner", 0, source.OriginDefinitionId, source.OriginInstanceId,
+                summon.NewActorContext(), effectCenter: summon.Position, allowZeroDamage: true);
+            pipeline.PublishSignal(new TriggerSignal(TriggerOn.Hurt, cause, summon.Position));
+        }
+        private void ExecutionEnded(IActuatorExecution e) { if (e is SummonExecution summon) summon.Damaged -= SummonHurt; if (!clearing) pipeline.NotifyExecutionEnded(e.Context.Cause, e.EndReason == ActuatorEndReason.Cancelled); }
         public int ActiveBlackHoles => holes.Count;
 
         private void OnEnable()
         {
+            activeCombats.Add(this);
             pipeline = GetComponent<OrganPipelineController>();
             pipeline.AttackProduced += Resolve;
             actuatorWorld = new BattleActuatorWorld(gameObject.scene, Resolve) { MeasuredDamage = ResolveDamage, DebuffApplied = hit => pipeline.PublishSignal(new TriggerSignal(TriggerOn.Debuff, hit, hit.EffectCenter)) };
@@ -79,7 +92,33 @@ namespace Tideflesh.Systems
         private bool Eligible(EnemyRuntime enemy) => enemy != null && enemy.isActiveAndEnabled
             && enemy.IsAlive && enemy.gameObject.scene == gameObject.scene;
 
-        private void ExecuteActuator(ActuatorContext context) => actuators.Start(straightProjectile, context, actuatorWorld);
+        private void ExecuteActuator(ActuatorContext context)
+        {
+            if (context.Projectile is PatternActuatorSettings settings && settings.Pattern == ActuatorPattern.Summon)
+                foreach (var active in actuators.Active)
+                    if (active is SummonExecution && !active.IsFinished
+                        && active.Context.Cause.OriginInstanceId == context.Cause.OriginInstanceId) return;
+            var world = context.Cause.Context.ActorPosition == null ? actuatorWorld
+                : new BattleActuatorWorld(gameObject.scene, Resolve) { MeasuredDamage = ResolveDamage,
+                    DebuffApplied = actuatorWorld.DebuffApplied, ActorPosition = context.Cause.Context.ActorPosition };
+            actuators.Start(straightProjectile, context, world);
+        }
+
+        // Equipment creates the first companion immediately, even while the laboratory pauses time.
+        public void SpawnEquippedSummons()
+        {
+            if (!isActiveAndEnabled || actuatorWorld == null || PlayerLocator.Player == null) return;
+            foreach (BodyPart part in System.Enum.GetValues(typeof(BodyPart)))
+                for (int slot = 0; slot < BodyRuntime.SlotCount; slot++)
+                {
+                    var organ = pipeline.GetBody(part).GetSlot(slot);
+                    if (!(organ?.Definition.Projectile is PatternActuatorSettings settings) || settings.Pattern != ActuatorPattern.Summon) continue;
+                    var origin = (Vector2)PlayerLocator.Player.position;
+                    var cause = new CastEvent("owner", organ.Definition.Damage, organ.Definition.Id, organ.InstanceId, new CastContext(),
+                        effectCenter: origin, allowZeroDamage: true);
+                    ExecuteActuator(new ActuatorContext(cause, part, slot, origin, Vector2.right, settings));
+                }
+        }
 
         public void Resolve(CastEvent attack)
             => ResolveDamage(attack);
@@ -193,6 +232,23 @@ namespace Tideflesh.Systems
             actuators.Advance(deltaTime);
         }
 
+        // Return the nearest living companion in the projectile's scene; caller compares it with the player.
+        public static SummonExecution SweepSummons(UnityEngine.SceneManagement.Scene scene, Vector2 from, Vector2 to,
+            float radius, out float fraction)
+        {
+            fraction = float.PositiveInfinity;
+            SummonExecution nearest = null;
+            foreach (var combat in activeCombats)
+            {
+                if (combat == null || !combat.isActiveAndEnabled || combat.gameObject.scene != scene) continue;
+                foreach (var execution in combat.actuators.Active)
+                    if (execution is SummonExecution summon && !summon.IsFinished
+                        && ProjectileGeometry.SegmentCircle(from, to, summon.Position, radius + summon.HitRadius, out float t) && t < fraction)
+                    { nearest = summon; fraction = t; }
+            }
+            return nearest;
+        }
+
         private void FixedUpdate() => Advance(Time.fixedDeltaTime);
         public void Clear()
         {
@@ -205,6 +261,7 @@ namespace Tideflesh.Systems
         }
         private void OnDisable()
         {
+            activeCombats.Remove(this);
             if (pipeline != null) pipeline.AttackProduced -= Resolve;
             if (pipeline != null) pipeline.ActuatorProduced -= ExecuteActuator;
             EnemyEvents.Killed -= Killed;

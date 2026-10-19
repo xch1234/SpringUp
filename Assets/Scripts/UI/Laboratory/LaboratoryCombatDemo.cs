@@ -71,8 +71,9 @@ namespace SpringUp.Laboratory
         private sealed class PreviewWorld : IEffectWorld
         {
             private readonly LaboratoryCombatDemo demo;
-            public PreviewWorld(LaboratoryCombatDemo demo) { this.demo = demo; }
-            public Vector2? OwnerPosition => demo.playerPosition;
+            private readonly Func<Vector2?> actorPosition;
+            public PreviewWorld(LaboratoryCombatDemo demo, Func<Vector2?> actorPosition = null) { this.demo = demo; this.actorPosition = actorPosition; }
+            public Vector2? OwnerPosition => actorPosition != null ? actorPosition() : demo.playerPosition;
             public IReadOnlyList<AttackTarget> Targets => demo.targets.Select(t => new AttackTarget(t.TargetId, t.transform.position, t.IsAlive)).ToArray();
             public bool SweepWall(Vector2 from, Vector2 to, float radius, out ActuatorHit hit) { hit = default; return false; }
             public IReadOnlyList<AttackTarget> BeamTargets(Vector2 from, Vector2 to, float radius)
@@ -124,7 +125,7 @@ namespace SpringUp.Laboratory
         }
         private void ExecuteActuator(ActuatorContext context)
         {
-            actuators.Start(straightProjectile, context, new PreviewWorld(this));
+            actuators.Start(straightProjectile, context, new PreviewWorld(this, context.Cause.Context.ActorPosition));
             Record($"{Origin(context.Cause)}：开始执行");
         }
         private void Start() { if (equipment == null) Initialize(); }
@@ -196,6 +197,13 @@ namespace SpringUp.Laboratory
             Pipeline.TargetSelectorInRange = SelectTargetInRange;
             Pipeline.TargetSnapshotInRange = SnapshotInRange;
             Pipeline.OriginProvider = () => playerPosition;
+            Pipeline.TargetSelectorFrom = (position, range) => AttackTargeting.SelectNearest(new PreviewWorld(this).Targets, position, range);
+            Pipeline.TargetSnapshotFrom = (position, id, range) =>
+            {
+                foreach (var target in new PreviewWorld(this).Targets)
+                    if (target.Id == id && AttackTargeting.IsInRange(target, position, range)) return target;
+                return null;
+            };
             Pipeline.MovingProvider = () => PreviewMoving;
             actuators.Started += ExecutionStarted; actuators.Ended += ExecutionEnded;
             Pipeline.ActuatorProduced += ExecuteActuator;

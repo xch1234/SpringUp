@@ -7,13 +7,14 @@ using UnityEngine.SceneManagement;
 
 namespace Tideflesh.Systems
 {
-    public sealed class BattleActuatorWorld : IEffectWorld
+    public sealed class BattleActuatorWorld : IEffectWorld, ISummonContactWorld
     {
         private readonly Scene scene;
         private readonly Action<CastEvent> damage;
         public Func<CastEvent, float> MeasuredDamage { get; set; }
         public Action<CastEvent> DebuffApplied { get; set; }
-        public Vector2? OwnerPosition => PlayerLocator.Player != null && PlayerLocator.Player.gameObject.scene == scene
+        public Func<Vector2?> ActorPosition { get; set; }
+        public Vector2? OwnerPosition => ActorPosition != null ? ActorPosition() : PlayerLocator.Player != null && PlayerLocator.Player.gameObject.scene == scene
             ? (Vector2?)PlayerLocator.Player.position : null;
         public IReadOnlyList<AttackTarget> Targets
         {
@@ -49,6 +50,13 @@ namespace Tideflesh.Systems
             if (delta.sqrMagnitude > .000001f)
                 foreach (var hit in Physics2D.CircleCastAll(from, radius, delta.normalized, delta.magnitude)) Add(hit.collider);
             return result;
+        }
+        public float ContactDamage(string targetId)
+        {
+            foreach (var enemy in EnemyRuntime.ActiveEnemies)
+                if (enemy != null && enemy.isActiveAndEnabled && enemy.IsAlive && enemy.gameObject.scene == scene && enemy.TargetId == targetId)
+                    return Mathf.Max(0, enemy.Data != null ? enemy.Data.AttackPower : 0);
+            return 0;
         }
         public void NotifyDebuff(CastEvent cause) => DebuffApplied?.Invoke(cause);
         public float Heal(float amount, CastEvent? cause = null)

@@ -12,13 +12,16 @@ namespace SpringUp.Organs
 
         public string ChainId { get; }
         public int Depth { get; }
+        // A live actor origin survives delayed/nested triggers without changing the player's origin.
+        public Func<UnityEngine.Vector2?> ActorPosition { get; }
 
-        public CastContext(int depth = 0)
+        public CastContext(int depth = 0, Func<UnityEngine.Vector2?> actorPosition = null)
         {
             if (depth < 0 || depth > MaxChainDepth)
                 throw new ArgumentOutOfRangeException(nameof(depth));
             ChainId = Guid.NewGuid().ToString("N");
             Depth = depth;
+            ActorPosition = actorPosition;
             triggeredInstances = new HashSet<string>();
         }
 
@@ -27,6 +30,7 @@ namespace SpringUp.Organs
             ChainId = parent.ChainId;
             Depth = parent.Depth + 1;
             triggeredInstances = parent.triggeredInstances;
+            ActorPosition = parent.ActorPosition;
         }
 
         public bool CanEnterTrigger(string instanceId) => Depth < MaxChainDepth && !triggeredInstances.Contains(instanceId);

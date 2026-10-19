@@ -36,6 +36,8 @@ namespace Tideflesh.Systems
             pipeline.TargetSelectorInRange = SelectTargetInRange;
             pipeline.TargetSnapshotInRange = SnapshotInRange;
             pipeline.OriginProvider = OriginPosition;
+            pipeline.TargetSelectorFrom = SelectTargetFrom;
+            pipeline.TargetSnapshotFrom = SnapshotFrom;
         }
 
         private void OnDisable()
@@ -47,6 +49,8 @@ namespace Tideflesh.Systems
             if (pipeline.TargetSelectorInRange == SelectTargetInRange) pipeline.TargetSelectorInRange = null;
             if (pipeline.TargetSnapshotInRange == SnapshotInRange) pipeline.TargetSnapshotInRange = null;
             if (pipeline.OriginProvider == OriginPosition) pipeline.OriginProvider = null;
+            if (pipeline.TargetSelectorFrom == SelectTargetFrom) pipeline.TargetSelectorFrom = null;
+            if (pipeline.TargetSnapshotFrom == SnapshotFrom) pipeline.TargetSnapshotFrom = null;
         }
 
         public string SelectTarget() => SelectTargetInRange(attackRange);
@@ -76,6 +80,25 @@ namespace Tideflesh.Systems
                 {
                     var target = new AttackTarget(enemy.TargetId, enemy.Position, true);
                     return AttackTargeting.IsInRange(target, origin.position, range) ? target : (AttackTarget?)null;
+                }
+            return null;
+        }
+
+        public string SelectTargetFrom(Vector2 position, float range)
+        {
+            candidates.Clear();
+            foreach (var enemy in EnemyRuntime.ActiveEnemies)
+                if (enemy != null && enemy.isActiveAndEnabled && enemy.IsAlive && enemy.gameObject.scene == gameObject.scene)
+                    candidates.Add(new AttackTarget(enemy.TargetId, enemy.Position, true));
+            return AttackTargeting.SelectNearest(candidates, position, range);
+        }
+        public AttackTarget? SnapshotFrom(Vector2 position, string targetId, float range)
+        {
+            foreach (var enemy in EnemyRuntime.ActiveEnemies)
+                if (enemy != null && enemy.isActiveAndEnabled && enemy.IsAlive && enemy.gameObject.scene == gameObject.scene && enemy.TargetId == targetId)
+                {
+                    var target = new AttackTarget(targetId, enemy.Position, true);
+                    return AttackTargeting.IsInRange(target, position, range) ? target : (AttackTarget?)null;
                 }
             return null;
         }

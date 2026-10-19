@@ -89,72 +89,36 @@ namespace TideBorne.Battle
             transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg);
         }
 
-        private void Update()
+        private void Update() => Advance(Time.deltaTime);
+
+        public void Advance(float deltaTime)
         {
-            // A ready cooldown / overlapping projectile must not resolve while the world is paused.
-            if (Time.timeScale <= 0f) return;
-            if (!_inUse)
-                return;
-
-            var deltaTime = Time.deltaTime;
+            if (Time.timeScale <= 0f || !_inUse || deltaTime <= 0) return;
             _elapsed += deltaTime;
-
             var previous = (Vector2)transform.position;
-            var step = _direction * _speed * deltaTime;
-            var next = previous + step;
-
-            if (HitsPlayer(previous, next))
+            var next = previous + _direction * _speed * deltaTime;
+            float playerFraction = float.PositiveInfinity;
+            if (PlayerLocator.HasPlayer && PlayerLocator.Player.gameObject.scene == gameObject.scene
+                && SpringUp.Organs.ProjectileGeometry.SegmentCircle(previous, next, PlayerLocator.PlayerPosition, hitRadius, out float t))
+                playerFraction = t;
+            var summon = Tideflesh.Systems.BattleOrganCombat.SweepSummons(gameObject.scene, previous, next, hitRadius, out float summonFraction);
+            if (summon != null && summonFraction <= playerFraction)
             {
-                // 移到目标附近再结算，视觉上"打到了"与"扣血了"同时发生。
-                transform.position = new Vector3(next.x, next.y, 0f);
+                transform.position = Vector2.Lerp(previous, next, summonFraction);
+                summon.TakeDamage(_damage);
+                ReleaseToPool();
+                return;
+            }
+            if (!float.IsPositiveInfinity(playerFraction))
+            {
+                transform.position = Vector2.Lerp(previous, next, playerFraction);
                 Impact();
                 return;
             }
-
             transform.position = new Vector3(next.x, next.y, 0f);
-
-            if (_elapsed >= lifetime)
-                ReleaseToPool();
+            if (_elapsed >= lifetime) ReleaseToPool();
         }
 
-        /// <summary>
-        /// 这一帧的位移是否命中玩家。
-        ///
-        /// 两个条件任一成立即判定命中：
-        /// 1. 本帧线段到玩家中心的距离 ≤ 命中半径（正常的擦身/正对）。
-        /// 2. 本帧**越过了**玩家（投影落在身后）且横向偏移 ≤ 命中半径
-        ///    —— 没有这一条，弹体在单帧内跨过玩家时永远不判定命中。
-        /// </summary>
-        private bool HitsPlayer(Vector2 previous, Vector2 next)
-        {
-            if (!PlayerLocator.HasPlayer)
-                return false;
-
-            var playerPosition = PlayerLocator.PlayerPosition;
-            var step = next - previous;
-
-            if (step.sqrMagnitude < 0.0000001f)
-                return Vector2.Distance(previous, playerPosition) <= hitRadius;
-
-            var length = step.magnitude;
-            var direction = step / length;
-
-            // 玩家相对本帧起点的投影长度。
-            var toPlayer = playerPosition - previous;
-            var projected = Vector2.Dot(toPlayer, direction);
-
-            // 垂直于弹道方向的横向偏移。
-            var closestPoint = previous + direction * Mathf.Clamp(projected, 0f, length);
-            var lateral = Vector2.Distance(playerPosition, closestPoint);
-
-            if (lateral > hitRadius)
-                return false;
-
-            // 投影落在这一段之内 = 正对命中；投影超过段长 = 本帧越过了玩家。
-            return projected >= -hitRadius;
-        }
-
-        /// <summary>命中：把伤害交给玩家侧结算（走 §6.1 的 `OnPlayerHurt`）。</summary>
         private void Impact()
         {
             EnemyEvents.RaisePlayerHurt(new EnemyEvents.PlayerHurtInfo

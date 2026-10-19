@@ -354,10 +354,11 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 60,
-      "icon": "placeholder/organs/summon_follower.png",
-      "damage": 0,
+      "icon": "Assets/Art/Organs/summon_follower.png",
+      "icon_sprite": "summon_follower_0",
+      "damage": 5,
       "count": 1,
-      "radius": 0.12,
+      "radius": 0.35,
       "speed": 4
     },
     {

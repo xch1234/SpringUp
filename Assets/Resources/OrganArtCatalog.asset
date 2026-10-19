@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: OrganArtCatalog
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Laboratory.OrganArtCatalog
   entries:
+  - definitionId: summon_follower
+    sprite: {fileID: 2583865209617173781, guid: 14e3b2463961f6c459ed878eeef1f158, type: 3}
   - definitionId: straight_projectile
     sprite: {fileID: 21300000, guid: 8cc3210d3b7853c4eacb6c749ee8ab5c, type: 3}
   - definitionId: fist

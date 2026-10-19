@@ -102,7 +102,7 @@ namespace SpringUp.EditorChecks
             Assert.AreEqual(13, definitions.Count(d => d.Projectile != null));
             Assert.AreEqual(12, definitions.Select(d => d.Projectile).OfType<PatternActuatorSettings>().Select(p => p.Pattern).Distinct().Count());
             var summon = definitions.Single(d => d.Id == "summon_follower");
-            Assert.AreEqual(0, summon.Damage); Assert.IsTrue(summon.CanAttack);
+            Assert.AreEqual(5, summon.Damage); Assert.IsTrue(summon.CanAttack);
             Assert.Throws<ArgumentOutOfRangeException>(() => new PatternActuatorSettings(ActuatorPattern.Fog, interval: 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => new PatternActuatorSettings(ActuatorPattern.Orbit, angularSpeed: float.NaN));
             Assert.Throws<ArgumentException>(() => new PatternActuatorSettings(ActuatorPattern.Vampire, lifeSteal: 2));
@@ -209,7 +209,7 @@ namespace SpringUp.EditorChecks
                 Assert.AreEqual(3, emitted);
                 pipeline.GetBody(BodyPart.Head).ResetTiming();
                 pipeline.StepInterval = .1f;
-                pipeline.AdvanceAutomatic(.1f);
+                pipeline.AdvanceAutomatic(.25f);
                 Assert.AreEqual(4, emitted, "Self effects automatically execute without enemies.");
             }
             finally { Object.DestroyImmediate(go); }

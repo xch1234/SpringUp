@@ -48,7 +48,7 @@ namespace SpringUp.EditorChecks
             input.FindProperty("sprintAction").objectReferenceValue = actions.First(a => a.action?.name == "Sprint");
             input.ApplyModifiedPropertiesWithoutUndo();
             var stats = new SerializedObject(driver.player.Stats);
-            stats.FindProperty("baseCooldown").floatValue = .15f;
+            stats.FindProperty("baseCooldown").floatValue = .25f;
             stats.FindProperty("baseCycleDuration").floatValue = 2f;
             stats.ApplyModifiedPropertiesWithoutUndo();
             for (int i = 0; i < PlayerRuntime.PartCount; i++) driver.player.SetPartRate(i, 1f);

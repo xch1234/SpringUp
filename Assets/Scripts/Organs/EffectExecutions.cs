@@ -16,6 +16,10 @@ namespace SpringUp.Organs
         bool SweepWall(Vector2 from, Vector2 to, float radius, out ActuatorHit hit);
         IReadOnlyList<AttackTarget> BeamTargets(Vector2 from, Vector2 to, float radius);
     }
+    public interface ISummonContactWorld
+    {
+        float ContactDamage(string targetId);
+    }
     public readonly struct EffectVisual
     {
         public readonly Vector2 From, To;
@@ -233,21 +237,49 @@ namespace SpringUp.Organs
 
     public sealed class SummonExecution : EffectExecution
     {
+        private readonly Dictionary<string, float> contactTimes = new Dictionary<string, float>();
+        public event Action<SummonExecution, float> Damaged;
         public float Health { get; private set; }
-        protected override float Duration => Settings.Health / Settings.HealthDecay;
-        public SummonExecution(ActuatorContext context, IEffectWorld world) : base(context, world) { Health = Settings.Health; }
+        public float MaxHealth => Settings.Health;
+        public float HitRadius => Settings.HitRadius;
+        protected override float Duration => Settings.HealthDecay > 0 ? Settings.Health / Settings.HealthDecay : float.PositiveInfinity;
+        public SummonExecution(ActuatorContext context, IEffectWorld world) : base(context, world)
+        { Health = Settings.Health; Position = context.SpawnPosition - context.Direction * Settings.FollowDistance; }
+        public CastContext NewActorContext() => new CastContext(actorPosition: () => IsFinished ? (Vector2?)null : Position);
         public void TakeDamage(float amount)
         {
             if (float.IsNaN(amount) || float.IsInfinity(amount) || amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
-            if (IsFinished) return;
-            Health = Mathf.Max(0, Health - amount); if (Health <= .00001f) Finish(ActuatorEndReason.Expired);
+            if (IsFinished || Health <= 0 || amount == 0) return;
+            float actual = Mathf.Min(Health, amount);
+            Health -= actual;
+            // A lethal hit can fire its immediate response; subsequent delayed casts require a live actor.
+            Damaged?.Invoke(this, actual);
+            if (Health <= .00001f) Finish(ActuatorEndReason.Expired);
         }
         protected override void Advance(float dt)
         {
             if (!World.OwnerPosition.HasValue) { Cancel(); return; }
+            Vector2 previous = Position;
             Vector2 destination = World.OwnerPosition.Value - Context.Direction * Settings.FollowDistance;
             Position = Vector2.MoveTowards(Position, destination, Settings.Speed * dt);
-            TakeDamage(Settings.HealthDecay * dt);
+            foreach (var target in World.BeamTargets(previous, Position, HitRadius))
+            {
+                if (IsFinished) break;
+                if (!target.IsAlive || (contactTimes.TryGetValue(target.Id, out float ready) && Age + .000001f < ready)) continue;
+                contactTimes[target.Id] = Age + Settings.Interval;
+                // Snapshot retaliation before outgoing damage can kill/return the enemy to its pool.
+                float incoming = (World as ISummonContactWorld)?.ContactDamage(target.Id) ?? 0;
+                var cause = Context.Cause;
+                if (cause.Damage > 0)
+                    World.Damage(new CastEvent(target.Id, cause.Damage, cause.OriginDefinitionId, cause.OriginInstanceId,
+                        NewActorContext(), effectCenter: target.Position));
+                TakeDamage(incoming);
+            }
+            // Natural decay is not an enemy hit and must never emit Hurt.
+            Health = Mathf.Max(0, Health - Settings.HealthDecay * dt);
+            if (Health <= .00001f) Finish(ActuatorEndReason.Expired);
+            foreach (var key in new List<string>(contactTimes.Keys))
+                if (contactTimes[key] <= Age) contactTimes.Remove(key);
         }
         public override void GetVisuals(List<EffectVisual> output)
         { if (!IsFinished) output.Add(new EffectVisual(Position, Position, .3f, Color.Lerp(Color.red, Color.cyan, Health / Settings.Health))); }

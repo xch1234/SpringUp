@@ -12,9 +12,9 @@ namespace SpringUp.EditorChecks
             void Fields(params string[] names) { foreach (var name in names) EditorGUILayout.PropertyField(serializedObject.FindProperty(name)); }
             Fields("organId", "displayName", "targetingRange", "pattern");
             var pattern = (ActuatorPattern)serializedObject.FindProperty("pattern").enumValueIndex;
-            if (pattern != ActuatorPattern.Summon) Fields("damage");
+            Fields("damage");
             if (pattern != ActuatorPattern.Laser && pattern != ActuatorPattern.ChargedLaser && pattern != ActuatorPattern.Fog) Fields("speed");
-            if (pattern != ActuatorPattern.Summon && pattern != ActuatorPattern.Fog) Fields("hitRadius");
+            if (pattern != ActuatorPattern.Fog) Fields("hitRadius");
             if (pattern != ActuatorPattern.Summon && pattern != ActuatorPattern.Laser && pattern != ActuatorPattern.ChargedLaser) Fields("lifetime");
             switch (pattern)
             {
@@ -28,7 +28,7 @@ namespace SpringUp.EditorChecks
                 case ActuatorPattern.Sucker: Fields("interval", "slowMultiplier"); break;
                 case ActuatorPattern.Missile: Fields("explosionDamage", "areaRadius"); break;
                 case ActuatorPattern.Spore: Fields("driftDuration"); break;
-                case ActuatorPattern.Summon: Fields("health", "healthDecay", "followDistance"); break;
+                case ActuatorPattern.Summon: Fields("health", "healthDecay", "followDistance", "interval"); break;
             }
             serializedObject.ApplyModifiedProperties();
             if (!((PatternActuatorConfig)target).TryCreateDefinition(out _, out var error)) EditorGUILayout.HelpBox(error, MessageType.Error);

@@ -48,7 +48,7 @@ namespace SpringUp.Laboratory
                     case ActuatorPattern.Sucker: return common + $"碰敌附着，每 {p.Interval:g}s 伤害，速度倍率 {p.SlowMultiplier:g}，总寿命 {p.Lifetime:g}s。";
                     case ActuatorPattern.Missile: return common + $"命中再爆炸 {p.ExplosionDamage:g}，半径 {p.AreaRadius:g}；直接伤害与爆炸叠加。";
                     case ActuatorPattern.Spore: return common + $"漂浮 {p.DriftDuration:g}s 后停留，总寿命 {p.Lifetime:g}s，碰敌消失。";
-                    case ActuatorPattern.Summon: return $"跟随召唤物，生命 {p.Health:g}，每秒自然损失 {p.HealthDecay:g}，跟随速度 {p.Speed:g}；暂不攻击。";
+                    case ActuatorPattern.Summon: return $"跟随召唤物，生命 {p.Health:g}，每秒自然损失 {p.HealthDecay:g}；碰撞伤害 {d.Damage:g}，同一敌人间隔 {p.Interval:g} 秒。碰撞敌人或被敌弹击中会受伤；相邻触发器的执行器从召唤物发动。";
                 }
             }
             if (d.Projectile != null) return $"直线子弹，命中伤害 {d.Damage:g}，速度 {d.Projectile.Speed:g}，寿命 {d.Projectile.Lifetime:g}s；碰敌消失，实战撞墙消失。";

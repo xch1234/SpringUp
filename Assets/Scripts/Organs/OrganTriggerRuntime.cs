@@ -11,7 +11,7 @@ namespace SpringUp.Organs
             public OrganInstance Organ;
             public BodyPart Part;
             public int Slot, Kills;
-            public float Charge;
+            public float Charge, Cooldown;
         }
         private sealed class ScheduledTrigger
         {
@@ -53,7 +53,17 @@ namespace SpringUp.Organs
             // Legacy definitions without settings use the same binding rules.
             var settings = organ.Definition.Trigger ?? new TriggerSettings(organ.Definition.TriggerOn, 1, killThreshold: 1);
             if (settings.Condition != signal.Kind || signal.Kind == TriggerOn.Stationary) return;
-            // Hurt/heal are owner events; stationary is driven by AdvanceTriggers.
+            if (signal.Kind == TriggerOn.Hurt || signal.Kind == TriggerOn.Heal)
+            {
+                var predecessor = slot > 0 ? body.GetSlot(slot - 1) : null;
+                bool summonBound = predecessor?.Definition.Projectile is PatternActuatorSettings p && p.Pattern == ActuatorPattern.Summon;
+                if (signal.Cause.Context.ActorPosition != null)
+                {
+                    if (!body.IsTriggerSource(slot, signal.Cause.OriginInstanceId)) return;
+                }
+                else if (summonBound) return;
+            }
+            // Hurt/heal use the actor binding above; stationary is driven by AdvanceTriggers.
             // Every attack event (including delayed damage) must come from the adjacent predecessor.
             if (signal.Kind != TriggerOn.Hurt && signal.Kind != TriggerOn.Heal
                 && !body.IsTriggerSource(slot, signal.Cause.OriginInstanceId)) return;
@@ -84,7 +94,7 @@ namespace SpringUp.Organs
         }
         private void ActivateConfigured(TriggerState state, TriggerSignal signal)
         {
-            if (!isActiveAndEnabled || !StillEquipped(state)) return;
+            if (!isActiveAndEnabled || !StillEquipped(state) || state.Cooldown > .000001f) return;
             var body = GetBody(state.Part);
             int nextSlot = state.Slot + 1;
             if (nextSlot >= BodyRuntime.SlotCount) return;
@@ -92,6 +102,7 @@ namespace SpringUp.Organs
             if (organ == null) return;
             if (!signal.Cause.Context.TryEnterTrigger(state.Organ.InstanceId, out var child, out var reason))
             { TriggerBlocked?.Invoke(GetBody(state.Part), state.Slot, state.Organ, signal.Cause.Context, reason); return; }
+            state.Cooldown = BodyRuntime.MinimumStepInterval;
             TriggerActivated?.Invoke(body, state.Slot, state.Organ, child);
             if (!isActiveAndEnabled || !StillEquipped(state)) return;
             TriggeredSlotExecuted?.Invoke(body, nextSlot, organ, child);
@@ -116,6 +127,7 @@ namespace SpringUp.Organs
             int epoch = triggerEpoch;
             foreach (var key in new List<string>(triggerStates.Keys))
                 if (!StillEquipped(triggerStates[key])) triggerStates.Remove(key);
+            foreach (var state in triggerStates.Values) state.Cooldown = Mathf.Max(0, state.Cooldown - deltaTime);
             foreach (var pending in scheduledTriggers.ToArray())
             {
                 if (!isActiveAndEnabled || epoch != triggerEpoch) return;

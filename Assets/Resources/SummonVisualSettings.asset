@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87b8bbe5346c4cde866c4869a94d7478, type: 3}
+  m_Name: SummonVisualSettings
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.SummonVisualSettings
+  frames:
+  - {fileID: 2583865209617173781, guid: 14e3b2463961f6c459ed878eeef1f158, type: 3}
+  - {fileID: 406995718877510514, guid: 14e3b2463961f6c459ed878eeef1f158, type: 3}
+  - {fileID: -7963202914557924806, guid: 14e3b2463961f6c459ed878eeef1f158, type: 3}
+  - {fileID: -2684437124145084757, guid: 14e3b2463961f6c459ed878eeef1f158, type: 3}
+  - {fileID: 8551875509946817619, guid: 14e3b2463961f6c459ed878eeef1f158, type: 3}
+  - {fileID: 7838379662551251607, guid: 14e3b2463961f6c459ed878eeef1f158, type: 3}
+  - {fileID: 7833769943314610003, guid: 14e3b2463961f6c459ed878eeef1f158, type: 3}
+  - {fileID: -2838228815423168361, guid: 14e3b2463961f6c459ed878eeef1f158, type: 3}
+  - {fileID: -7162243286316766649, guid: 14e3b2463961f6c459ed878eeef1f158, type: 3}
+  - {fileID: 2559222340416644, guid: 14e3b2463961f6c459ed878eeef1f158, type: 3}
+  framesPerSecond: 10
+  width: 1.4
+  flipWithMovement: 1
+  artworkFacesLeft: 1
+  showHealthBar: 1
+  healthBarOffset: {x: 0, y: 0.12}
+  healthBarSize: {x: 0.9, y: 0.1}
+  healthBarColor: {r: 0.9, g: 0.08, b: 0.1, a: 1}
+  healthBarBackground: {r: 0.12, g: 0.02, b: 0.025, a: 0.9}

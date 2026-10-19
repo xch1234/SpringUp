@@ -98,7 +98,7 @@ namespace TideBorne.Battle
         /// <summary>实际步进间隔，秒：<c>PlayerStats.baseCooldown × partRate[i]</c>。</summary>
         public float GetStepInterval(int partIndex)
         {
-            return Stats.BaseCooldown * GetPartRate(partIndex);
+            return Mathf.Max(SpringUp.Organs.BodyRuntime.MinimumStepInterval, Stats.BaseCooldown * GetPartRate(partIndex));
         }
 
         public float GetCycleDuration(int partIndex)

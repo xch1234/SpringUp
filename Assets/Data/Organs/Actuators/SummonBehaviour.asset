@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   organId: summon_follower
   displayName: 跟随召唤物
-  damage: 0
+  damage: 5
   targetingRange: 10
   chargeCost: 20
   pattern: 11
   speed: 4
-  hitRadius: 0.12
+  hitRadius: 0.35
   lifetime: 4
   orbitRadius: 1
   angularSpeed: 180
@@ -34,4 +34,4 @@ MonoBehaviour:
   driftDuration: 1
   health: 20
   healthDecay: 2
-  followDistance: 0.8
+  followDistance: 1.8

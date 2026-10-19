@@ -6,7 +6,7 @@ namespace SpringUp.Organs
     public sealed class BodyRuntime
     {
         public const int SlotCount = 6;
-        public const float MinimumStepInterval = 0.05f;
+        public const float MinimumStepInterval = 0.25f;
 
         private readonly OrganInstance[] slots = new OrganInstance[SlotCount];
         private readonly Func<string, bool> occupiedInOtherBody;
@@ -54,9 +54,9 @@ namespace SpringUp.Organs
             get => stepInterval;
             set
             {
-                if (float.IsNaN(value) || float.IsInfinity(value) || value < MinimumStepInterval)
-                    throw new ArgumentOutOfRangeException(nameof(value), "步进间隔至少为 0.05 秒。");
-                stepInterval = value;
+                if (float.IsNaN(value) || float.IsInfinity(value) || value <= 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), "步进间隔必须为有限正数，实际最短间隔为 0.25 秒。");
+                stepInterval = Math.Max(MinimumStepInterval, value);
             }
         }
 
@@ -152,9 +152,9 @@ namespace SpringUp.Organs
             }
 
             elapsed += deltaTime;
-            while (elapsed >= stepInterval && HasAutomaticSlots())
+            while (elapsed + .0000001 >= stepInterval && HasAutomaticSlots())
             {
-                elapsed -= stepInterval;
+                elapsed = Math.Max(0, elapsed - stepInterval);
                 StepOnce();
             }
         }

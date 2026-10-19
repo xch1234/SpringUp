@@ -73,6 +73,7 @@ namespace SpringUp.EditorChecks
                 var cause = r.Cause(); r.Signal(TriggerOn.Hit, cause); r.Signal(TriggerOn.Hit, cause);
                 Assert.AreEqual(1, r.Attacks.Count);
                 r.Pipeline.AttackProduced += attack => r.Signal(TriggerOn.Hit, attack);
+                r.Pipeline.AdvanceTriggers(.25f);
                 r.Signal(TriggerOn.Hit); Assert.AreEqual(2, r.Attacks.Count, "same-chain reentry is bounded");
                 r.Signal(TriggerOn.Hit, r.Cause(chain: new CastContext(CastContext.MaxChainDepth)));
                 Assert.AreEqual(2, r.Attacks.Count);
@@ -145,6 +146,7 @@ namespace SpringUp.EditorChecks
                 r.Pipeline.NotifyExecutionEnded(r.Cause(previous.InstanceId), true); Assert.IsEmpty(r.Attacks);
                 r.Pipeline.NotifyExecutionEnded(r.Cause("external")); Assert.IsEmpty(r.Attacks);
                 r.Pipeline.NotifyExecutionEnded(r.Cause(previous.InstanceId)); Assert.AreEqual(1, r.Attacks.Count);
+                r.Pipeline.AdvanceTriggers(.25f);
                 r.Pipeline.TryExecuteSlot(Part.Head, 0); Assert.AreEqual(3, r.Attacks.Count, "instant executor starts/ends too");
             }
         }
@@ -173,7 +175,7 @@ namespace SpringUp.EditorChecks
                     r.Pipeline.AutomaticExecution = true;
                     r.Pipeline.StepInterval = .125f;
                     r.Pipeline.CycleDurationProvider = _ => period;
-                    r.Pipeline.AdvanceAutomatic(period > 0 ? 1.5f : 1f);
+                    r.Pipeline.AdvanceAutomatic(2f);
                     CollectionAssert.AreEqual(new[] { 0, 3, 4, 5, 0, 3, 4, 5 }, slots);
                     Assert.AreEqual(8, r.Attacks.Count);
                     Assert.IsFalse(r.Pipeline.TryExecuteSlot(Part.Head, 2));

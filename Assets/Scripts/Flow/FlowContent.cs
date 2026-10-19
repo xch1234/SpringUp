@@ -52,6 +52,8 @@ namespace SpringUp.Flow
             if (session == null || player == null || pipeline == null)
                 throw new InvalidOperationException("Incomplete content dependencies");
             pipeline.AutomaticExecution = false;
+            // FlowApplication owns the single persistent listener, including loading screens.
+            foreach (var listener in world.GetComponentsInChildren<AudioListener>(true)) listener.enabled = false;
             world.SetActive(true);
             PlayerLocator.Bind(player.transform);
             player.GetComponent<PlayerMotor>().InputAllowed = () => app.WorldInputAllowed;
@@ -227,6 +229,7 @@ namespace SpringUp.Flow
             }
             Torso.Apply(torsos, pipeline);
             PipelineLoadout.Apply(pipeline, session.Run.Inventory, app.Configuration.Definitions);
+            combat.SpawnEquippedSummons();
             foreach (BodyPart part in Enum.GetValues(typeof(BodyPart))) pipeline.GetBody(part).ResetTiming();
             Equipment.Refresh();
         }

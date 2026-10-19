@@ -17,12 +17,23 @@ namespace Tideflesh.Systems
         private Material material;
         private OrganPipelineController pipeline;
         private BattleOrganCombat combat;
+        private sealed class SummonView
+        {
+            public SpriteRenderer Renderer;
+            public LineRenderer HealthBackground, HealthFill;
+            public Vector2 LastPosition;
+            public float Frame;
+        }
+        private SummonVisualSettings summonSettings;
+        private readonly Dictionary<string, SummonView> summonViews = new Dictionary<string, SummonView>();
+        public int SummonViewCount => summonViews.Count;
         private readonly Dictionary<string, LineRenderer> projectileViews = new Dictionary<string, LineRenderer>();
         private readonly Stack<LineRenderer> projectilePool = new Stack<LineRenderer>();
         private void OnEnable()
         {
             pipeline = GetComponent<OrganPipelineController>();
             combat = GetComponent<BattleOrganCombat>();
+            summonSettings = Resources.Load<SummonVisualSettings>("SummonVisualSettings");
             pipeline.AttackProduced += Show;
         }
         private void Show(CastEvent attack)
@@ -67,8 +78,15 @@ namespace Tideflesh.Systems
         private void RenderProjectiles()
         {
             var visible = new HashSet<string>();
+            var visibleSummons = new HashSet<string>();
             if (combat != null) foreach (var execution in combat.Actuators.Active)
             {
+                if (execution.IsFinished) continue;
+                if (execution is SummonExecution summon && summonSettings != null && summonSettings.IsValid)
+                {
+                    RenderSummon(summon, visibleSummons);
+                    continue;
+                }
                 effectVisuals.Clear();
                 if (execution is IEffectVisuals effects) effects.GetVisuals(effectVisuals);
                 else effectVisuals.Add(new EffectVisual(execution.Position, execution.Position, execution.Context.Projectile.HitRadius, Color.yellow));
@@ -105,9 +123,72 @@ namespace Tideflesh.Systems
                 var line = projectileViews[id]; projectileViews.Remove(id);
                 line.gameObject.SetActive(false); projectilePool.Push(line);
             }
+            foreach (var id in new List<string>(summonViews.Keys)) if (!visibleSummons.Contains(id))
+            {
+                var view = summonViews[id]; view.Renderer.gameObject.SetActive(false);
+                Destroy(view.Renderer.gameObject); summonViews.Remove(id);
+            }
+        }
+        private void RenderSummon(SummonExecution execution, HashSet<string> visible)
+        {
+            string id = execution.Context.ExecutionId; visible.Add(id);
+            if (!summonViews.TryGetValue(id, out var view))
+            {
+                var go = new GameObject("Summon follower"); go.transform.SetParent(transform, false);
+                var renderer = go.AddComponent<SpriteRenderer>(); renderer.sortingOrder = 3;
+                view = new SummonView { Renderer = renderer, LastPosition = execution.Position };
+                view.HealthBackground = CreateSummonHealthLine("Summon health background", go.transform, 30);
+                view.HealthFill = CreateSummonHealthLine("Summon health fill", go.transform, 31);
+                summonViews.Add(id, view);
+            }
+            float dx = execution.Position.x - view.LastPosition.x;
+            if (summonSettings.flipWithMovement && Mathf.Abs(dx) > .0001f)
+                view.Renderer.flipX = (dx < 0) != summonSettings.artworkFacesLeft;
+            else if (!summonSettings.flipWithMovement) view.Renderer.flipX = false;
+            view.LastPosition = execution.Position;
+            view.Frame = Mathf.Repeat(view.Frame + Time.deltaTime * Mathf.Max(0, summonSettings.framesPerSecond), summonSettings.frames.Length);
+            view.Renderer.sprite = summonSettings.frames[(int)view.Frame] ?? summonSettings.frames[0];
+            view.Renderer.transform.SetPositionAndRotation(execution.Position, Quaternion.identity);
+            float scale = Mathf.Max(.1f, summonSettings.width) / Mathf.Max(.001f, summonSettings.frames[0].bounds.size.x);
+            view.Renderer.transform.localScale = Vector3.one * scale;
+            RenderSummonHealth(execution, view);
+        }
+        private LineRenderer CreateSummonHealthLine(string name, Transform parent, int order)
+        {
+            if (material == null) material = new Material(Shader.Find("Sprites/Default"));
+            var go = new GameObject(name); go.transform.SetParent(parent, false);
+            var line = go.AddComponent<LineRenderer>();
+            line.sharedMaterial = material; line.useWorldSpace = true;
+            line.positionCount = 2; line.sortingOrder = order;
+            return line;
+        }
+        private void RenderSummonHealth(SummonExecution execution, SummonView view)
+        {
+            bool show = summonSettings.showHealthBar;
+            view.HealthBackground.enabled = show;
+            float fraction = Mathf.Clamp01(execution.Health / execution.MaxHealth);
+            view.HealthFill.enabled = show && fraction > 0;
+            if (!show) return;
+            float width = Mathf.Max(.1f, summonSettings.healthBarSize.x);
+            float height = Mathf.Max(.02f, summonSettings.healthBarSize.y);
+            // World-space geometry keeps the bar upright and independent of sprite scaling/flipping.
+            Vector2 center = new Vector2(execution.Position.x, view.Renderer.bounds.max.y) + summonSettings.healthBarOffset;
+            Vector2 left = center - Vector2.right * width * .5f;
+            const float border = .02f;
+            view.HealthBackground.widthMultiplier = height + border * 2;
+            view.HealthBackground.startColor = view.HealthBackground.endColor = summonSettings.healthBarBackground;
+            view.HealthBackground.SetPosition(0, left - Vector2.right * border);
+            view.HealthBackground.SetPosition(1, left + Vector2.right * (width + border));
+            view.HealthFill.widthMultiplier = height;
+            view.HealthFill.startColor = view.HealthFill.endColor = summonSettings.healthBarColor;
+            view.HealthFill.SetPosition(0, left);
+            view.HealthFill.SetPosition(1, left + Vector2.right * width * fraction);
         }
         public void Clear()
         {
+            foreach (var view in summonViews.Values) if (view.Renderer != null)
+            { view.Renderer.gameObject.SetActive(false); Destroy(view.Renderer.gameObject); }
+            summonViews.Clear();
             for (int i = rings.Count - 1; i >= 0; i--) Remove(i);
             foreach (var line in projectileViews.Values) if (line != null) Destroy(line.gameObject);
             projectileViews.Clear();

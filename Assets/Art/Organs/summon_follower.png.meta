@@ -1,0 +1,569 @@
+fileFormatVersion: 2
+guid: 14e3b2463961f6c459ed878eeef1f158
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2583865209617173781
+    second: summon_follower_0
+  - first:
+      213: 406995718877510514
+    second: summon_follower_1
+  - first:
+      213: -7963202914557924806
+    second: summon_follower_2
+  - first:
+      213: -2684437124145084757
+    second: summon_follower_3
+  - first:
+      213: 8551875509946817619
+    second: summon_follower_4
+  - first:
+      213: 7838379662551251607
+    second: summon_follower_5
+  - first:
+      213: 7833769943314610003
+    second: summon_follower_6
+  - first:
+      213: -2838228815423168361
+    second: summon_follower_7
+  - first:
+      213: -7162243286316766649
+    second: summon_follower_8
+  - first:
+      213: 2559222340416644
+    second: summon_follower_9
+  - first:
+      213: 2131108360046249176
+    second: summon_follower_10
+  - first:
+      213: 6116063865535806324
+    second: summon_follower_11
+  - first:
+      213: 4910924185277500142
+    second: summon_follower_12
+  - first:
+      213: 4477917707447089725
+    second: summon_follower_13
+  - first:
+      213: 143994990452898709
+    second: summon_follower_14
+  - first:
+      213: -2138111737965458036
+    second: summon_follower_15
+  - first:
+      213: -5834757521424459356
+    second: summon_follower_16
+  - first:
+      213: -3922544758502237993
+    second: summon_follower_17
+  - first:
+      213: 3714034291703386417
+    second: summon_follower_18
+  - first:
+      213: -5119942366193109489
+    second: summon_follower_19
+  - first:
+      213: -6764058650651847086
+    second: summon_follower_20
+  - first:
+      213: -5717293287640346646
+    second: summon_follower_21
+  - first:
+      213: 5481973442741540952
+    second: summon_follower_22
+  - first:
+      213: -836681909972194390
+    second: summon_follower_23
+  - first:
+      213: -267278494725371455
+    second: summon_follower_24
+  - first:
+      213: 744536538277639579
+    second: summon_follower_25
+  - first:
+      213: 2727037790479022200
+    second: summon_follower_26
+  - first:
+      213: 7144345410771799800
+    second: summon_follower_27
+  - first:
+      213: 1796508609844671062
+    second: summon_follower_28
+  - first:
+      213: 4462341577366487136
+    second: summon_follower_29
+  - first:
+      213: -3110026558997458682
+    second: summon_follower_30
+  - first:
+      213: -1458793534734119413
+    second: summon_follower_31
+  - first:
+      213: 8194212165007870029
+    second: summon_follower_32
+  - first:
+      213: 7253004154101918658
+    second: summon_follower_33
+  - first:
+      213: -2841203980880500948
+    second: summon_follower_34
+  - first:
+      213: -1971448071973140072
+    second: summon_follower_35
+  - first:
+      213: -1212327674306875516
+    second: summon_follower_36
+  - first:
+      213: -5802102160937757110
+    second: summon_follower_37
+  - first:
+      213: -2790346947618310144
+    second: summon_follower_38
+  - first:
+      213: -5114232641156417257
+    second: summon_follower_39
+  - first:
+      213: 7686926435618439795
+    second: summon_follower_40
+  - first:
+      213: 6788247714731501432
+    second: summon_follower_41
+  - first:
+      213: -6775031156292218904
+    second: summon_follower_42
+  - first:
+      213: 6842422377745941380
+    second: summon_follower_43
+  - first:
+      213: 6902338096860229095
+    second: summon_follower_44
+  - first:
+      213: -4819394339369224325
+    second: summon_follower_45
+  - first:
+      213: 5178549606317174161
+    second: summon_follower_46
+  - first:
+      213: 7276830624905889794
+    second: summon_follower_47
+  - first:
+      213: 4470345663778977191
+    second: summon_follower_48
+  - first:
+      213: -7288160072790957023
+    second: summon_follower_49
+  - first:
+      213: -5846684425718246903
+    second: summon_follower_50
+  - first:
+      213: -2102119415906879372
+    second: summon_follower_51
+  - first:
+      213: 3112931164450963718
+    second: summon_follower_52
+  - first:
+      213: -4141473518827677146
+    second: summon_follower_53
+  - first:
+      213: 3660459860119385705
+    second: summon_follower_54
+  - first:
+      213: 6345161927459291671
+    second: summon_follower_55
+  - first:
+      213: -5880372275251731333
+    second: summon_follower_56
+  - first:
+      213: -802373440048306255
+    second: summon_follower_57
+  - first:
+      213: 4812316362251621869
+    second: summon_follower_58
+  - first:
+      213: -2695690086597309071
+    second: summon_follower_59
+  - first:
+      213: 1488489009305718862
+    second: summon_follower_60
+  - first:
+      213: 8616027637877183952
+    second: summon_follower_61
+  - first:
+      213: 6430313704544009356
+    second: summon_follower_62
+  - first:
+      213: 3064360110879222480
+    second: summon_follower_63
+  - first:
+      213: -3465963726694735911
+    second: summon_follower_64
+  - first:
+      213: 1315689592701344004
+    second: summon_follower_65
+  - first:
+      213: -1579444819362108517
+    second: summon_follower_66
+  - first:
+      213: 949664393692056797
+    second: summon_follower_67
+  - first:
+      213: 5066525345206540816
+    second: summon_follower_68
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 4096
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 4096
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 4096
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 4096
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: summon_follower_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 300
+        width: 600
+        height: 300
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 51dc8bed7bbbbd320800000000000000
+      internalID: 2583865209617173781
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: summon_follower_1
+      rect:
+        serializedVersion: 2
+        x: 600
+        y: 300
+        width: 600
+        height: 300
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 27b7cc03370f5a500800000000000000
+      internalID: 406995718877510514
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: summon_follower_2
+      rect:
+        serializedVersion: 2
+        x: 1200
+        y: 300
+        width: 600
+        height: 300
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a3a6b6bd3250d7190800000000000000
+      internalID: -7963202914557924806
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: summon_follower_3
+      rect:
+        serializedVersion: 2
+        x: 1800
+        y: 300
+        width: 600
+        height: 300
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba6067988a6febad0800000000000000
+      internalID: -2684437124145084757
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: summon_follower_4
+      rect:
+        serializedVersion: 2
+        x: 2400
+        y: 300
+        width: 600
+        height: 300
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 35c1ebd677d5ea670800000000000000
+      internalID: 8551875509946817619
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: summon_follower_5
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 600
+        height: 300
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 79a730906c487cc60800000000000000
+      internalID: 7838379662551251607
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: summon_follower_6
+      rect:
+        serializedVersion: 2
+        x: 600
+        y: 0
+        width: 600
+        height: 300
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3573663224427bc60800000000000000
+      internalID: 7833769943314610003
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: summon_follower_7
+      rect:
+        serializedVersion: 2
+        x: 1200
+        y: 0
+        width: 600
+        height: 300
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 790ac611ee59c98d0800000000000000
+      internalID: -2838228815423168361
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: summon_follower_8
+      rect:
+        serializedVersion: 2
+        x: 1800
+        y: 0
+        width: 600
+        height: 300
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 74aa924ada99a9c90800000000000000
+      internalID: -7162243286316766649
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: summon_follower_9
+      rect:
+        serializedVersion: 2
+        x: 2400
+        y: 0
+        width: 600
+        height: 300
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48470826997190000800000000000000
+      internalID: 2559222340416644
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    outline: []
+    customData:
+    physicsShape: []
+    bones: []
+    spriteID: 8724bbc565d5c2a4b873e7a7d3aba24a
+    internalID: 0
+    vertices: []
+    indices:
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":5.0,"y":2.0},"gridSpriteSize":{"x":600.0,"y":300.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      summon_follower_0: 2583865209617173781
+      summon_follower_1: 406995718877510514
+      summon_follower_2: -7963202914557924806
+      summon_follower_3: -2684437124145084757
+      summon_follower_4: 8551875509946817619
+      summon_follower_5: 7838379662551251607
+      summon_follower_6: 7833769943314610003
+      summon_follower_7: -2838228815423168361
+      summon_follower_8: -7162243286316766649
+      summon_follower_9: 2559222340416644
+  mipmapLimitGroupName:
+  pSDRemoveMatte: 0
+  userData:
+  assetBundleName:
+  assetBundleVariant:

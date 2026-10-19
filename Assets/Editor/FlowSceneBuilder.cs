@@ -88,7 +88,7 @@ namespace SpringUp.EditorChecks
             motorData.FindProperty("sprintAction").objectReferenceValue = inputs.First(a => a.action?.name == "Sprint");
             motorData.ApplyModifiedPropertiesWithoutUndo();
             var stats = new SerializedObject(player.Stats);
-            stats.FindProperty("baseCooldown").floatValue = .15f;
+            stats.FindProperty("baseCooldown").floatValue = .25f;
             stats.FindProperty("baseCycleDuration").floatValue = 2;
             stats.ApplyModifiedPropertiesWithoutUndo();
             var director = Object.FindAnyObjectByType<WaveDirector>();

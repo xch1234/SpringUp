@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using SpringUp.Laboratory;
 using UnityEditor;
 using UnityEngine;
@@ -11,7 +12,7 @@ namespace SpringUp.EditorChecks
     public static class OrganArtAuthoring
     {
         [Serializable] public sealed class Data { public Row[] organs = Array.Empty<Row>(); }
-        [Serializable] public sealed class Row { public string id = "", icon = ""; }
+        [Serializable] public sealed class Row { public string id = "", icon = "", icon_sprite = ""; }
         public const string JsonPath = "Assets/Data/Organs/organs.json";
 
         [MenuItem("Tools/SpringUp/UI/刷新器官图片绑定")]
@@ -31,6 +32,13 @@ namespace SpringUp.EditorChecks
                     throw new InvalidOperationException("Organ image must exist and use its JSON ID: " + row.icon);
                 var importer = AssetImporter.GetAtPath(row.icon) as TextureImporter;
                 if (importer == null) throw new InvalidOperationException("Missing texture importer: " + row.icon);
+                if (!string.IsNullOrEmpty(row.icon_sprite))
+                {
+                    var frame = AssetDatabase.LoadAllAssetsAtPath(row.icon).OfType<Sprite>().SingleOrDefault(s => s.name == row.icon_sprite);
+                    if (frame == null) throw new InvalidOperationException("Missing icon frame: " + row.icon_sprite);
+                    entries.Add(new OrganArtCatalog.Entry { definitionId = row.id, sprite = frame });
+                    continue;
+                }
                 // Some supplied icons were automatically sliced into isolated pixels/parts.
                 // Single mode imports the whole illustration, including disconnected details.
                 if (importer.textureType != TextureImporterType.Sprite || importer.spriteImportMode != SpriteImportMode.Single

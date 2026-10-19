@@ -46,6 +46,7 @@ namespace SpringUp.Flow
         Scene contentScene;
         string retryPath;
         bool quitting;
+        AudioListener flowListener;
         Font uiFont;
         GameObject dimmer;
         Text controlsHint;
@@ -66,6 +67,12 @@ namespace SpringUp.Flow
         {
             if (IsActive) { Destroy(gameObject); return; }
             IsActive = true;
+            // Bootstrap survives additive scene transitions; the audio listener must survive too.
+            var menuListener = menuCamera != null ? menuCamera.GetComponent<AudioListener>() : null;
+            if (menuListener != null) menuListener.enabled = false;
+            flowListener = gameObject.GetComponent<AudioListener>();
+            if (flowListener == null) flowListener = gameObject.AddComponent<AudioListener>();
+            flowListener.enabled = true;
             Pause = new PauseService();
             GameSettings.Load();
             GameSettings.Changed += RefreshControlsHint;
