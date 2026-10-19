@@ -118,7 +118,8 @@ namespace Tideflesh.Systems
         public KillRewardResult ResolveKill(string lifeId, int baseMarrow, bool eligible)
         {
             if (!eligible || Stage != RunPhase.Combat || string.IsNullOrEmpty(lifeId) || !rewardedLives.Add(lifeId)) return default;
-            int gained = AddMarrow(baseMarrow);
+            // Halve each base kill reward first; discard odd remainders permanently.
+            int gained = AddMarrow(Math.Max(0, baseMarrow) / 2);
             string instance = null;
             double chance = _waves[Wave].kill_organ_chance;
             if (!double.IsNaN(chance) && chance > 0 && NextUnit() < Math.Min(1, chance))
@@ -128,7 +129,7 @@ namespace Tideflesh.Systems
             }
             WaveKillMarrow += gained;
             BalanceChanged?.Invoke(Marrow);
-            return new KillRewardResult(true, baseMarrow > 0 || gained > 0, gained, instance);
+            return new KillRewardResult(true, gained > 0, gained, instance);
         }
         int AddMarrow(int amount)
         {

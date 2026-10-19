@@ -34,6 +34,8 @@ namespace SpringUp.Flow
                 status.fontSize = 24; status.color = Color.white;
                 status.alignment = TextAnchor.UpperLeft; status.raycastTarget = false;
                 go.AddComponent<Outline>().effectColor = Color.black;
+
+                status.gameObject.SetActive(false);
             }
             foreach (var text in GetComponentsInChildren<Text>(true)) text.font = app.hud.font;
             run.LoadoutChanged += Changed;

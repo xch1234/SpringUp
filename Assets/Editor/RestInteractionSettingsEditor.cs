@@ -9,7 +9,7 @@ namespace SpringUp.EditorChecks
     public sealed class RestInteractionSettingsEditor : Editor
     {
         public const string AssetPath = "Assets/Resources/RestInteractionSettings.asset";
-        [MenuItem("Tools/SpringUp/休整区/编辑商店与实验室交互范围")]
+        [MenuItem("Tools/SpringUp/休整区/编辑木桩、商店与实验室范围")]
         public static void SelectSettings()
         { Selection.activeObject = EnsureAsset(); EditorGUIUtility.PingObject(Selection.activeObject); }
         public static RestInteractionSettings EnsureAsset()
@@ -24,7 +24,7 @@ namespace SpringUp.EditorChecks
         }
         public override void OnInspectorGUI()
         {
-            EditorGUILayout.HelpBox("绿色为商店，蓝色为实验室。范围包含柜台贴图及其左侧一小段甲板；中间走道留空。玩家中心进入矩形后按交互键打开。运行时修改立即生效。", MessageType.Info);
+            EditorGUILayout.HelpBox("黄色为木桩攻击区，绿色为商店，蓝色为实验室。离开木桩区仅暂停自动攻击，已有攻击效果保留。范围包含柜台贴图及其左侧一小段甲板；中间走道留空。玩家中心进入矩形后按交互键打开。运行时修改立即生效。", MessageType.Info);
             DrawDefaultInspector();
             var settings = (RestInteractionSettings)target;
             if (settings.shopArea.Overlaps(settings.laboratoryArea))
@@ -37,6 +37,7 @@ namespace SpringUp.EditorChecks
                 var uv = sprite.rect; uv.x /= sprite.texture.width; uv.width /= sprite.texture.width;
                 uv.y /= sprite.texture.height; uv.height /= sprite.texture.height;
                 GUI.DrawTextureWithTexCoords(rect, sprite.texture, uv);
+                DrawArea(rect, settings.trainingArea, new Color(1, .8f, .2f, .35f), "木桩攻击区");
                 DrawArea(rect, settings.shopArea, new Color(.2f, 1, .4f, .35f), "商店");
                 DrawArea(rect, settings.laboratoryArea, new Color(.2f, .6f, 1, .35f), "实验室");
             }
