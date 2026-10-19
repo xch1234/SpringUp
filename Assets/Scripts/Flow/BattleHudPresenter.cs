@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,6 +24,8 @@ namespace SpringUp.Flow
         readonly Vector3[] corners = new Vector3[4];
         Item wave, time, health, marrow, help;
         Image healthTrack, healthFill;
+        readonly List<Image> images = new List<Image>();
+        public IReadOnlyList<Image> Images => images;
         public Image HealthFill => healthFill;
         public BattleHudSettings Settings => settings;
         public Text WaveText => wave.label;
@@ -112,6 +115,7 @@ namespace SpringUp.Flow
             Apply(wave, settings.wave, visible); Apply(time, settings.time, visible);
             Apply(health, settings.health, visible); Apply(marrow, settings.marrow, visible); Apply(help, settings.help, visible);
             RefreshHealthBar();
+            RefreshImages(visible);
             app.RewardFlights?.SetReceiverTarget(runScene && settings.marrow.visible ? marrow.rect : null);
             if (runScene)
             {
@@ -124,7 +128,45 @@ namespace SpringUp.Flow
         void Apply(Item item, HudTextStyle style, bool visible)
         {
             item.rect.gameObject.SetActive(visible && style.visible);
-            Vector2 anchor = style.anchor switch
+            ApplyLayout(item.rect, style.anchor, style.offset, Vector2.Max(new Vector2(20, 20), style.size), style.scale);
+            item.group.alpha = Mathf.Clamp01(style.opacity);
+            item.label.fontSize = Mathf.Clamp(style.fontSize, 8, 96);
+            item.label.fontStyle = style.bold ? FontStyle.Bold : FontStyle.Normal;
+            item.label.color = style.textColor; item.label.alignment = style.alignment;
+            item.background.color = style.backgroundColor; item.outline.enabled = style.outline;
+        }
+
+        void RefreshImages(bool visible)
+        {
+            int count = settings.images != null ? settings.images.Length : 0;
+            while (images.Count > count)
+            {
+                var image = images[images.Count - 1];
+                image.gameObject.SetActive(false); Destroy(image.gameObject); images.RemoveAt(images.Count - 1);
+            }
+            while (images.Count < count)
+            {
+                var go = new GameObject("HUD Image", typeof(RectTransform), typeof(Image));
+                go.layer = gameObject.layer; go.transform.SetParent(root, false);
+                // Decorative images sit behind labels and never intercept clicks.
+                go.transform.SetAsFirstSibling();
+                var image = go.GetComponent<Image>(); image.raycastTarget = false; images.Add(image);
+            }
+            for (int i = 0; i < count; i++)
+            {
+                var style = settings.images[i]; var image = images[i];
+                image.gameObject.SetActive(visible && style != null && style.visible && style.sprite != null);
+                if (style == null) continue;
+                image.name = string.IsNullOrEmpty(style.name) ? "HUD Image" : style.name;
+                image.sprite = style.sprite; image.preserveAspect = style.preserveAspect;
+                var color = style.color; color.a *= Mathf.Clamp01(style.opacity); image.color = color;
+                ApplyLayout(image.rectTransform, style.anchor, style.offset, Vector2.Max(Vector2.one, style.size), style.scale);
+            }
+        }
+
+        void ApplyLayout(RectTransform rect, HudAnchor placement, Vector2 offset, Vector2 size, float scale)
+        {
+            Vector2 anchor = placement switch
             {
                 HudAnchor.TopRight => Vector2.one,
                 HudAnchor.BottomLeft => Vector2.zero,
@@ -132,9 +174,9 @@ namespace SpringUp.Flow
                 HudAnchor.Center => Vector2.one * .5f,
                 _ => Vector2.up
             };
-            item.rect.anchorMin = item.rect.anchorMax = item.rect.pivot = anchor;
-            var position = style.offset;
-            if (style.anchor == HudAnchor.BelowEquipment)
+            rect.anchorMin = rect.anchorMax = rect.pivot = anchor;
+            var position = offset;
+            if (placement == HudAnchor.BelowEquipment)
             {
                 var equipment = app.Content != null ? app.Content.EquipmentHudRect : null;
                 if (equipment != null)
@@ -144,14 +186,9 @@ namespace SpringUp.Flow
                 }
                 else position += new Vector2(16, -330);
             }
-            item.rect.anchoredPosition = position;
-            item.rect.sizeDelta = Vector2.Max(new Vector2(20, 20), style.size);
-            item.rect.localScale = Vector3.one * Mathf.Clamp(style.scale, .25f, 4);
-            item.group.alpha = Mathf.Clamp01(style.opacity);
-            item.label.fontSize = Mathf.Clamp(style.fontSize, 8, 96);
-            item.label.fontStyle = style.bold ? FontStyle.Bold : FontStyle.Normal;
-            item.label.color = style.textColor; item.label.alignment = style.alignment;
-            item.background.color = style.backgroundColor; item.outline.enabled = style.outline;
+            rect.anchoredPosition = position;
+            rect.sizeDelta = Vector2.Max(Vector2.one, size);
+            rect.localScale = Vector3.one * Mathf.Clamp(scale, .25f, 4);
         }
 
         string Format(string template)

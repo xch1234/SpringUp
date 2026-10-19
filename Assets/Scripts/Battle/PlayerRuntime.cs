@@ -190,6 +190,8 @@ namespace TideBorne.Battle
             currentHealth = Mathf.Clamp(currentHealth, 0f, MaxHealth);
             PublishSnapshotIfChanged(true);
 
+            // Build the animated renderer before the hit-flash skin captures its sources.
+            PlayerSpriteAnimator.Ensure(this);
             EnsureHitFlash();
         }
 

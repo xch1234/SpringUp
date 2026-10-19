@@ -28,6 +28,21 @@ namespace SpringUp.Flow
     }
 
     [Serializable]
+    public sealed class HudImageStyle
+    {
+        public string name = "图片";
+        public bool visible = true;
+        public Sprite sprite;
+        public HudAnchor anchor = HudAnchor.BelowEquipment;
+        public Vector2 offset = new Vector2(0, -12);
+        public Vector2 size = new Vector2(42, 42);
+        [Range(.25f, 4)] public float scale = 1;
+        [Range(0, 1)] public float opacity = 1;
+        public Color color = Color.white;
+        public bool preserveAspect = true;
+    }
+
+    [Serializable]
     public sealed class HudTextStyle
     {
         public bool visible = true;
@@ -56,6 +71,7 @@ namespace SpringUp.Flow
         public HudTextStyle health = new HudTextStyle("生命 {health}/{maxHealth}", -120) { alignment = TextAnchor.MiddleCenter };
         public HealthBarStyle healthBar = new HealthBarStyle();
         public EquipmentHudStyle equipment = new EquipmentHudStyle();
+        public HudImageStyle[] images = Array.Empty<HudImageStyle>();
         public HudTextStyle marrow = new HudTextStyle("骨髓 {marrow}", 0)
         {
             anchor = HudAnchor.BelowEquipment, offset = new Vector2(0, -12),

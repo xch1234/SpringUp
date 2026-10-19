@@ -63,15 +63,27 @@ MonoBehaviour:
   equipment:
     visible: 1
     backgroundSprite: {fileID: 8411360302620295237, guid: 4cce96afdc3ea34448a8abf00b324929, type: 3}
+    backgroundColor: {r: 1, g: 1, b: 1, a: 1}
     anchor: 0
     offset: {x: 16, y: -10}
     size: {x: 530, y: 265}
     scale: 1.08
+    opacity: 0.888
+  images:
+  - name: "\u9AA8\u9AD3\u56FE\u6807"
+    visible: 1
+    sprite: {fileID: 6479159477360449753, guid: c48e231cd0f5c8846b9ec7cf6a651bd5, type: 3}
+    anchor: 5
+    offset: {x: 15, y: 0}
+    size: {x: 42, y: 42}
+    scale: 1
     opacity: 1
+    color: {r: 1, g: 1, b: 1, a: 1}
+    preserveAspect: 1
   marrow:
     visible: 1
     anchor: 5
-    offset: {x: 0, y: -12}
+    offset: {x: 70, y: 5}
     size: {x: 300, y: 42}
     scale: 1
     opacity: 1
@@ -95,4 +107,5 @@ MonoBehaviour:
     alignment: 3
     bold: 0
     outline: 1
-    text: "\u5668\u5B98\u81EA\u52A8\u653B\u51FB {interaction}  {inventoryKey}\uFF1A\u80CC\u5305  Esc\uFF1A\u83DC\u5355"
+    text: "\u5668\u5B98\u81EA\u52A8\u653B\u51FB {interaction}  {inventoryKey}\uFF1A\u80CC\u5305 
+      Esc\uFF1A\u83DC\u5355"

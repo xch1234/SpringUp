@@ -12,6 +12,7 @@ namespace SpringUp.EditorChecks
         static readonly string[] Alignments = { "左上", "居中靠上", "右上", "居左", "居中", "居右", "左下", "居中靠下", "右下" };
         readonly bool[] expanded = { true, true, true, true, false };
         bool equipmentExpanded = true;
+        bool imagesExpanded = true;
 
         [MenuItem("Tools/SpringUp/战斗界面/编辑 HUD 布局与文字")]
         public static void SelectSettings()
@@ -52,6 +53,7 @@ namespace SpringUp.EditorChecks
             }
             EquipmentSection();
             Section(3, "marrow", "骨髓（默认装备栏下方）");
+            ImagesSection();
             Section(4, "help", "操作提示（默认左下角）");
             serializedObject.ApplyModifiedProperties();
             EditorGUILayout.Space();
@@ -60,6 +62,8 @@ namespace SpringUp.EditorChecks
             {
                 Undo.RecordObject(target, "Restore battle HUD defaults");
                 var defaults = CreateInstance<BattleHudSettings>();
+                // Custom artwork is independent of the text/layout reset.
+                defaults.images = ((BattleHudSettings)target).images;
                 EditorUtility.CopySerialized(defaults, target); DestroyImmediate(defaults);
                 target.name = "BattleHudSettings"; EditorUtility.SetDirty(target);
             }
@@ -86,6 +90,45 @@ namespace SpringUp.EditorChecks
                 Field(p, "scale", "整体缩放");
                 Field(p, "opacity", "不透明度（0 隐藏 / 1 不透明）");
                 EditorGUILayout.HelpBox("边框、器官图标和槽位一起缩放。保持原比例请调整体缩放；单独改宽高会拉伸。骨髓仍跟随装备栏下沿。", MessageType.Info);
+            }
+        }
+
+        void ImagesSection()
+        {
+            EditorGUILayout.Space();
+            imagesExpanded = EditorGUILayout.Foldout(imagesExpanded, "自定义图片（骨髓图标等）", true);
+            if (!imagesExpanded) return;
+            var list = serializedObject.FindProperty("images");
+            EditorGUILayout.HelpBox("可添加多张 Sprite 图片，自由设置位置和大小。装备栏左下沿锚点会跟随装备栏移动。图片与骨髓文字独立定位；清空图片后隐藏，战斗和休整区共用。", MessageType.Info);
+            for (int i = 0; i < list.arraySize; i++)
+            {
+                var p = list.GetArrayElementAtIndex(i);
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    Field(p, "name", "名称"); Field(p, "visible", "显示图片");
+                    Field(p, "sprite", "图片（Sprite）");
+                    var anchor = p.FindPropertyRelative("anchor");
+                    anchor.enumValueIndex = EditorGUILayout.Popup("定位锚点", anchor.enumValueIndex, Anchors);
+                    Field(p, "offset", "图片位置（X 向右 / Y 向上）");
+                    Field(p, "size", "图片尺寸（宽 / 高）"); Field(p, "scale", "图片缩放");
+                    Field(p, "opacity", "图片不透明度"); Field(p, "color", "图片颜色（白色保留原色）");
+                    Field(p, "preserveAspect", "保持图片比例");
+                    if (GUILayout.Button("删除此图片")) { list.DeleteArrayElementAtIndex(i); break; }
+                }
+            }
+            if (GUILayout.Button("添加图片"))
+            {
+                int index = list.arraySize; list.InsertArrayElementAtIndex(index);
+                var p = list.GetArrayElementAtIndex(index);
+                p.FindPropertyRelative("name").stringValue = "新图片";
+                p.FindPropertyRelative("visible").boolValue = true;
+                p.FindPropertyRelative("sprite").objectReferenceValue = null;
+                p.FindPropertyRelative("anchor").enumValueIndex = (int)HudAnchor.BelowEquipment;
+                p.FindPropertyRelative("offset").vector2Value = new Vector2(0, -12);
+                p.FindPropertyRelative("size").vector2Value = new Vector2(42, 42);
+                p.FindPropertyRelative("scale").floatValue = 1; p.FindPropertyRelative("opacity").floatValue = 1;
+                p.FindPropertyRelative("color").colorValue = Color.white;
+                p.FindPropertyRelative("preserveAspect").boolValue = true;
             }
         }
 

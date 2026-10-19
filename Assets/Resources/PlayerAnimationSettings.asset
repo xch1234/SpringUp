@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bac1d130ff74cb58a58b166b57cf9b9, type: 3}
+  m_Name: PlayerAnimationSettings
+  m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.PlayerAnimationSettings
+  rightFrames:
+  - {fileID: 8265405207571276191, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  - {fileID: 2892268621359042576, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  - {fileID: 5360270497298427415, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  - {fileID: 5870353011326147, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  - {fileID: -6241158449887520335, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  - {fileID: -4163262470883524979, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  leftFrames:
+  - {fileID: 8112200976008582922, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  - {fileID: -8451136904121554160, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  - {fileID: 6633482050628790806, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  - {fileID: 4011645893606088114, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  - {fileID: -2934684412087059089, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  - {fileID: 1327549051776637053, guid: 45f72e0251df6b3458f928f707715ee8, type: 3}
+  moveFramesPerSecond: 10
+  idleFramesPerSecond: 4
+  sprintAnimationMultiplier: 1.5
+  height: 1.5
+  offset: {x: 0, y: 0}
+  initiallyFacingLeft: 0

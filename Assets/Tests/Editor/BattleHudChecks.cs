@@ -65,6 +65,8 @@ namespace SpringUp.EditorChecks
                         settings = Object.Instantiate(hud.Settings);
                         typeof(BattleHudPresenter).GetField("settings", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(hud, settings);
                         Require(hud.WaveText.text == "波次 1/7", "Wave data displayed");
+                        Require(hud.Images.Count == 1 && hud.Images[0].sprite != null && hud.Images[0].sprite.name == "marrow_0", "Configured marrow artwork is loaded");
+                        Require(hud.Images[0].gameObject.activeInHierarchy && !hud.Images[0].raycastTarget, "Marrow icon is visible and does not intercept input");
                         var art = Resources.Load<SpringUp.Laboratory.OrganArtCatalog>("OrganArtCatalog");
                         foreach (var entry in art.entries)
                         {
@@ -139,16 +141,31 @@ namespace SpringUp.EditorChecks
                         settings.time.text = "{typo} {seconds}"; hud.Refresh();
                         Require(hud.TimeText.text.StartsWith("{typo} "), "Unknown template token does not throw");
                         var defaults = ScriptableObject.CreateInstance<BattleHudSettings>();
+                        var imageStyle = settings.images[0];
+                        var sprite = imageStyle.sprite;
+                        imageStyle.anchor = HudAnchor.BottomRight; imageStyle.offset = new Vector2(-30, 25);
+                        imageStyle.size = new Vector2(64, 50); imageStyle.opacity = .4f;
+                        hud.Refresh();
+                        Require(hud.Images[0].rectTransform.anchoredPosition == imageStyle.offset
+                            && hud.Images[0].rectTransform.sizeDelta == imageStyle.size
+                            && Mathf.Approximately(hud.Images[0].color.a, .4f), "Image position, size and opacity update live");
+                        imageStyle.sprite = null; hud.Refresh();
+                        Require(!hud.Images[0].gameObject.activeSelf, "Empty sprite never shows a white rectangle");
+                        imageStyle.sprite = sprite; imageStyle.anchor = HudAnchor.BelowEquipment;
+                        imageStyle.offset = new Vector2(0, -12); imageStyle.size = new Vector2(42, 42); imageStyle.opacity = 1;
+                        defaults.images = settings.images; defaults.marrow.offset.x = 50;
                         EditorUtility.CopySerialized(defaults, settings); Object.DestroyImmediate(defaults);
                         hud.Refresh();
                         pause.Dispose(); pause = null;
                         app.ToggleInventory(); hud.Refresh(); Require(!hud.WaveText.gameObject.activeInHierarchy, "Inventory hides HUD by default");
+                        Require(!hud.Images[0].gameObject.activeInHierarchy, "Inventory also hides custom images");
                         settings.hideWithWindows = false; hud.Refresh(); Require(hud.WaveText.gameObject.activeInHierarchy, "Modal visibility is configurable");
                         app.CloseTop(); settings.hideWithWindows = true;
                         content.director.CompleteCurrentWave(); break;
                     case 4:
                         hud.Refresh();
                         Require(content.kind == ContentKind.Rest && !app.hud.enabled, "Shared HUD replaces the duplicate legacy status line in rest");
+                        Require(hud.Images[0].gameObject.activeInHierarchy && hud.Images[0].sprite == settings.images[0].sprite, "Marrow artwork survives rest transition");
                         Require(hud.WaveText.gameObject.activeInHierarchy && hud.TimeText.gameObject.activeInHierarchy
                             && hud.HealthText.gameObject.activeInHierarchy && hud.MarrowText.gameObject.activeInHierarchy,
                             "Wave, rest timer, health and marrow use the shared HUD in rest");
