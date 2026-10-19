@@ -33,10 +33,9 @@ namespace TideBorne.Battle
         public const float PlayerWorldSize = 1.35f;
 
         /// <summary>
-        /// 玩家碰撞体边长，米。**与视觉尺寸相等**是有意的：碰撞盒比看得见的大或小，
-        /// 都会让人误判"我明明没碰到"。
+        /// 玩家身体中心的小碰撞框，略小于人物可见轮廓；转向时也不伸出贴图两侧。
         /// </summary>
-        public const float PlayerColliderSize = PlayerWorldSize;
+        public const float PlayerColliderSize = .65f;
 
         /// <summary>
         /// 灰盒敌人相对玩家的尺寸比例。保持与玩家同倍缩放，

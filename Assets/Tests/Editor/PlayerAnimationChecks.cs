@@ -77,7 +77,8 @@ namespace SpringUp.EditorChecks
                         Assert.IsNotNull(animation); Assert.IsNotNull(animation.Visual.sprite);
                         Assert.IsFalse(player.GetComponent<SpriteRenderer>().enabled, "Placeholder is hidden");
                         Assert.AreEqual(Color.white, animation.Visual.color, "Artwork retains its original colors");
-                        Assert.AreEqual(new Vector2(1.35f, 1.35f), player.GetComponent<BoxCollider2D>().size, "Original collision shape retained");
+                        Assert.AreEqual(Vector2.one * GreyboxAssets.PlayerColliderSize, player.GetComponent<BoxCollider2D>().size, "Compact player collision shape");
+                        CheckContactVolumes(app);
                         Assert.AreEqual(1.5f, animation.Visual.bounds.size.y, .01f);
                         startPosition = player.transform.position;
                         Seen.Clear(); sampleUntil = EditorApplication.timeSinceStartup + .8;
@@ -145,6 +146,37 @@ namespace SpringUp.EditorChecks
                 stage++; next = EditorApplication.timeSinceStartup + .35;
             }
             catch (Exception error) { Debug.LogException(error); Finish(1); }
+        }
+
+        static void CheckContactVolumes(FlowApplication app)
+        {
+            foreach (var prefab in Resources.LoadAll<GameObject>("Enemies"))
+                Assert.AreEqual(Vector2.one * EnemyFactory.ColliderSize, prefab.GetComponent<BoxCollider2D>().size, prefab.name + " compact collider");
+            var player = app.Content.player;
+            float health = player.CurrentHealth;
+            var enemy = Object.Instantiate(Resources.Load<GameObject>("Enemies/Normal"));
+            try
+            {
+                enemy.GetComponent<EnemyMotor>().enabled = false;
+                enemy.transform.localScale = new Vector3(.4f, .4f, 1);
+                enemy.transform.position = player.transform.position + Vector3.right * .68f;
+                Physics2D.SyncTransforms();
+                var contact = enemy.GetComponent<EnemyContactDamage>();
+                var cooldown = typeof(EnemyContactDamage).GetField("_cooldownRemaining", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                cooldown.SetValue(contact, 0f);
+                contact.SendMessage("Update");
+                Assert.AreEqual(health, player.CurrentHealth, "Inside old radius but outside compact bodies must not damage player");
+                enemy.transform.position = player.transform.position + Vector3.right * .4f;
+                Physics2D.SyncTransforms(); contact.SendMessage("Update");
+                Assert.Less(player.CurrentHealth, health, "Actual body overlap still deals contact damage");
+                enemy.SetActive(false); enemy.SetActive(true);
+                Assert.AreEqual(Vector2.one * EnemyFactory.ColliderSize, enemy.GetComponent<BoxCollider2D>().size, "Pool reuse retains collision size");
+                Debug.Log("COLLISION_CHECKS_PASS: all enemy prefab sizes, small player body, no damage across gap, overlap damage, pool reuse.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(enemy); player.RestoreHealth(health); player.ResetDamageProtection();
+            }
         }
 
         static void Capture(FlowApplication app, string name)

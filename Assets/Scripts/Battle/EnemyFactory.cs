@@ -28,6 +28,7 @@ namespace TideBorne.Battle
         /// 这样"敌人比玩家大/小多少"只在一个地方定义，不会两处各改一遍还改歪。
         /// </summary>
         public const float VisualSize = GreyboxAssets.EnemyWorldSize;
+        public const float ColliderSize = .7f;
 
         /// <summary>灰盒敌人的攻击距离，米。默认 1.2 米太近，弹道一闪而过看不见。</summary>
         public static float GreyboxAttackRange => EnemyArchetypeConfig.Get(EnemyArchetype.Normal).attackRange;
@@ -91,7 +92,7 @@ namespace TideBorne.Battle
         /// **不再自己造 1 PPU 的小图**——那个尺寸小到看不见，是"敌人能碰到但看不到"的成因。
         ///
         /// 尺寸处理与玩家一致：精灵本身是 1 世界单位的方块，用 transform 缩到
-        /// <see cref="VisualSize"/>，碰撞体尺寸写 1（随 transform 一起缩成 VisualSize）。
+        /// <see cref="VisualSize"/>，碰撞体尺寸写 0.7（给贴图边缘留出空间）。
         /// **不用 <c>SpriteRenderer.drawMode = Sliced</c>**：那要求精灵带九宫格边框，
         /// 普通方块图在 Sliced 下可能直接不渲染。
         /// </summary>
@@ -113,9 +114,9 @@ namespace TideBorne.Battle
             renderer.color = color;
             renderer.sortingOrder = 2;
 
-            // 尺寸写 1：transform 已缩到 VisualSize，世界尺寸随之变成 VisualSize。
+            // 留出贴图边缘：碰撞框宽高为原整格的 70%，随敌人缩放。
             var collider = enemy.AddComponent<BoxCollider2D>();
-            collider.size = Vector2.one;
+            collider.size = Vector2.one * ColliderSize;
 
             var body = enemy.AddComponent<Rigidbody2D>();
             body.gravityScale = 0f;

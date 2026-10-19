@@ -11,9 +11,8 @@ namespace TideBorne.Battle
     /// 伤害仍走 <see cref="EnemyEvents.PlayerHurt"/>，减免与结算只在玩家侧生效
     /// （见 <see cref="PlayerRuntime"/>），避免每个敌人各算一遍。
     ///
-    /// 命中判定用**距离检测**而不是 <c>OnCollisionEnter2D</c>：
-    /// 1. 敌我双方在高速移动，靠碰撞回调容易漏帧；
-    /// 2. 不依赖碰撞层与触发器配置，灰盒阶段少一个出错来源。
+    /// 优先测量双方实际碰撞体的间隙（允许 0.03 单位接触容差），
+    /// 不依赖敌我碰撞层回调。没有碰撞体的旧对象才使用中心距离兜底。
     /// </summary>
     [DisallowMultipleComponent]
     [AddComponentMenu("潮涌之躯/战场/接触伤害（EnemyContactDamage）")]
@@ -68,16 +67,15 @@ namespace TideBorne.Battle
             if (!PlayerLocator.HasPlayer)
                 return;
 
-            var distance = Vector2.Distance(transform.position, PlayerLocator.PlayerPosition);
-            if (distance > contactRadius)
+            var player = PlayerLocator.Player;
+            var other = player != null ? player.GetComponent<Collider2D>() : null;
+            if (_collider != null && other != null)
             {
-                // Solid colliders may prevent centers from reaching contactRadius.
-                var player = PlayerLocator.Player;
-                var other = player != null ? player.GetComponent<Collider2D>() : null;
-                if (_collider == null || other == null) return;
+                if (!_collider.enabled || !other.enabled) return;
                 var gap = _collider.Distance(other);
                 if (!gap.isValid || gap.distance > 0.03f) return;
             }
+            else if (Vector2.Distance(transform.position, PlayerLocator.PlayerPosition) > contactRadius) return;
 
             ApplyContactDamage();
         }
