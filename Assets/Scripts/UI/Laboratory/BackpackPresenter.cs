@@ -10,8 +10,7 @@ namespace SpringUp.Laboratory
     {
         public OrganDragSlot[] equipmentSlots, inventorySlots;
         public OrganIconView detailIcon, dragGhost;
-        public Text detail, pageLabel, message;
-        public Button previousPage, nextPage;
+        public Text detail, message;
         public ScrollRect detailsScroll;
         bool readOnly;
         public bool ReadOnly
@@ -28,7 +27,6 @@ namespace SpringUp.Laboratory
         public string SelectedInstanceId { get; private set; }
         public bool IsDragging => draggingId != null;
         RunLaboratoryEquipment equipment;
-        int page;
         string draggingId;
         LaboratoryPart fromPart;
         int fromIndex;
@@ -38,12 +36,8 @@ namespace SpringUp.Laboratory
         {
             Unbind(); equipment = source; equipment.Changed += Refresh;
             foreach (var slot in equipmentSlots.Concat(inventorySlots)) slot.owner = this;
-            previousPage.onClick.AddListener(Previous); nextPage.onClick.AddListener(Next);
             Refresh();
         }
-        void Previous() => ChangePage(-1);
-        void Next() => ChangePage(1);
-        public void ChangePage(int offset) { CancelDrag(); page += offset; Refresh(); }
         public void Select(string id)
         {
             SelectedInstanceId = id; RefreshSelection();
@@ -55,16 +49,12 @@ namespace SpringUp.Laboratory
             CancelDrag();
             if (equipment == null) return;
             var items = equipment.Inventory;
-            int pages = Mathf.Max(1, Mathf.CeilToInt(items.Count / (float)inventorySlots.Length));
-            page = Mathf.Clamp(page, 0, pages - 1);
             foreach (var slot in equipmentSlots) slot.Bind(equipment.GetSlot(slot.part, slot.index));
             for (int i = 0; i < inventorySlots.Length; i++)
             {
-                int position = page * inventorySlots.Length + i;
+                int position = i;
                 inventorySlots[i].Bind(position < items.Count ? items[position] : null);
             }
-            pageLabel.text = $"{page + 1} / {pages} 页 · {items.Count} 件";
-            previousPage.interactable = page > 0; nextPage.interactable = page + 1 < pages;
             RefreshSelection();
         }
         void RefreshSelection()
@@ -101,7 +91,7 @@ namespace SpringUp.Laboratory
         public bool CanDrop(OrganDragSlot target)
         {
             if (!IsDragging || ReadOnly) return false;
-            if (target.inventory) return !fromInventory;
+            if (target.inventory) return !fromInventory && equipment.Inventory.Count < Inventory.BackpackCapacity;
             if (!draggingItem.CanEquip(target.part)) return false;
             return fromInventory || target.Item == null || target.Item.CanEquip(fromPart);
         }
@@ -121,11 +111,6 @@ namespace SpringUp.Laboratory
             if (ReadOnly || fromInventory) { CancelDrag(); return; }
             string id = draggingId;
             bool ok = equipment.TryUnequipInstance(id, fromPart, fromIndex, out var error);
-            if (ok)
-            {
-                int position = equipment.Inventory.ToList().FindIndex(x => x.InstanceId == id);
-                page = Mathf.Max(0, position / inventorySlots.Length);
-            }
             Finish(ok, error, id);
         }
         void Finish(bool ok, string error, string id = null)
@@ -154,7 +139,6 @@ namespace SpringUp.Laboratory
         {
             if (equipment != null) equipment.Changed -= Refresh;
             equipment = null;
-            previousPage.onClick.RemoveListener(Previous); nextPage.onClick.RemoveListener(Next);
         }
         void OnDisable() { CancelDrag(); Unbind(); }
     }

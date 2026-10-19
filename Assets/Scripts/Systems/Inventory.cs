@@ -22,6 +22,8 @@ namespace Tideflesh.Systems
 
     public sealed class Inventory
     {
+        public const int BackpackCapacity = 14;
+        public bool IsBackpackFull => _unequipped.Count >= BackpackCapacity;
         public static readonly Dictionary<string, int> SlotCounts = new()
         {
             { "head", 6 }, { "hand", 6 }, { "leg", 6 }, { "torso", 2 }
@@ -48,6 +50,7 @@ namespace Tideflesh.Systems
         {
             if (!Catalog.ContainsKey(organId))
                 throw new InventoryException($"unknown organ {organId}");
+            if (IsBackpackFull) throw new InventoryException("capacity");
             var iid = $"inst_{_next++}";
             Instances[iid] = new OrganInstance { instance_id = iid, organ_id = organId };
             _unequipped.Add(iid);
@@ -56,20 +59,14 @@ namespace Tideflesh.Systems
 
         public string SpawnEquipped(string organId, string part, int slot)
         {
-            var iid = Spawn(organId);
-            try
-            {
-                if (!OrganOf(iid).CanEquip(part))
-                    throw new InventoryException("part mismatch");
-                _unequipped.Remove(iid);
-                Place(iid, part, slot);
-            }
-            catch (InventoryException)
-            {
-                _unequipped.Remove(iid);
-                Instances.Remove(iid);
-                throw;
-            }
+            if (!Catalog.TryGetValue(organId, out var organ))
+                throw new InventoryException($"unknown organ {organId}");
+            if (!organ.CanEquip(part)) throw new InventoryException("part mismatch");
+            int index = SlotIndex(part, slot);
+            if (_equipped[part][index] != null) throw new InventoryException("slot occupied");
+            var iid = $"inst_{_next++}";
+            Instances[iid] = new OrganInstance { instance_id = iid, organ_id = organId };
+            _equipped[part][index] = iid;
             return iid;
         }
 
@@ -86,8 +83,8 @@ namespace Tideflesh.Systems
             return _equipped[part][idx];
         }
 
-        // null means unlimited; legacy display callers may still show capacity text.
-        public int? UnequippedCapacity() => null;
+        // Fixed backpack size; equipped organs do not consume backpack slots.
+        public int UnequippedCapacity() => BackpackCapacity;
 
         public float MarrowGainMult()
         {
@@ -100,7 +97,7 @@ namespace Tideflesh.Systems
             return mult;
         }
 
-        public bool UnequippedWithinCap() => true;
+        public bool UnequippedWithinCap() => _unequipped.Count <= BackpackCapacity;
 
         public void Equip(string instanceId, string part, int slot)
         {
@@ -118,6 +115,7 @@ namespace Tideflesh.Systems
             var iid = _equipped[part][idx];
             if (iid == null)
                 throw new InventoryException("empty slot");
+            if (IsBackpackFull) throw new InventoryException("capacity");
             _equipped[part][idx] = null;
             _unequipped.Add(iid);
             return iid;
@@ -147,7 +145,8 @@ namespace Tideflesh.Systems
             _equipped[toPart][to] = instanceId;
         }
 
-        public int SalePrice(string instanceId) => OrganOf(instanceId).shop_price / 2;
+        public int SalePrice(string instanceId) => SalePriceForOrgan(OrganOf(instanceId).id);
+        public int SalePriceForOrgan(string organId) => Catalog[organId].shop_price / 2;
 
         public int Sell(string instanceId)
         {

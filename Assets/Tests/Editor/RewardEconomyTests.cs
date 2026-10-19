@@ -85,20 +85,64 @@ public class RewardEconomyTests
         Assert.IsNull(invalid.ResolveKill("kill", 30, true).OrganInstanceId);
         invalid.CombatTimerFinished(); Assert.AreEqual(0, invalid.Inventory.UnequippedIds().Count);
     }
-    [Test] public void UnlimitedBagKeepsSlotAndPhaseRulesAndTransactions()
+    [Test] public void FixedBagRejectsOverflowAndAllowsAtomicReplacementAndSale()
     {
         var run = Run(); run.ResolveKill("fund", 1000, true);
-        for (int i = 0; i < 500; i++) run.Inventory.Spawn("drop");
-        Assert.IsNull(run.Inventory.UnequippedCapacity()); Assert.IsTrue(run.Inventory.UnequippedWithinCap());
-        Assert.Throws<RunException>(() => run.Unequip("hand", 1));
-        Assert.IsFalse(run.TryPurchase("drop", 20).Ok);
-        run.CombatTimerFinished(); run.Unequip("hand", 1);
-        Assert.IsTrue(run.TryPurchase("drop", 20).Ok);
-        int before = run.Marrow; var id = run.Inventory.UnequippedIds()[0]; run.Sell(id);
-        Assert.AreEqual(before + 10, run.Marrow);
-        Assert.Throws<InventoryException>(() => run.Inventory.Equip(run.Inventory.UnequippedIds()[0], "hand", 7));
-        Assert.Throws<InventoryException>(() => run.Inventory.Equip(run.Inventory.UnequippedIds()[0], "torso", 1));
+        while (!run.Inventory.IsBackpackFull) run.Inventory.Spawn("drop");
+        Assert.AreEqual(14, run.Inventory.UnequippedCapacity());
+        int instances = run.Inventory.Instances.Count;
+        Assert.Throws<InventoryException>(() => run.Inventory.Spawn("drop"));
+        Assert.AreEqual(instances, run.Inventory.Instances.Count);
+        run.CombatTimerFinished();
+        string equipped = run.Inventory.EquippedAt("hand", 1);
+        Assert.Throws<InventoryException>(() => run.Unequip("hand", 1));
+        Assert.AreEqual(equipped, run.Inventory.EquippedAt("hand", 1));
+        var offer = run.GetShopOffers()[0]; int balance = run.Marrow;
+        Assert.AreEqual("capacity", run.TryPurchaseShopOffer(offer).Reason);
+        Assert.IsFalse(offer.Purchased); Assert.AreEqual(balance, run.Marrow);
+        string replacement = run.Inventory.UnequippedIds()[0];
+        run.Replace(replacement, "hand", 1);
+        Assert.AreEqual(replacement, run.Inventory.EquippedAt("hand", 1));
+        Assert.Contains(equipped, run.Inventory.UnequippedIds());
+        Assert.AreEqual(14, run.Inventory.UnequippedIds().Count);
+        run.MoveOrSwap(replacement, "hand", 1, "head", 1);
+        Assert.AreEqual(replacement, run.Inventory.EquippedAt("head", 1));
+        Assert.Throws<InventoryException>(() => run.Inventory.SpawnEquipped("drop", "head", 1));
+        run.Inventory.SpawnEquipped("drop", "hand", 1);
+        Assert.AreEqual(14, run.Inventory.UnequippedIds().Count, "Direct equipped spawn does not use a bag slot");
+        run.Sell(equipped);
+        Assert.IsTrue(run.TryPurchaseShopOffer(offer).Ok);
+        Assert.AreEqual(14, run.Inventory.UnequippedIds().Count);
         Assert.IsTrue(run.CanStartNextWave()); run.StartNextWave(); Assert.AreEqual(2, run.Wave);
+    }
+    [Test] public void FullBagRewardsAutoSellAtExactSalePriceWithoutGainMultiplier()
+    {
+        var run = Run(() => 0, 1);
+        run.Inventory.SpawnEquipped("bonus", "torso", 1);
+        while (!run.Inventory.IsBackpackFull) run.Inventory.Spawn("drop");
+        int signals = 0; run.LoadoutChanged += _ => signals++;
+        var reward = run.ResolveKill("full", 30, true);
+        Assert.IsNull(reward.OrganInstanceId, "No organ flight for an automatic sale");
+        Assert.AreEqual(43, reward.Marrow, "33 kill marrow plus exactly 10 sale marrow");
+        Assert.AreEqual(43, run.Marrow); Assert.AreEqual(43, run.WaveKillMarrow);
+        Assert.IsFalse(run.ResolveKill("full", 30, true).Accepted);
+        LabOpenedPayload settlement = null; run.RestOpened += value => settlement = value;
+        run.CombatTimerFinished();
+        Assert.AreEqual(108, run.Marrow, "55 wave marrow plus exactly 10 sale marrow");
+        Assert.AreEqual(65, settlement.WaveEndMarrow); Assert.IsEmpty(settlement.Drops);
+        Assert.AreEqual(14, run.Inventory.UnequippedIds().Count); Assert.AreEqual(0, signals);
+        Assert.IsTrue(run.CanStartNextWave());
+    }
+    [Test] public void FourteenthRewardFitsAndNextRewardSellsEvenWithZeroKillMarrow()
+    {
+        var run = Run(() => 0, 1);
+        for (int i = 0; i < 13; i++) run.Inventory.Spawn("drop");
+        var last = run.ResolveKill("last-slot", 0, true);
+        Assert.NotNull(last.OrganInstanceId); Assert.IsFalse(last.HasMarrow);
+        var overflow = run.ResolveKill("overflow", 0, true);
+        Assert.IsNull(overflow.OrganInstanceId); Assert.IsTrue(overflow.HasMarrow);
+        Assert.AreEqual(10, overflow.Marrow); Assert.AreEqual(10, run.Marrow);
+        Assert.AreEqual(14, run.Inventory.UnequippedIds().Count);
     }
     [Test] public void ExcludedAndEndedKillsDoNotConsumeRandomAndSeventhPoolIsEmpty()
     {

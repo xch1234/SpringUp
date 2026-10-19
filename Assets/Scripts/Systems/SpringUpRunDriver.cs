@@ -216,14 +216,12 @@ namespace Tideflesh.Systems
             runStatus.text = Run.Phase == "run_won" ? "七波完成" : Run.Phase == "run_lost" ? "本局失败"
                 : "第 " + Run.Wave + " / " + Run.MaxWave + " 波    " + (lab ? "实验室" : Mathf.CeilToInt(director.RemainingTime) + " 秒")
                     + "    生命 " + player.CurrentHealth.ToString("0.#") + " / " + player.MaxHealth.ToString("0.#") + "    髓质 " + Run.Marrow;
-            int count = Run.Inventory.UnequippedIds().Count; int? cap = Run.Inventory.UnequippedCapacity();
-            capacityText.text = "未装备 " + count + " / " + cap + (count > cap ? "    超出 " + (count - cap) + " 件" : "");
             nextButton.gameObject.SetActive(lab);
             nextButton.interactable = Run.CanStartNextWave();
             sellButton.gameObject.SetActive(lab); discardButton.gameObject.SetActive(lab);
             sellButton.interactable = discardButton.interactable = lab && presenter.SelectedInstanceId != null;
             restartButton.gameObject.SetActive(Run.Phase == "run_won" || Run.Phase == "run_lost");
-            capacityText.gameObject.SetActive(lab); rewardText.gameObject.SetActive(lab);
+            capacityText.gameObject.SetActive(false); rewardText.gameObject.SetActive(lab);
         }
         private void OnDestroy()
         {
