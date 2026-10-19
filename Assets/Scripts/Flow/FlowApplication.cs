@@ -28,6 +28,7 @@ namespace SpringUp.Flow
         public RewardFlightSettings rewardFlightSettings;
         public RewardFlightPresenter RewardFlights { get; private set; }
         public BattleHudPresenter BattleHud { get; private set; }
+        public GameViewport Viewport { get; private set; }
         public FlowWindow windowPrefab;
         public FlowWindow laboratoryPrefab;
         public GameObject loading;
@@ -50,6 +51,7 @@ namespace SpringUp.Flow
         Font uiFont;
         GameObject dimmer;
         Text controlsHint;
+        GameObject restContinue;
         public bool HasModal => windows.Count > 0;
         public bool CanModifyEquipment => !IsTransitioning && Session?.Run.Stage == RunPhase.Rest
             && Content != null && Content.IsNearCounter(Content.Laboratory)
@@ -67,6 +69,9 @@ namespace SpringUp.Flow
         {
             if (IsActive) { Destroy(gameObject); return; }
             IsActive = true;
+            Viewport = gameObject.AddComponent<GameViewport>();
+            Viewport.Initialize(uiRoot.GetComponentInParent<Canvas>());
+            Viewport.Register(menuCamera);
             // Bootstrap survives additive scene transitions; the audio listener must survive too.
             var menuListener = menuCamera != null ? menuCamera.GetComponent<AudioListener>() : null;
             if (menuListener != null) menuListener.enabled = false;
@@ -98,6 +103,7 @@ namespace SpringUp.Flow
         void Update()
         {
             if (Pause == null) return;
+            RefreshContentActionsVisibility();
             var settings = windows.Count > 0 ? windows[windows.Count - 1].View.GetComponent<MenuSettingsView>() : null;
             if (settings != null && settings.IsListening) { settings.CaptureKey(); return; }
             if (Keyboard.current?.escapeKey.wasPressedThisFrame == true) HandleEscape();
@@ -265,6 +271,8 @@ namespace SpringUp.Flow
             if (!contentScene.IsValid() || !contentScene.isLoaded) throw new InvalidOperationException("Scene did not load");
             SceneManager.SetActiveScene(contentScene);
             Content = contentScene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<FlowContent>(true)).Single();
+            foreach (var camera in contentScene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<Camera>(true)))
+                Viewport.Register(camera);
             menuCamera.gameObject.SetActive(Content.kind == ContentKind.MainMenu);
             Content.Initialize(this, Session);
             Content.Begin();
@@ -296,11 +304,25 @@ namespace SpringUp.Flow
             return view;
         }
         FlowWindow actions;
-        void ClearActions() { if (actions != null) { actions.gameObject.SetActive(false); Destroy(actions.gameObject); } actions = null; }
+        void ClearActions()
+        {
+            if (restContinue != null) { restContinue.SetActive(false); Destroy(restContinue); }
+            restContinue = null;
+            if (actions != null) { actions.gameObject.SetActive(false); Destroy(actions.gameObject); }
+            actions = null;
+        }
+        void RefreshContentActionsVisibility()
+        {
+            if (Content == null || Content.kind == ContentKind.MainMenu || actions == null) return;
+            bool visible = !IsTransitioning && !HasModal;
+            bool debug = BattleHud != null && BattleHud.Settings.showDebugPanel;
+            actions.gameObject.SetActive(visible && debug);
+            if (restContinue != null) restContinue.SetActive(visible && !debug);
+        }
         void ShowMainMenu()
         {
             ClearActions();
-            actions = CreateMenuView("MainMenu");
+            actions = MenuPresentationView.Create(uiRoot, false, uiFont);
             actions.GetComponent<MenuSettingsView>().BindMenu(StartNewRun, () => OpenWindow(WindowKind.Settings), QuitGame);
             FocusFirst(actions);
         }
@@ -326,7 +348,7 @@ namespace SpringUp.Flow
         {
             ClearActions();
             if (Content.kind == ContentKind.MainMenu) return;
-            actions = CreateView(); actions.title.text = ContentTitle(Content.kind);
+            actions = CreateView(); actions.gameObject.name = "Debug actions"; actions.title.text = ContentTitle(Content.kind);
             // Small non-modal corner panel; only windows acquire pause leases.
             var rect = (RectTransform)actions.transform;
             rect.anchorMin = rect.anchorMax = new Vector2(1, 0);
@@ -337,6 +359,14 @@ namespace SpringUp.Flow
                 controlsHint = actions.AddText(""); RefreshControlsHint();
                 actions.AddButton("重置木桩", () => Content.ResetDummy());
                 actions.AddButton("进入下一波", NextWave);
+                // Progression is a normal game action and remains available with debug UI disabled.
+                var nextWave = actions.AddButton("进入下一波", NextWave);
+                restContinue = nextWave.gameObject; restContinue.name = "Next wave";
+                restContinue.transform.SetParent(uiRoot, false);
+                var nextRect = (RectTransform)restContinue.transform;
+                nextRect.anchorMin = nextRect.anchorMax = nextRect.pivot = new Vector2(1, 0);
+                nextRect.anchoredPosition = new Vector2(-24, 24); nextRect.sizeDelta = new Vector2(260, 58);
+                nextWave.GetComponentInChildren<Text>().fontSize = 28;
             }
             else
             {
@@ -347,6 +377,7 @@ namespace SpringUp.Flow
                     catch (RunException) { OpenNotice("战斗期间无法更换装备，请在休整时操作。"); }
                 });
             }
+            RefreshContentActionsVisibility();
         }
         void OpenNotice(string text)
         {
@@ -378,10 +409,7 @@ namespace SpringUp.Flow
                 case WindowKind.Shop:
                     view.GetComponent<FlowShopWindow>().Bind(this); break;
                 case WindowKind.Settlement:
-                    view.AddText(Session.Run.Stage == RunPhase.Won ? "挑战成功！" : "挑战失败");
-                    view.AddText($"到达第 {Session.Run.Wave} 波，持有骨髓 {Session.Run.Marrow}");
-                    view.AddButton("开始新局", StartNewRun);
-                    view.AddButton("主菜单", RequestMainMenu); break;
+                    view.GetComponent<MenuPresentationView>().BindSettlement(Session.Run.Stage == RunPhase.Won, AbandonRun); break;
             }
             view.gameObject.SetActive(true);
             FocusFirst(view);
@@ -392,7 +420,8 @@ namespace SpringUp.Flow
             if (windows.Count > 0) windows[windows.Count - 1].View.group.interactable = false;
             var focus = eventSystem.currentSelectedGameObject;
             EnsureDimmer(); dimmer.SetActive(true); dimmer.transform.SetAsLastSibling();
-            var view = kind == WindowKind.Inventory || kind == WindowKind.Laboratory ? Instantiate(laboratoryPrefab, uiRoot)
+            var view = kind == WindowKind.Settlement ? MenuPresentationView.Create(uiRoot, true, uiFont)
+                : kind == WindowKind.Inventory || kind == WindowKind.Laboratory ? Instantiate(laboratoryPrefab, uiRoot)
                 : kind == WindowKind.Pause || kind == WindowKind.Settings || kind == WindowKind.Confirm || kind == WindowKind.Shop ? CreateMenuView(kind.ToString()) : CreateView();
             if (view.title != null) view.title.text = title;
             windows.Add(new WindowEntry { Kind = kind, View = view, Lease = Pause.Acquire(), Focus = focus });

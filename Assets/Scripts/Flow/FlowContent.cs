@@ -37,6 +37,9 @@ namespace SpringUp.Flow
         public Transform Laboratory => laboratory;
         [SerializeField, Min(.1f)] float interactionRadius = 2f;
         public float InteractionRadius => interactionRadius;
+        RestInteractionSettings interactionSettings;
+        public RestInteractionSettings InteractionSettings => interactionSettings != null ? interactionSettings
+            : interactionSettings = Resources.Load<RestInteractionSettings>("RestInteractionSettings");
         // Normalized positions on the ship sprite, measured from its lower-left corner.
         // Stand on the deck immediately to the left of each painted counter.
         [SerializeField] Vector2 shopAnchor = new Vector2(.645f, .60f);
@@ -158,9 +161,44 @@ namespace SpringUp.Flow
         }
         public bool IsNearCounter(Transform counter)
         {
-            return kind == ContentKind.Rest && player != null && counter != null
-                && counter.gameObject.activeInHierarchy && player.gameObject.activeInHierarchy
-                && ((Vector2)(counter.position - player.transform.position)).sqrMagnitude <= interactionRadius * interactionRadius;
+            if (kind != ContentKind.Rest || player == null || counter == null ||
+                !counter.gameObject.activeInHierarchy || !player.gameObject.activeInHierarchy) return false;
+            if (counter != merchant && counter != laboratory) return false;
+            var ship = world != null ? world.transform.Find("ShipBackground")?.GetComponent<SpriteRenderer>() : null;
+            var settings = InteractionSettings;
+            if (ship != null && ship.sprite != null && settings != null)
+            {
+                var point = ship.transform.InverseTransformPoint(player.transform.position);
+                var bounds = ship.sprite.bounds;
+                var uv = new Vector2((point.x - bounds.min.x) / bounds.size.x, (point.y - bounds.min.y) / bounds.size.y);
+                if (ship.flipX) uv.x = 1 - uv.x;
+                if (ship.flipY) uv.y = 1 - uv.y;
+                return RestInteractionSettings.Contains(counter == merchant ? settings.shopArea : settings.laboratoryArea, uv);
+            }
+            // Legacy scenes without the ship/config retain their circular proximity check.
+            return ((Vector2)(counter.position - player.transform.position)).sqrMagnitude <= interactionRadius * interactionRadius;
+        }
+        void OnDrawGizmosSelected()
+        {
+            if (kind != ContentKind.Rest || world == null || InteractionSettings == null || !InteractionSettings.showSceneGizmos) return;
+            var ship = world.transform.Find("ShipBackground")?.GetComponent<SpriteRenderer>();
+            if (ship == null || ship.sprite == null) return;
+            DrawCounterArea(ship, InteractionSettings.shopArea, Color.green);
+            DrawCounterArea(ship, InteractionSettings.laboratoryArea, Color.cyan);
+        }
+        static void DrawCounterArea(SpriteRenderer ship, Rect area, Color color)
+        {
+            var bounds = ship.sprite.bounds;
+            var corners = new[] { area.min, new Vector2(area.xMax, area.yMin), area.max, new Vector2(area.xMin, area.yMax) };
+            var previous = Gizmos.color; Gizmos.color = color;
+            Vector3 WorldPoint(Vector2 uv)
+            {
+                if (ship.flipX) uv.x = 1 - uv.x;
+                if (ship.flipY) uv.y = 1 - uv.y;
+                return ship.transform.TransformPoint(new Vector3(bounds.min.x + bounds.size.x * uv.x, bounds.min.y + bounds.size.y * uv.y, 0));
+            }
+            for (int i = 0; i < 4; i++) Gizmos.DrawLine(WorldPoint(corners[i]), WorldPoint(corners[(i + 1) % 4]));
+            Gizmos.color = previous;
         }
         void UpdateCounterHint(Transform counter, bool available)
         {

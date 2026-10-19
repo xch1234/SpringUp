@@ -29,11 +29,15 @@ namespace Tideflesh.Systems
         public int SummonViewCount => summonViews.Count;
         private readonly Dictionary<string, LineRenderer> projectileViews = new Dictionary<string, LineRenderer>();
         private readonly Stack<LineRenderer> projectilePool = new Stack<LineRenderer>();
+        private ProjectileVisualSettings projectileSettings;
+        private readonly Dictionary<string, ProjectileSpriteView> spriteViews = new Dictionary<string, ProjectileSpriteView>();
+        private readonly Stack<ProjectileSpriteView> spritePool = new Stack<ProjectileSpriteView>();
         private void OnEnable()
         {
             pipeline = GetComponent<OrganPipelineController>();
             combat = GetComponent<BattleOrganCombat>();
             summonSettings = Resources.Load<SummonVisualSettings>("SummonVisualSettings");
+            projectileSettings = Resources.Load<ProjectileVisualSettings>("ProjectileVisualSettings");
             pipeline.AttackProduced += Show;
         }
         private void Show(CastEvent attack)
@@ -79,6 +83,7 @@ namespace Tideflesh.Systems
         {
             var visible = new HashSet<string>();
             var visibleSummons = new HashSet<string>();
+            var visibleSprites = new HashSet<string>();
             if (combat != null) foreach (var execution in combat.Actuators.Active)
             {
                 if (execution.IsFinished) continue;
@@ -93,7 +98,26 @@ namespace Tideflesh.Systems
                 for (int index = 0; index < effectVisuals.Count; index++)
                 {
                     var visual = effectVisuals[index];
-                    string id = execution.Context.ExecutionId + "/" + index; visible.Add(id);
+                    string id = execution.Context.ExecutionId + "/" + (visual.Index >= 0 ? visual.Index : index);
+                    var style = projectileSettings != null ? projectileSettings.For(execution.Context.Projectile) : null;
+                    if (!visual.Line && style != null && style.IsValid)
+                    {
+                        visibleSprites.Add(id);
+                        if (!spriteViews.TryGetValue(id, out var sprite))
+                        {
+                            if (spritePool.Count > 0) sprite = spritePool.Pop();
+                            else
+                            {
+                                var go = new GameObject("Player projectile sprite"); go.transform.SetParent(transform, false);
+                                sprite = go.AddComponent<ProjectileSpriteView>();
+                            }
+                            sprite.ResetView(); sprite.gameObject.SetActive(true); spriteViews.Add(id, sprite);
+                        }
+                        sprite.Present(style, visual.From, visual.Direction.sqrMagnitude > 0 ? visual.Direction : execution.Context.Direction,
+                            visual.Radius, Time.deltaTime);
+                        continue;
+                    }
+                    visible.Add(id);
                     if (!projectileViews.TryGetValue(id, out var line))
                     {
                         if (projectilePool.Count > 0) line = projectilePool.Pop();
@@ -122,6 +146,11 @@ namespace Tideflesh.Systems
             {
                 var line = projectileViews[id]; projectileViews.Remove(id);
                 line.gameObject.SetActive(false); projectilePool.Push(line);
+            }
+            foreach (var id in new List<string>(spriteViews.Keys)) if (!visibleSprites.Contains(id))
+            {
+                var sprite = spriteViews[id]; spriteViews.Remove(id);
+                sprite.gameObject.SetActive(false); spritePool.Push(sprite);
             }
             foreach (var id in new List<string>(summonViews.Keys)) if (!visibleSummons.Contains(id))
             {
@@ -186,6 +215,10 @@ namespace Tideflesh.Systems
         }
         public void Clear()
         {
+            foreach (var sprite in spriteViews.Values) if (sprite != null)
+            { sprite.gameObject.SetActive(false); Destroy(sprite.gameObject); }
+            spriteViews.Clear();
+            while (spritePool.Count > 0) { var sprite = spritePool.Pop(); if (sprite != null) Destroy(sprite.gameObject); }
             foreach (var view in summonViews.Values) if (view.Renderer != null)
             { view.Renderer.gameObject.SetActive(false); Destroy(view.Renderer.gameObject); }
             summonViews.Clear();

@@ -32,6 +32,7 @@ namespace SpringUp.EditorChecks
         {
             if (!Application.isBatchMode) throw new InvalidOperationException("Use an isolated batch project.");
             System.IO.Directory.CreateDirectory("Logs/Presentation");
+            RestInteractionSettingsEditor.EnsureAsset();
             var scene = EditorSceneManager.OpenScene(FlowApplication.RestPath);
             var content = Object.FindAnyObjectByType<FlowContent>();
             content.EnsureMerchant();
@@ -74,8 +75,38 @@ namespace SpringUp.EditorChecks
                     "Cyan placeholder hidden");
                 Require(counter.GetComponentInChildren<TextMesh>(true).font != null, "Counter hint has a renderable font");
             }
-            Require(Vector2.Distance(content.Merchant.position, content.Laboratory.position) > content.InteractionRadius * 2,
-                "Shop and laboratory interaction ranges do not overlap");
+            var settings = content.InteractionSettings;
+            Require(!settings.shopArea.Overlaps(settings.laboratoryArea), "Painted counter interaction rectangles do not overlap");
+            var playerPosition = content.player.transform.position;
+            var shipPosition = ship.transform.position; var shipScale = ship.transform.localScale;
+            bool worldActive = content.world.activeSelf; content.world.SetActive(true);
+            Vector3 At(Vector2 uv) => ship.transform.TransformPoint(new Vector3(bounds.min.x + bounds.size.x * uv.x, bounds.min.y + bounds.size.y * uv.y, 0));
+            try
+            {
+                foreach (var counter in new[] { content.Merchant, content.Laboratory })
+                {
+                    var area = counter == content.Merchant ? settings.shopArea : settings.laboratoryArea;
+                    foreach (var uv in new[] { area.center, area.min + Vector2.one * .001f, area.max - Vector2.one * .001f })
+                    {
+                        content.player.transform.position = At(uv);
+                        Require(content.IsNearCounter(counter), "Counter art interior and corner approaches are interactive: " + counter.name + " " + uv);
+                        Require(!content.IsNearCounter(counter == content.Merchant ? content.Laboratory : content.Merchant), "Only the intended counter opens");
+                    }
+                    foreach (var uv in new[] { new Vector2(area.xMin - .001f, area.center.y), new Vector2(area.xMax + .001f, area.center.y),
+                        new Vector2(area.center.x, area.yMin - .001f), new Vector2(area.center.x, area.yMax + .001f) })
+                    { content.player.transform.position = At(uv); Require(!content.IsNearCounter(counter), "Outside each edge cannot interact"); }
+                }
+                content.player.transform.position = At(new Vector2(.75f, (settings.shopArea.yMin + settings.laboratoryArea.yMax) * .5f));
+                Require(!content.IsNearCounter(content.Merchant) && !content.IsNearCounter(content.Laboratory), "Corridor does not trigger either room");
+                ship.transform.position += new Vector3(3, -2, 0); ship.transform.localScale *= 1.3f;
+                content.player.transform.position = At(settings.shopArea.center);
+                Require(content.IsNearCounter(content.Merchant), "Zone follows translated and scaled artwork");
+            }
+            finally
+            {
+                content.player.transform.position = playerPosition; ship.transform.position = shipPosition; ship.transform.localScale = shipScale;
+                content.world.SetActive(worldActive);
+            }
             var merchant = content.Merchant; var laboratory = content.Laboratory;
             content.EnsureMerchant();
             Require(content.Merchant == merchant && content.Laboratory == laboratory, "Counter setup is idempotent");

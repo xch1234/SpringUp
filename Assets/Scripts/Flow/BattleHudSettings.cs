@@ -66,6 +66,7 @@ namespace SpringUp.Flow
     public sealed class BattleHudSettings : ScriptableObject
     {
         public bool hideWithWindows = true;
+        [InspectorName("显示右下角调试面板")] public bool showDebugPanel = false;
         public HudTextStyle wave = new HudTextStyle("波次 {wave}/{maxWave}", -24);
         public HudTextStyle time = new HudTextStyle("剩余时间 {time}", -72);
         public HudTextStyle health = new HudTextStyle("生命 {health}/{maxHealth}", -120) { alignment = TextAnchor.MiddleCenter };
@@ -80,6 +81,7 @@ namespace SpringUp.Flow
         };
         public HudTextStyle help = new HudTextStyle("器官自动攻击 {interaction}  {inventoryKey}：背包  Esc：菜单", 0)
         {
+            visible = false,
             anchor = HudAnchor.BottomLeft, offset = new Vector2(24, 20),
             size = new Vector2(900, 32), alignment = TextAnchor.MiddleLeft,
             fontSize = 18, bold = false, backgroundColor = Color.clear

@@ -26,8 +26,10 @@ namespace SpringUp.Organs
         public readonly float Radius;
         public readonly Color Color;
         public readonly bool Line;
-        public EffectVisual(Vector2 from, Vector2 to, float radius, Color color, bool line = false)
-        { From = from; To = to; Radius = radius; Color = color; Line = line; }
+        public readonly int Index;
+        public readonly Vector2 Direction;
+        public EffectVisual(Vector2 from, Vector2 to, float radius, Color color, bool line = false, int index = -1, Vector2 direction = default)
+        { From = from; To = to; Radius = radius; Color = color; Line = line; Index = index; Direction = direction; }
     }
     public interface IEffectVisuals { void GetVisuals(List<EffectVisual> output); }
 
@@ -167,7 +169,14 @@ namespace SpringUp.Organs
         protected override void Finish(ActuatorEndReason reason)
         { base.Finish(reason); foreach (var shot in shots) shot.Cancel(); }
         public override void GetVisuals(List<EffectVisual> output)
-        { foreach (var shot in shots) if (!shot.IsFinished) output.Add(new EffectVisual(shot.Position, shot.Position, Settings.HitRadius, Color.yellow)); }
+        {
+            for (int i = 0; i < shots.Count; i++)
+            {
+                var shot = shots[i];
+                if (!shot.IsFinished) output.Add(new EffectVisual(shot.Position, shot.Position, Settings.HitRadius,
+                    Color.yellow, index: i, direction: shot.Context.Direction));
+            }
+        }
     }
 
     public sealed class BeamExecution : EffectExecution

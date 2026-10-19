@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a77df73b142446948fe58bd2ff81a00f, type: 3}
+  m_Name: ProjectileVisualSettings
+  m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Organs.ProjectileVisualSettings
+  orbit:
+    frames:
+    - {fileID: 5521250136302941789, guid: 918f07ddeee1f1e48ab480b56d7dac2a, type: 3}
+    framesPerSecond: 0
+    bodyPixels: 422
+    sizeMultiplier: 1.5
+    color: {r: 1, g: 1, b: 1, a: 1}
+    rotate: 0
+    angleOffset: 0
+    sortingOrder: 20
+  flying:
+    frames:
+    - {fileID: -1177481059, guid: e7c98476f50ddb440b8dcecf23852a8b, type: 3}
+    - {fileID: 1869097716, guid: e7c98476f50ddb440b8dcecf23852a8b, type: 3}
+    - {fileID: 490493778, guid: e7c98476f50ddb440b8dcecf23852a8b, type: 3}
+    - {fileID: 1729750332, guid: e7c98476f50ddb440b8dcecf23852a8b, type: 3}
+    - {fileID: 646187084, guid: e7c98476f50ddb440b8dcecf23852a8b, type: 3}
+    framesPerSecond: 12
+    bodyPixels: 114
+    sizeMultiplier: 1.5
+    color: {r: 1, g: 1, b: 1, a: 1}
+    rotate: 1
+    angleOffset: 0
+    sortingOrder: 20

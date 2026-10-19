@@ -118,17 +118,17 @@ namespace SpringUp.EditorChecks
         }
         static Slider Volume(string name, Transform parent, float y, out Text value)
         {
-            Label(name + " label", parent, name, new Vector2(210, 40), new Vector2(-215, y), 24, TextAnchor.MiddleLeft);
-            var rect = Rect(name, parent, new Vector2(290, 36), new Vector2(75, y));
+            Label(name + " label", parent, name, new Vector2(260, 50), new Vector2(-300, y), 32, TextAnchor.MiddleLeft);
+            var rect = Rect(name, parent, new Vector2(360, 46), new Vector2(80, y));
             var slider = rect.gameObject.AddComponent<Slider>(); slider.minValue = 0; slider.maxValue = 1;
-            var track = Rect("Track", rect, new Vector2(270, 8), Vector2.zero); Picture(track, null, new Color(.12f, .24f, .36f)).raycastTarget = true;
-            var fillArea = Rect("Fill area", rect, new Vector2(270, 8), Vector2.zero);
+            var track = Rect("Track", rect, new Vector2(340, 10), Vector2.zero); Picture(track, null, new Color(.12f, .24f, .36f)).raycastTarget = true;
+            var fillArea = Rect("Fill area", rect, new Vector2(340, 10), Vector2.zero);
             var fill = Rect("Fill", fillArea, Vector2.zero, Vector2.zero); Stretch(fill); Picture(fill, null, new Color(.4f, .7f, .94f));
-            var handleArea = Rect("Handle area", rect, new Vector2(270, 0), Vector2.zero);
-            var handle = Rect("Handle", handleArea, new Vector2(18, 28), Vector2.zero); var image = Picture(handle, null, Ink); image.raycastTarget = true;
+            var handleArea = Rect("Handle area", rect, new Vector2(340, 0), Vector2.zero);
+            var handle = Rect("Handle", handleArea, new Vector2(24, 38), Vector2.zero); var image = Picture(handle, null, Ink); image.raycastTarget = true;
             slider.fillRect = fill; slider.handleRect = handle; slider.targetGraphic = image;
             slider.value = .5f;
-            value = Label(name + " value", parent, "50%", new Vector2(80, 40), new Vector2(285, y), 22);
+            value = Label(name + " value", parent, "50%", new Vector2(100, 50), new Vector2(420, y), 30);
             return slider;
         }
         static void Confirm()
@@ -142,23 +142,35 @@ namespace SpringUp.EditorChecks
                 Button("放弃本局", view.panel, new Vector2(240, 52), new Vector2(145, -95)) };
             Save(view, "Confirm");
         }
+        [MenuItem("Tools/SpringUp/Flow/Rebuild Settings UI")]
+        public static void RebuildSettings()
+        {
+            backdrop = AssetDatabase.LoadAllAssetsAtPath("Assets/Art/UI/Backdrop.png").OfType<Sprite>().Single();
+            button = AssetDatabase.LoadAllAssetsAtPath("Assets/Art/UI/Button.png").OfType<Sprite>().Single();
+            Settings(); AssetDatabase.SaveAssets();
+        }
         static void Settings()
         {
-            var view = Root("Settings", new Vector2(860, 760), .92f); Picture(view.panel, backdrop, Color.white);
-            view.GetComponent<FlowWindow>().title = Label("Title", view.panel, "设置", new Vector2(500, 50), new Vector2(0, 305), 32);
-            view.music = Volume("音乐音量", view.panel, 235, out view.musicValue);
-            view.sfx = Volume("音效音量", view.panel, 180, out view.sfxValue);
-            Label("Keyboard title", view.panel, "按键绑定", new Vector2(640, 32), new Vector2(0, 120), 22, TextAnchor.MiddleLeft);
+            var view = Root("Settings", new Vector2(1100, 1000), .94f); Picture(view.panel, backdrop, Color.white);
+            view.GetComponent<FlowWindow>().title = Label("Title", view.panel, "设置", new Vector2(800, 65), new Vector2(0, 420), 44);
+            view.music = Volume("音乐音量", view.panel, 325, out view.musicValue);
+            view.sfx = Volume("音效音量", view.panel, 245, out view.sfxValue);
+            Label("Keyboard title", view.panel, "按键绑定", new Vector2(860, 50), new Vector2(0, 165), 30, TextAnchor.MiddleLeft);
             view.bindings = new Button[GameSettings.Labels.Length];
             for (int i = 0; i < view.bindings.Length; i++)
             {
-                float y = 73 - 43 * i;
-                Label("Binding label " + i, view.panel, GameSettings.Labels[i], new Vector2(240, 36), new Vector2(-200, y), 22, TextAnchor.MiddleLeft);
-                view.bindings[i] = Button("绑定", view.panel, new Vector2(290, 36), new Vector2(150, y));
-                var text = view.bindings[i].GetComponentInChildren<Text>(); text.rectTransform.sizeDelta = new Vector2(250, 32); text.fontSize = 21;
+                float y = 95 - 58 * i;
+                Label("Binding label " + i, view.panel, GameSettings.Labels[i], new Vector2(300, 48), new Vector2(-280, y), 30, TextAnchor.MiddleLeft);
+                view.bindings[i] = Button("绑定", view.panel, new Vector2(380, 48), new Vector2(200, y));
+                var text = view.bindings[i].GetComponentInChildren<Text>(); text.rectTransform.sizeDelta = new Vector2(330, 44); text.fontSize = 30;
             }
-            view.hint = Label("Hint", view.panel, "方向键 / Tab 为备用键；Esc / 鼠标右键返回。", new Vector2(660, 48), new Vector2(0, -240), 18);
-            view.buttons = new[] { Button("恢复默认", view.panel, new Vector2(260, 52), new Vector2(-160, -300)), Button("返回", view.panel, new Vector2(260, 52), new Vector2(160, -300)) };
+            view.hint = Label("Hint", view.panel, "方向键 / Tab 为备用键；Esc / 鼠标右键返回。", new Vector2(900, 60), new Vector2(0, -345), 24);
+            view.buttons = new[] { Button("恢复默认", view.panel, new Vector2(340, 66), new Vector2(-210, -425)), Button("返回", view.panel, new Vector2(340, 66), new Vector2(210, -425)) };
+            foreach (var control in view.buttons)
+            {
+                var label = control.GetComponentInChildren<Text>(); label.fontSize = 32;
+                label.rectTransform.sizeDelta = new Vector2(300, 56);
+            }
             Save(view, "Settings");
         }
     }

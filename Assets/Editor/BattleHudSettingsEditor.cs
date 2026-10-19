@@ -37,6 +37,8 @@ namespace SpringUp.EditorChecks
             EditorGUILayout.LabelField("战斗 HUD · 布局与文字", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox("战斗与休整区共用此配置。从 Bootstrap 运行进入场景后，在此修改即可实时预览，暂停时也生效。资源参数会保存；停止运行后仍保留。位置单位采用 Canvas 参考分辨率（1440×900），随窗口缩放。", MessageType.Info);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("hideWithWindows"), new GUIContent("打开背包 / 菜单时隐藏"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("showDebugPanel"), new GUIContent("显示右下角调试面板"));
+            EditorGUILayout.HelpBox("调试面板默认关闭，战斗和休整共用此开关，运行时立即生效。关闭时休整区仍保留独立的“进入下一波”按钮。", MessageType.Info);
             Section(0, "wave", "波次（默认右上角）");
             Section(1, "time", "剩余时间（默认右上角）");
             Section(2, "health", "红色血条（默认右上角）");
@@ -54,7 +56,7 @@ namespace SpringUp.EditorChecks
             EquipmentSection();
             Section(3, "marrow", "骨髓（默认装备栏下方）");
             ImagesSection();
-            Section(4, "help", "操作提示（默认左下角）");
+            Section(4, "help", "操作提示（左下角，默认关闭）");
             serializedObject.ApplyModifiedProperties();
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox("文字占位符：\n{wave} 当前波次　{maxWave} 总波数\n{time} 剩余时间（分:秒）　{seconds} 剩余总秒数\n{health} 当前血量　{maxHealth} 最大血量\n{marrow} 骨髓数量\n{interaction} 商店 / 实验室互动提示（随改键更新，战斗为空）\n{inventoryKey} 当前背包按键与 Tab\n休整时 {time} 显示“休整中”，{seconds} 为 0\n可自由改标签或换行；不认识的占位符会原样显示。", MessageType.Info);

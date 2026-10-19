@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: BattleHudSettings
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Flow.BattleHudSettings
   hideWithWindows: 1
+  showDebugPanel: 0
   wave:
     visible: 1
     anchor: 1
@@ -95,7 +96,7 @@ MonoBehaviour:
     outline: 1
     text: "\u9AA8\u9AD3 {marrow}"
   help:
-    visible: 1
+    visible: 0
     anchor: 2
     offset: {x: 24, y: 20}
     size: {x: 900, y: 32}
