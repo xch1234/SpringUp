@@ -119,13 +119,16 @@ namespace Tideflesh.Systems
         {
             if (!eligible || Stage != RunPhase.Combat || string.IsNullOrEmpty(lifeId) || !rewardedLives.Add(lifeId)) return default;
             int gained = AddMarrow(baseMarrow);
-            WaveKillMarrow += gained;
             string instance = null;
             double chance = _waves[Wave].kill_organ_chance;
             if (!double.IsNaN(chance) && chance > 0 && NextUnit() < Math.Min(1, chance))
-                instance = DrawOrgan(_waves[Wave]);
+            {
+                instance = DrawOrgan(_waves[Wave], out int sale);
+                gained += sale;
+            }
+            WaveKillMarrow += gained;
             BalanceChanged?.Invoke(Marrow);
-            return new KillRewardResult(true, baseMarrow > 0, gained, instance);
+            return new KillRewardResult(true, baseMarrow > 0 || gained > 0, gained, instance);
         }
         int AddMarrow(int amount)
         {
@@ -203,7 +206,8 @@ namespace Tideflesh.Systems
             if (Wave >= 1 && Wave <= 6)
             {
                 waveEndMarrow = AddMarrow(cfg.marrow_reward);
-                var instance = DrawOrgan(cfg);
+                var instance = DrawOrgan(cfg, out int sale);
+                waveEndMarrow += sale;
                 if (instance != null) spawned.Add(instance);
             }
             BalanceChanged?.Invoke(Marrow);
@@ -377,6 +381,7 @@ namespace Tideflesh.Systems
             int price = quotedPrice ?? QuotePurchasePrice(organId);
             if (!PurchasePriceInBand(item.shop_price, price)) return new ShopResult { Reason = "invalid_price" };
             if (price < 0 || Marrow < price) return new ShopResult { Reason = "insufficient_marrow" };
+            if (Inventory.IsBackpackFull) return new ShopResult { Reason = "capacity" };
             Inventory.Spawn(organId);
             Marrow -= price;
             EmitLoadout();
@@ -393,8 +398,9 @@ namespace Tideflesh.Systems
 
         public ShopResult TryUpgradeTorso(string nodeId) => new() { Ok = false, Reason = "not_open" };
 
-        string DrawOrgan(WaveDefinition cfg)
+        string DrawOrgan(WaveDefinition cfg, out int sale)
         {
+            sale = 0;
             var pool = new List<string>();
             foreach (var id in cfg.random_drop_pool ?? Array.Empty<string>())
             {
@@ -402,6 +408,13 @@ namespace Tideflesh.Systems
             }
             if (pool.Count == 0) return null;
             var idToSpawn = pool[Math.Min(pool.Count - 1, (int)(NextUnit() * pool.Count))];
+            if (Inventory.IsBackpackFull)
+            {
+                // An automatic sale uses the same quote as the shop, without marrow gain multipliers.
+                sale = Inventory.SalePriceForOrgan(idToSpawn);
+                Marrow += sale;
+                return null;
+            }
             return Inventory.Spawn(idToSpawn);
         }
         double NextUnit()

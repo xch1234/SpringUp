@@ -369,7 +369,7 @@ namespace SpringUp.Flow
                     view.GetComponent<FlowLaboratoryWindow>().Bind(this);
                     break;
                 case WindowKind.Shop:
-                    BuildShop(view); break;
+                    view.GetComponent<FlowShopWindow>().Bind(this); break;
                 case WindowKind.Settlement:
                     view.AddText(Session.Run.Stage == RunPhase.Won ? "挑战成功！" : "挑战失败");
                     view.AddText($"到达第 {Session.Run.Wave} 波，持有骨髓 {Session.Run.Marrow}");
@@ -379,81 +379,6 @@ namespace SpringUp.Flow
             view.gameObject.SetActive(true);
             FocusFirst(view);
         }
-        void BuildShop(FlowWindow view)
-        {
-            var run = Session.Run;
-            var balance = view.AddText("");
-            var message = view.AddText("本波商品保留，付费可刷新；每次刷新费用递增，下波重置。仅可出售未装备物品。");
-            var selection = view.AddText("未选择物品");
-            string selected = null;
-            var choices = new List<Button>();
-            var offers = run.GetShopOffers();
-            var offerButtons = new Button[offers.Count];
-            Button sell = null, reroll = null;
-            Action refresh = null;
-            Action refreshOffers = null;
-            refreshOffers = () => {
-                offers = run.GetShopOffers();
-                for (var i = 0; i < offerButtons.Length; i++)
-                {
-                    var offer = offers[i];
-                    var organ = Configuration.Organs[offer.OrganId];
-                    var button = offerButtons[i];
-                    button.interactable = !offer.Purchased
-                        && run.Marrow >= offer.Price;
-                    button.GetComponentInChildren<Text>().text = offer.Purchased
-                        ? $"已购买 {organ.name}"
-                        : $"购买 {organ.name}（{offer.Price} 骨髓）";
-                    button.name = button.GetComponentInChildren<Text>().text;
-                }
-                if (reroll != null)
-                {
-                    reroll.interactable = offers.Count > 0 && run.Marrow >= run.ShopRefreshPrice;
-                    reroll.GetComponentInChildren<Text>().text = $"刷新商品（{run.ShopRefreshPrice} 骨髓）";
-                }
-            };
-            refresh = () => {
-                balance.text = $"骨髓 {run.Marrow} · 背包 {run.Inventory.UnequippedIds().Count}/{run.Inventory.UnequippedCapacity()} · 本波已刷新 {run.ShopRefreshCount} 次";
-                selected = null; selection.text = run.Inventory.UnequippedIds().Count == 0 ? "空库存：没有可出售物品" : "请选择出售物品";
-                if (sell != null) sell.interactable = false;
-                foreach (var button in choices) { button.gameObject.SetActive(false); Destroy(button.gameObject); }
-                choices.Clear();
-                foreach (var id in run.Inventory.UnequippedIds())
-                {
-                    string captured = id;
-                    var organ = run.Inventory.OrganOf(id);
-                    choices.Add(view.AddButton(organ.name + " #" + id, () => {
-                        if (!run.Inventory.UnequippedIds().Contains(captured)) { refresh(); return; }
-                        selected = captured; selection.text = $"{organ.name} · 售价 {run.Inventory.SalePrice(captured)} 骨髓";
-                        sell.interactable = true;
-                    }));
-                }
-                refreshOffers();
-            };
-            for (var i = 0; i < offers.Count; i++)
-            {
-                var offerIndex = i;
-                offerButtons[i] = view.AddButton("商品", () => {
-                    var offer = run.GetShopOffers()[offerIndex];
-                    var result = run.TryPurchaseShopOffer(offer);
-                    message.text = result.Ok ? $"购买成功：{Configuration.Organs[offer.OrganId].name}" : SpringUp.UI.ChineseText.Error(result.Reason);
-                    refresh();
-                });
-            }
-            reroll = view.AddButton("刷新商品", () => {
-                int price = run.ShopRefreshPrice;
-                var result = run.TryRefreshShop();
-                message.text = result.Ok ? $"已刷新商品，花费 {price} 骨髓。" : SpringUp.UI.ChineseText.Error(result.Reason);
-                refresh();
-            });
-            sell = view.AddButton("出售所选物品", () => {
-                if (selected == null || !run.Inventory.UnequippedIds().Contains(selected)) { message.text = "请重新选择有效物品"; refresh(); return; }
-                var equipment = new RunLaboratoryEquipment(run, Configuration.Definitions);
-                message.text = equipment.TrySell(selected, out var error) ? "出售成功" : error; refresh();
-            });
-            view.AddButton("关闭", CloseTop); refresh();
-        }
-
         FlowWindow Push(WindowKind kind, string title)
         {
             if (actions != null) actions.group.interactable = false;
@@ -461,7 +386,7 @@ namespace SpringUp.Flow
             var focus = eventSystem.currentSelectedGameObject;
             EnsureDimmer(); dimmer.SetActive(true); dimmer.transform.SetAsLastSibling();
             var view = kind == WindowKind.Inventory || kind == WindowKind.Laboratory ? Instantiate(laboratoryPrefab, uiRoot)
-                : kind == WindowKind.Pause || kind == WindowKind.Settings || kind == WindowKind.Confirm ? CreateMenuView(kind.ToString()) : CreateView();
+                : kind == WindowKind.Pause || kind == WindowKind.Settings || kind == WindowKind.Confirm || kind == WindowKind.Shop ? CreateMenuView(kind.ToString()) : CreateView();
             if (view.title != null) view.title.text = title;
             windows.Add(new WindowEntry { Kind = kind, View = view, Lease = Pause.Acquire(), Focus = focus });
             RefreshWindowVisibility();

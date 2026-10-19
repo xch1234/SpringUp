@@ -96,7 +96,8 @@ namespace SpringUp.EditorChecks
             var binding = root.gameObject.AddComponent<FlowLaboratoryWindow>(); binding.backpack = backpack;
             // Only the actual panel blocks clicks; icons/overlays themselves do not swallow drop events.
             var background = Image("Artwork", root, 0, 0, 1774, 887, Color.white, true);
-            background.sprite = SpriteAt("Assets/Art/UI/Backpack.png");
+            background.sprite = AssetDatabase.LoadAllAssetsAtPath("Assets/Art/UI/Backpack.png")
+                .OfType<Sprite>().Single(sprite => sprite.name == "Backpack_0");
             var slots = new List<OrganDragSlot>();
             for (int p = 0; p < 4; p++) for (int i = 0; i < (p == 3 ? 2 : 6); i++)
             {
@@ -109,7 +110,7 @@ namespace SpringUp.EditorChecks
             backpack.equipmentSlots = slots.ToArray(); slots.Clear();
             var inventory = Image("Inventory drop area", root, 320, 593, 858, 225, Color.clear, true);
             inventory.gameObject.AddComponent<InventoryDropArea>().owner = backpack;
-            for (int i = 0; i < 14; i++)
+            for (int i = 0; i < Inventory.BackpackCapacity; i++)
             {
                 var view = Icon(inventory.transform, "Inventory " + (i + 1), art, 25 + i % 7 * 120, 24 + i / 7 * 113, 76, true);
                 var slot = view.gameObject.AddComponent<OrganDragSlot>(); slot.view = view; slot.inventory = true; slot.index = i; slots.Add(slot);
@@ -128,9 +129,6 @@ namespace SpringUp.EditorChecks
             content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             scroll.content = content;
             backpack.detailsScroll = scroll;
-            backpack.previousPage = Button("Previous page", root, "上一页", 1270, 780, 150, 40);
-            backpack.pageLabel = Text("Page", root, "1 / 1 页", 1270, 746, 320, 30, 23); backpack.pageLabel.alignment = TextAnchor.MiddleCenter;
-            backpack.nextPage = Button("Next page", root, "下一页", 1440, 780, 150, 40);
             binding.discardButton = Button("Discard selected", root, "丢弃选中器官", 1270, 700, 320, 42);
             backpack.dragGhost = Icon(root, "Drag ghost", art, 0, 0, 76, false);
             backpack.dragGhost.GetComponent<RectTransform>().pivot = new Vector2(.5f, .5f);
