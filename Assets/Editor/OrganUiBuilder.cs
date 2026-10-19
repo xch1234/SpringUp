@@ -101,7 +101,8 @@ namespace SpringUp.EditorChecks
             var binding = root.gameObject.AddComponent<FlowLaboratoryWindow>(); binding.backpack = backpack;
             // Only the actual panel blocks clicks; icons/overlays themselves do not swallow drop events.
             var background = Image("Artwork", root, 0, 0, 1774, 887, Color.white, true);
-            background.sprite = SpriteAt("Assets/Art/UI/Backpack.png");
+            background.sprite = AssetDatabase.LoadAllAssetsAtPath("Assets/Art/UI/Backpack.png")
+                .OfType<Sprite>().Single(sprite => sprite.name == "Backpack_0");
             var slots = new List<OrganDragSlot>();
             for (int p = 0; p < 4; p++) for (int i = 0; i < (p == 3 ? 2 : 6); i++)
             {

@@ -108,7 +108,7 @@ TextureImporter:
         width: 1774
         height: 887
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -121,11 +121,55 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: ShopSlot
+      rect:
+        serializedVersion: 2
+        x: 508
+        y: 625
+        width: 103
+        height: 105
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c098ad57416f27e45b04597f550831ec
+      internalID: -600075412
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ShopCrown
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 762
+        width: 1774
+        height: 125
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a5194269a84855f419a87a1e4332103a
+      internalID: 1088296481
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 9e464c61771b43a4fb5710a1c7937312
     internalID: 0
     vertices: []
     indices: 
@@ -136,6 +180,8 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       Backpack_0: 1428892310142603471
+      ShopCrown: 1088296481
+      ShopSlot: -600075412
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
