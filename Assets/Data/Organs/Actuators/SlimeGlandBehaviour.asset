@@ -15,7 +15,7 @@ MonoBehaviour:
   organId: slime_gland
   displayName: 粘液腺
   damage: 5
-  targetingRange: 6
+  targetingRange: 8
   chargeCost: 25
   shape: 0
   explosionRadius: 2

@@ -13,17 +13,77 @@ MonoBehaviour:
   m_Name: OrganArtCatalog
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Laboratory.OrganArtCatalog
   entries:
+  - definitionId: straight_projectile
+    sprite: {fileID: 21300000, guid: 8cc3210d3b7853c4eacb6c749ee8ab5c, type: 3}
   - definitionId: fist
-    sprite: {fileID: -5191308225362931239, guid: ecfc6c7a8b876e546bdf44ccc1b391bf, type: 3}
+    sprite: {fileID: 21300000, guid: ecfc6c7a8b876e546bdf44ccc1b391bf, type: 3}
   - definitionId: steel_pipe
-    sprite: {fileID: -2794209340441566712, guid: bac38d31eb74c1d40883e75e8b234504, type: 3}
+    sprite: {fileID: 21300000, guid: bac38d31eb74c1d40883e75e8b234504, type: 3}
   - definitionId: rust_knife
-    sprite: {fileID: -7603697247306116889, guid: d75ced302cb271147bfc46ef315f8b3e, type: 3}
+    sprite: {fileID: 21300000, guid: d75ced302cb271147bfc46ef315f8b3e, type: 3}
   - definitionId: slime_gland
-    sprite: {fileID: -4755339834602207717, guid: 505ba2b3321e63e4b86a5259e709315f, type: 3}
+    sprite: {fileID: 21300000, guid: 505ba2b3321e63e4b86a5259e709315f, type: 3}
   - definitionId: multi_tentacle
-    sprite: {fileID: -7066304203038159458, guid: 1921d5fbabe6a9542b350aa08b2521c1, type: 3}
+    sprite: {fileID: 21300000, guid: 1921d5fbabe6a9542b350aa08b2521c1, type: 3}
   - definitionId: collapse_body
-    sprite: {fileID: 4926106958354313883, guid: 4c6f8ce8b0f926d428231bb35381f8ef, type: 3}
+    sprite: {fileID: 21300000, guid: 4c6f8ce8b0f926d428231bb35381f8ef, type: 3}
   - definitionId: tnt
-    sprite: {fileID: -8136218936520485124, guid: 773f63d7c87d7cc46aa42b6c3d11ce92, type: 3}
+    sprite: {fileID: 21300000, guid: 773f63d7c87d7cc46aa42b6c3d11ce92, type: 3}
+  - definitionId: spider_nest
+    sprite: {fileID: 21300000, guid: 0053c7e0b41d5e7438e427101f43107b, type: 3}
+  - definitionId: compound_eye
+    sprite: {fileID: 21300000, guid: 0a57b3c3f63cdc5448d0279911e1de02, type: 3}
+  - definitionId: treads
+    sprite: {fileID: 21300000, guid: d885130bef29e2847bf86b43c48f5010, type: 3}
+  - definitionId: collection_net
+    sprite: {fileID: 21300000, guid: a5cbd3323c1292c4eb2afd3191ba25de, type: 3}
+  - definitionId: orbit_projectile
+    sprite: {fileID: 21300000, guid: 37505fa698142614ca0a6d1f83e9d2ae, type: 3}
+  - definitionId: spiral_projectile
+    sprite: {fileID: 21300000, guid: 429447a998cc81a489fde7e58c35d56d, type: 3}
+  - definitionId: laser
+    sprite: {fileID: 21300000, guid: 674aaf97250842146971fad64698a799, type: 3}
+  - definitionId: homing_projectile
+    sprite: {fileID: 21300000, guid: 83638e09849eea6469d514e8417533d0, type: 3}
+  - definitionId: poison_fog
+    sprite: {fileID: 21300000, guid: ba0c8b11081c03b428844e7040c9693a, type: 3}
+  - definitionId: vampire_needle
+    sprite: {fileID: 21300000, guid: 33acaf5ae6e61024c9b1d3fc3e4a9367, type: 3}
+  - definitionId: triple_projectile
+    sprite: {fileID: 21300000, guid: 1a990b723164c224c9a1ea62476d43fe, type: 3}
+  - definitionId: octopus_sucker
+    sprite: {fileID: 21300000, guid: 025c69563a851b448b28a6082f1a22f7, type: 3}
+  - definitionId: missile
+    sprite: {fileID: 21300000, guid: 6bdcc9703469b9744ad4f591545ead43, type: 3}
+  - definitionId: charged_laser
+    sprite: {fileID: 21300000, guid: fe0398ed4df0bad4fa4a7aa4daca7fd7, type: 3}
+  - definitionId: spore
+    sprite: {fileID: 21300000, guid: 830915f1a77ba304c9562544df42e82f, type: 3}
+  - definitionId: trigger_hit
+    sprite: {fileID: 21300000, guid: 76011003c29ddfa49a918a85daa856f0, type: 3}
+  - definitionId: trigger_delay
+    sprite: {fileID: 21300000, guid: 7cd1d38627daec246a0c62e59e5f23e7, type: 3}
+  - definitionId: trigger_killcount
+    sprite: {fileID: 21300000, guid: 6b4c5994e78f87140abf341d7629361b, type: 3}
+  - definitionId: trigger_hurt
+    sprite: {fileID: 21300000, guid: 320527e6c2c61254aa8fa4a549dc427d, type: 3}
+  - definitionId: trigger_heal
+    sprite: {fileID: 21300000, guid: de898063e0dd1be488f4acf50468f750, type: 3}
+  - definitionId: trigger_end
+    sprite: {fileID: 21300000, guid: c08e80ca6f99e0f479d697ea3aeb1b70, type: 3}
+  - definitionId: trigger_debuff
+    sprite: {fileID: 21300000, guid: db05d54248f652b41b7bd6e85b85536f, type: 3}
+  - definitionId: torso_overdrive
+    sprite: {fileID: 21300000, guid: 00515cdde0bd0c547a72a439c6e4a870, type: 3}
+  - definitionId: torso_leech
+    sprite: {fileID: 21300000, guid: e9bbaf4b6cb715b4d9fabe06a8542c0c, type: 3}
+  - definitionId: torso_ram
+    sprite: {fileID: 21300000, guid: f2e0e4c98acfa584cbc9be8a04b218d4, type: 3}
+  - definitionId: torso_wideview
+    sprite: {fileID: 21300000, guid: 43b18cf25d78dc344a3e952802c9327a, type: 3}
+  - definitionId: torso_focused
+    sprite: {fileID: 21300000, guid: d71eaea4f7aee194ba2420553daf8116, type: 3}
+  - definitionId: torso_longguard
+    sprite: {fileID: 21300000, guid: 49abc6fe19d19e54dbd130a13c0ca3a4, type: 3}
+  - definitionId: torso_shortguard
+    sprite: {fileID: 21300000, guid: 3eaca7099dfb29c4e85cc7b5b81f30a8, type: 3}

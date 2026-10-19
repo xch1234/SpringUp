@@ -15,7 +15,7 @@ MonoBehaviour:
   organId: homing_projectile
   displayName: 追踪子弹
   damage: 5
-  targetingRange: 14
+  targetingRange: 16
   chargeCost: 20
   pattern: 3
   speed: 5

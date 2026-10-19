@@ -145,6 +145,8 @@ namespace SpringUp.EditorChecks
                         app.HandleBack(); Assert.AreEqual(1, Time.timeScale); Assert.IsTrue(app.WorldInputAllowed);
                         app.HandleBack(); Assert.IsFalse(app.HasModal, "Right click in world does not open pause");
                         GameSettings.TryBind(GameBinding.Inventory, Key.V, out _);
+                        app.BattleHud.Refresh();
+                        Assert.IsTrue(app.BattleHud.HelpText.text.Contains("V / Tab：背包"), "Battle HUD follows rebound inventory key");
                         InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.V)); break;
                     case 14:
                         Assert.IsTrue(app.HasModal, "Rebound inventory key");
@@ -154,6 +156,9 @@ namespace SpringUp.EditorChecks
                     case 15:
                         Assert.AreEqual(ContentKind.Rest, app.Content.kind);
                         app.Content.player.transform.position = app.Content.Laboratory.position;
+                        app.BattleHud.Refresh();
+                        Assert.IsTrue(app.BattleHud.HelpText.text.Contains("J：实验室装配"), "Rest HUD follows rebound interaction key");
+                        Assert.IsTrue(app.BattleHud.HelpText.text.Contains("V / Tab：背包"), "Rest HUD retains rebound inventory key");
                         InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.J)); break;
                     case 16:
                         Assert.IsTrue(app.CanModifyEquipment, "Rebound interaction opens laboratory");

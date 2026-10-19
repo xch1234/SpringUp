@@ -98,7 +98,7 @@ namespace SpringUp.EditorChecks
         [Test] public void AssetsCoverAllThirteenAndValidateSnapshots()
         {
             var definitions = OrganCatalog.LoadDefault().CreateDefinitions();
-            Assert.AreEqual(36, definitions.Count);
+            Assert.AreEqual(34, definitions.Count);
             Assert.AreEqual(13, definitions.Count(d => d.Projectile != null));
             Assert.AreEqual(12, definitions.Select(d => d.Projectile).OfType<PatternActuatorSettings>().Select(p => p.Pattern).Distinct().Count());
             var summon = definitions.Single(d => d.Id == "summon_follower");

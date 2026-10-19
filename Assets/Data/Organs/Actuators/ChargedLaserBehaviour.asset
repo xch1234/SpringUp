@@ -15,7 +15,7 @@ MonoBehaviour:
   organId: charged_laser
   displayName: 大激光
   damage: 20
-  targetingRange: 7
+  targetingRange: 10
   chargeCost: 20
   pattern: 9
   speed: 8
@@ -23,7 +23,7 @@ MonoBehaviour:
   lifetime: 4
   orbitRadius: 1
   angularSpeed: 180
-  range: 7
+  range: 10
   areaRadius: 1
   interval: 0.5
   lifeSteal: 0.2

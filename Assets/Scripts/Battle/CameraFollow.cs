@@ -18,6 +18,7 @@ namespace TideBorne.Battle
     /// - 有没有别的东西在覆盖相机位置
     /// </summary>
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(100)]
     [AddComponentMenu("潮涌之躯/战场/俯视跟随相机（CameraFollow）")]
     public class CameraFollow : MonoBehaviour
     {
@@ -58,6 +59,11 @@ namespace TideBorne.Battle
 
         /// <summary>边界限制是否开启。</summary>
         public bool ClampEnabled { get { return clampToMapBounds; } }
+
+        public void ConfigureBounds(Vector2 center, Vector2 halfExtents)
+        {
+            mapCenter = center; mapHalfExtents = halfExtents; clampToMapBounds = true;
+        }
 
         /// <summary>是否已经拿到跟随目标。</summary>
         public bool HasTarget { get { return target != null; } }

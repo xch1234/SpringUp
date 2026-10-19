@@ -124,6 +124,7 @@ namespace SpringUp.EditorChecks
             entry.kind = kind; entry.world = world; entry.player = player; entry.director = director;
             entry.pipeline = pipeline; entry.combat = combat; entry.effects = effects; entry.dummy = dummy;
             entry.EnsureMerchant();
+            BattleMapAuthoring.Configure(entry);
             world.SetActive(false);
             EditorSceneManager.SaveScene(scene, path);
         }

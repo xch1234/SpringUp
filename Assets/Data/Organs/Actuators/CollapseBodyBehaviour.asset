@@ -15,7 +15,7 @@ MonoBehaviour:
   organId: collapse_body
   displayName: 坍缩体
   damage: 0
-  targetingRange: 10
+  targetingRange: 12
   chargeCost: 40
   shape: 2
   explosionRadius: 2

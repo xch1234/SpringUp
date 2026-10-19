@@ -9,7 +9,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 90,
-      "icon": "placeholder/organs/straight_projectile.png",
+      "icon": "Assets/Art/Organs/straight_projectile.png",
       "damage": 5,
       "count": 1,
       "radius": 0.12,
@@ -23,7 +23,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 0,
-      "icon": "placeholder/organs/fist.png",
+      "icon": "Assets/Art/Organs/fist.jpg",
       "damage": 5,
       "count": 1,
       "radius": 0
@@ -36,7 +36,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 100,
-      "icon": "placeholder/organs/steel_pipe.png",
+      "icon": "Assets/Art/Organs/steel_pipe.jpg",
       "damage": 8,
       "count": 1,
       "radius": 0,
@@ -55,7 +55,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 80,
-      "icon": "placeholder/organs/rust_knife.png",
+      "icon": "Assets/Art/Organs/rust_knife.jpg",
       "damage": 4,
       "count": 1,
       "radius": 0,
@@ -74,7 +74,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 100,
-      "icon": "placeholder/organs/slime_gland.png",
+      "icon": "Assets/Art/Organs/slime_gland.jpg",
       "damage": 3,
       "count": 1,
       "radius": 0,
@@ -92,7 +92,7 @@
       "type": "trigger",
       "rarity": "rare",
       "shop_price": 150,
-      "icon": "placeholder/organs/multi_tentacle.png",
+      "icon": "Assets/Art/Organs/multi_tentacle.jpg",
       "trigger_on": "kill",
       "trigger_target": "NEXT_SLOT",
       "chance": 100
@@ -105,7 +105,7 @@
       "type": "executor",
       "rarity": "rare",
       "shop_price": 200,
-      "icon": "placeholder/organs/collapse_body.png",
+      "icon": "Assets/Art/Organs/collapse_body.jpg",
       "damage": 0,
       "count": 1,
       "radius": 2,
@@ -123,7 +123,7 @@
       "type": "executor",
       "rarity": "rare",
       "shop_price": 220,
-      "icon": "placeholder/organs/tnt.png",
+      "icon": "Assets/Art/Organs/tnt.jpg",
       "damage": 12,
       "count": 1,
       "radius": 3
@@ -136,7 +136,7 @@
       "type": "trigger",
       "rarity": "rare",
       "shop_price": 180,
-      "icon": "placeholder/organs/spider_nest.png",
+      "icon": "Assets/Art/Organs/spider_nest.png",
       "trigger_on": "hit",
       "trigger_target": "NONE",
       "chance": 5
@@ -149,7 +149,7 @@
       "type": "torso_special",
       "rarity": "rare",
       "shop_price": 200,
-      "icon": "placeholder/organs/compound_eye.png",
+      "icon": "Assets/Art/Organs/compound_eye.png",
       "modifiers": {
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1
@@ -166,7 +166,7 @@
       "type": "torso_special",
       "rarity": "rare",
       "shop_price": 200,
-      "icon": "placeholder/organs/treads.png",
+      "icon": "Assets/Art/Organs/treads.png",
       "modifiers": {
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1
@@ -183,7 +183,7 @@
       "type": "torso_special",
       "rarity": "mechanical",
       "shop_price": 250,
-      "icon": "placeholder/organs/collection_net.png",
+      "icon": "Assets/Art/Organs/collection_net.png",
       "modifiers": {
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1.1
@@ -200,7 +200,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 110,
-      "icon": "placeholder/organs/orbit_projectile.png",
+      "icon": "Assets/Art/Organs/orbit_projectile.png",
       "damage": 5,
       "count": 1,
       "radius": 0.12,
@@ -214,7 +214,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 70,
-      "icon": "placeholder/organs/spiral_projectile.png",
+      "icon": "Assets/Art/Organs/spiral_projectile.png",
       "damage": 5,
       "count": 1,
       "radius": 0.12,
@@ -228,7 +228,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 140,
-      "icon": "placeholder/organs/laser.png",
+      "icon": "Assets/Art/Organs/laser.png",
       "damage": 8,
       "count": 1,
       "radius": 0.12,
@@ -242,7 +242,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 110,
-      "icon": "placeholder/organs/homing_projectile.png",
+      "icon": "Assets/Art/Organs/homing_projectile.png",
       "damage": 5,
       "count": 1,
       "radius": 0.12,
@@ -256,7 +256,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 190,
-      "icon": "placeholder/organs/poison_fog.png",
+      "icon": "Assets/Art/Organs/poison_fog.png",
       "damage": 2,
       "count": 1,
       "radius": 0.12,
@@ -270,7 +270,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 120,
-      "icon": "placeholder/organs/vampire_needle.png",
+      "icon": "Assets/Art/Organs/vampire_needle.png",
       "damage": 6,
       "count": 1,
       "radius": 0.12,
@@ -284,7 +284,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 160,
-      "icon": "placeholder/organs/triple_projectile.png",
+      "icon": "Assets/Art/Organs/triple_projectile.png",
       "damage": 4,
       "count": 1,
       "radius": 0.12,
@@ -298,7 +298,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 170,
-      "icon": "placeholder/organs/octopus_sucker.png",
+      "icon": "Assets/Art/Organs/octopus_sucker.png",
       "damage": 2,
       "count": 1,
       "radius": 0.12,
@@ -312,7 +312,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 150,
-      "icon": "placeholder/organs/missile.png",
+      "icon": "Assets/Art/Organs/missile.png",
       "damage": 5,
       "count": 1,
       "radius": 0.12,
@@ -326,7 +326,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 240,
-      "icon": "placeholder/organs/charged_laser.png",
+      "icon": "Assets/Art/Organs/charged_laser.png",
       "damage": 20,
       "count": 1,
       "radius": 0.4,
@@ -340,7 +340,7 @@
       "type": "executor",
       "rarity": "common",
       "shop_price": 80,
-      "icon": "placeholder/organs/spore.png",
+      "icon": "Assets/Art/Organs/spore.png",
       "damage": 6,
       "count": 1,
       "radius": 0.2,
@@ -368,7 +368,7 @@
       "type": "trigger",
       "rarity": "common",
       "shop_price": 130,
-      "icon": "placeholder/organs/trigger_hit.png",
+      "icon": "Assets/Art/Organs/trigger_hit.png",
       "trigger_on": "hit",
       "trigger_target": "NEXT_SLOT",
       "chance": 30
@@ -381,7 +381,7 @@
       "type": "trigger",
       "rarity": "common",
       "shop_price": 140,
-      "icon": "placeholder/organs/trigger_delay.png",
+      "icon": "Assets/Art/Organs/trigger_delay.png",
       "trigger_on": "started",
       "trigger_target": "NEXT_SLOT",
       "chance": 100
@@ -394,7 +394,7 @@
       "type": "trigger",
       "rarity": "common",
       "shop_price": 90,
-      "icon": "placeholder/organs/trigger_killcount.png",
+      "icon": "Assets/Art/Organs/trigger_killcount.png",
       "trigger_on": "kill",
       "trigger_target": "NEXT_SLOT",
       "chance": 100
@@ -407,7 +407,7 @@
       "type": "trigger",
       "rarity": "common",
       "shop_price": 100,
-      "icon": "placeholder/organs/trigger_hurt.png",
+      "icon": "Assets/Art/Organs/trigger_hurt.png",
       "trigger_on": "hurt",
       "trigger_target": "NEXT_SLOT",
       "chance": 100
@@ -420,7 +420,7 @@
       "type": "trigger",
       "rarity": "common",
       "shop_price": 80,
-      "icon": "placeholder/organs/trigger_heal.png",
+      "icon": "Assets/Art/Organs/trigger_heal.png",
       "trigger_on": "heal",
       "trigger_target": "NEXT_SLOT",
       "chance": 100
@@ -433,7 +433,7 @@
       "type": "trigger",
       "rarity": "common",
       "shop_price": 110,
-      "icon": "placeholder/organs/trigger_end.png",
+      "icon": "Assets/Art/Organs/trigger_end.png",
       "trigger_on": "expire",
       "trigger_target": "NEXT_SLOT",
       "chance": 100
@@ -446,36 +446,10 @@
       "type": "trigger",
       "rarity": "common",
       "shop_price": 100,
-      "icon": "placeholder/organs/trigger_debuff.png",
+      "icon": "Assets/Art/Organs/trigger_debuff.png",
       "trigger_on": "debuff",
       "trigger_target": "NEXT_SLOT",
       "chance": 30
-    },
-    {
-      "id": "trigger_critical",
-      "name": "暴击触发",
-      "description": "样板：满足条件后只发动紧邻后一个执行器，后者不参与自动循环；参数由触发器配置管理。",
-      "part": "any",
-      "type": "trigger",
-      "rarity": "common",
-      "shop_price": 70,
-      "icon": "placeholder/organs/trigger_critical.png",
-      "trigger_on": "critical",
-      "trigger_target": "NEXT_SLOT",
-      "chance": 100
-    },
-    {
-      "id": "trigger_stationary",
-      "name": "静止充能触发",
-      "description": "样板：满足条件后只发动紧邻后一个执行器，后者不参与自动循环；参数由触发器配置管理。",
-      "part": "any",
-      "type": "trigger",
-      "rarity": "common",
-      "shop_price": 60,
-      "icon": "placeholder/organs/trigger_stationary.png",
-      "trigger_on": "stationary",
-      "trigger_target": "NEXT_SLOT",
-      "chance": 100
     },
     {
       "id": "torso_overdrive",
@@ -485,7 +459,7 @@
       "type": "torso_special",
       "rarity": "common",
       "shop_price": 220,
-      "icon": "placeholder/organs/torso_overdrive.png",
+      "icon": "Assets/Art/Organs/torso_overdrive.png",
       "modifiers": {
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1
@@ -500,7 +474,7 @@
       "type": "torso_special",
       "rarity": "common",
       "shop_price": 140,
-      "icon": "placeholder/organs/torso_leech.png",
+      "icon": "Assets/Art/Organs/torso_leech.png",
       "modifiers": {
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1
@@ -515,7 +489,7 @@
       "type": "torso_special",
       "rarity": "common",
       "shop_price": 230,
-      "icon": "placeholder/organs/torso_ram.png",
+      "icon": "Assets/Art/Organs/torso_ram.png",
       "modifiers": {
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1
@@ -530,7 +504,7 @@
       "type": "torso_special",
       "rarity": "common",
       "shop_price": 80,
-      "icon": "placeholder/organs/torso_wideview.png",
+      "icon": "Assets/Art/Organs/torso_wideview.png",
       "modifiers": {
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1
@@ -545,7 +519,7 @@
       "type": "torso_special",
       "rarity": "common",
       "shop_price": 160,
-      "icon": "placeholder/organs/torso_focused.png",
+      "icon": "Assets/Art/Organs/torso_focused.png",
       "modifiers": {
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1
@@ -560,7 +534,7 @@
       "type": "torso_special",
       "rarity": "common",
       "shop_price": 90,
-      "icon": "placeholder/organs/torso_longguard.png",
+      "icon": "Assets/Art/Organs/torso_longguard.png",
       "modifiers": {
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1
@@ -575,7 +549,7 @@
       "type": "torso_special",
       "rarity": "common",
       "shop_price": 210,
-      "icon": "placeholder/organs/torso_shortguard.png",
+      "icon": "Assets/Art/Organs/torso_shortguard.png",
       "modifiers": {
         "unequipped_capacity_delta": 0,
         "marrow_gain_mult": 1

@@ -50,8 +50,8 @@ namespace SpringUp.EditorChecks
         [Test] public void AssetsAndAllEventConditions()
         {
             var definitions = OrganCatalog.LoadDefault().CreateDefinitions();
-            Assert.AreEqual(10, definitions.Count(d => d.Trigger != null));
-            Assert.AreEqual(9, definitions.Where(d => d.Trigger != null).Select(d => d.TriggerOn).Distinct().Count());
+            Assert.AreEqual(8, definitions.Count(d => d.Trigger != null));
+            Assert.AreEqual(7, definitions.Where(d => d.Trigger != null).Select(d => d.TriggerOn).Distinct().Count());
             foreach (var kind in new[] { TriggerOn.Hit, TriggerOn.Hurt, TriggerOn.Heal, TriggerOn.Debuff, TriggerOn.Critical })
                 using (var r = new Rig())
                 {

@@ -20,12 +20,7 @@ namespace SpringUp.EditorChecks
         [MenuItem("Tools/SpringUp/UI/Build Organ UI Assets")]
         public static void Build()
         {
-            var art = AssetDatabase.LoadAssetAtPath<OrganArtCatalog>(ArtPath);
-            if (art == null) { art = ScriptableObject.CreateInstance<OrganArtCatalog>(); AssetDatabase.CreateAsset(art, ArtPath); }
-            string[] ids = { "fist", "steel_pipe", "rust_knife", "slime_gland", "multi_tentacle", "collapse_body", "tnt" };
-            string[] files = { "Fist", "SteelPipe", "RustKnife", "SlimeGland", "MultiTentacle", "CollapseBody", "TNT" };
-            art.entries = ids.Select((id, i) => new OrganArtCatalog.Entry { definitionId = id, sprite = SpriteAt("Assets/Art/Organs/" + files[i] + ".jpg") }).ToArray();
-            EditorUtility.SetDirty(art);
+            var art = OrganArtAuthoring.RefreshCatalog();
             BuildHud(art); BuildBackpack(art); AssetDatabase.SaveAssets();
             Debug.Log("[Organ UI] Assets built. Prefabs are now editable without runtime layout rebuilding.");
         }

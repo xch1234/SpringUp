@@ -1,4 +1,5 @@
 using System;
+using SpringUp.Flow;
 using SpringUp.Laboratory;
 using SpringUp.Organs;
 using UnityEngine;
@@ -17,6 +18,43 @@ namespace Tideflesh.Systems
         OrganCombatReport report;
         OrganPulseBinding pulses;
         int reportRevision = -1;
+        CanvasGroup layoutGroup;
+        Vector2 originalSize;
+        Image artwork;
+        Sprite originalArtwork;
+        public void ApplyLayout(EquipmentHudStyle style)
+        {
+            var rect = (RectTransform)transform;
+            if (layoutGroup == null)
+            {
+                originalSize = rect.sizeDelta;
+                layoutGroup = GetComponent<CanvasGroup>();
+                if (layoutGroup == null) layoutGroup = gameObject.AddComponent<CanvasGroup>();
+                artwork = transform.Find("Artwork")?.GetComponent<Image>();
+                if (artwork != null) originalArtwork = artwork.sprite;
+            }
+            if (artwork != null)
+            {
+                artwork.sprite = style.backgroundSprite != null ? style.backgroundSprite : originalArtwork;
+                artwork.color = style.backgroundColor;
+            }
+            var anchor = style.anchor switch
+            {
+                HudAnchor.TopRight => Vector2.one,
+                HudAnchor.BottomLeft => Vector2.zero,
+                HudAnchor.BottomRight => Vector2.right,
+                HudAnchor.Center => Vector2.one * .5f,
+                _ => Vector2.up
+            };
+            rect.anchorMin = rect.anchorMax = rect.pivot = anchor;
+            rect.anchoredPosition = style.offset;
+            // The prefab uses fixed artwork/slot coordinates. Scale them together to preserve alignment.
+            float scale = Mathf.Clamp(style.scale, .25f, 4);
+            rect.localScale = new Vector3(Mathf.Max(20, style.size.x) / Mathf.Max(1, originalSize.x) * scale,
+                Mathf.Max(20, style.size.y) / Mathf.Max(1, originalSize.y) * scale, 1);
+            layoutGroup.alpha = Mathf.Clamp01(style.opacity);
+            layoutGroup.blocksRaycasts = layoutGroup.interactable = layoutGroup.alpha > 0;
+        }
         public void BindReport(OrganCombatReport value) { report = value; reportRevision = -1; }
         public void BindPipeline(OrganPipelineController pipeline)
         {

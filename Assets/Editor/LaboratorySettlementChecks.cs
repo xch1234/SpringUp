@@ -25,7 +25,7 @@ namespace SpringUp.LaboratoryEditor
             }
             void Step() => demo.Pipeline.GetBody(BodyPart.Hand).Tick(1);
             var definitions = OrganCatalog.LoadDefault().CreateDefinitions();
-            Require(definitions.Count == 36, "真实目录七种旧器官、十三种执行器与九种触发器样板");
+            Require(definitions.Count == 34, "真实目录十九种执行器、八种触发器与七种躯干");
             foreach (var definition in definitions.Where(d => !(d.Projectile is PatternActuatorSettings) && d.Trigger == null && d.Torso == null))
             {
                 Empty(); var item = Equip(definition.Id);

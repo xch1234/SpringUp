@@ -15,7 +15,7 @@ MonoBehaviour:
   organId: fist
   displayName: 拳头
   damage: 5
-  targetingRange: 4
+  targetingRange: 5
   chargeCost: 20
   shape: 0
   explosionRadius: 2

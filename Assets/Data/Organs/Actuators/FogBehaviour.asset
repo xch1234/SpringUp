@@ -15,7 +15,7 @@ MonoBehaviour:
   organId: poison_fog
   displayName: 毒雾
   damage: 2
-  targetingRange: 6
+  targetingRange: 8
   chargeCost: 20
   pattern: 4
   speed: 8
