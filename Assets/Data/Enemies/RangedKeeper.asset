@@ -43,7 +43,7 @@ MonoBehaviour:
   facingLerpSpeed: 720
   stopAtAttackRangeRatio: 0.9
   minStopDistance: 0.5
-  preferredDistance: 6
+  preferredDistance: 5
   distanceTolerance: 0.8
   archetype: 2
   allowRegularSpawn: 1

@@ -24,6 +24,9 @@ namespace TideBorne.EditorTools
         /// <summary>记录已生成 prefab 版本的标记文件。</summary>
         private const string MarkerPath = OutputFolder + "/.generated-version.txt";
 
+        /// <summary>敌人子弹贴图；存在时优先于灰盒方块（由 EnemyArtSetup 导入）。</summary>
+        private const string BulletSpritePath = "Assets/Art/Enemies/Bullet/enemy_bullet.png";
+
         /// <summary>
         /// prefab 生成器版本。**改动影响 prefab 序列化内容的东西就要加一**，
         /// 否则已有的 prefab 会一直留着旧值——这里踩过一次：
@@ -48,8 +51,9 @@ namespace TideBorne.EditorTools
         ///      颜色改白并挂 Animator；没有美术的原型继续走灰盒方块。
         ///      同时给开火型敌人补回 `EnemyAttackFlash`（此前漏加，重建会丢开火闪黄）。
         /// 7 → 复核「美术接入」真的生效（含 RangedChaser 1.5 倍尺寸与 Animator）。
+        /// 8 → 其余五种敌人（普通 / 快速 / 远程 / 治疗 / 兵工厂）接入贴图动画。
         /// </summary>
-        private const int PrefabVersion = 7;
+        private const int PrefabVersion = 8;
 
         private static bool s_AutoBuildAttempted;
 
@@ -443,8 +447,20 @@ namespace TideBorne.EditorTools
             var serialized = new SerializedObject(attack);
             SetBool(serialized, "useProjectiles", true);
             SetFloat(serialized, "projectileVisualSize", GreyboxAssets.ProjectileWorldSize);
-            SetColor(serialized, "projectileColor", config.color);
-            SetObject(serialized, "projectileSprite", EnsureSquareSprite());
+
+            var bulletSprite = AssetDatabase.LoadAssetAtPath<Sprite>(BulletSpritePath);
+            if (bulletSprite != null)
+            {
+                // 真美术自带颜色，不能再乘染色的 config.color。
+                SetColor(serialized, "projectileColor", Color.white);
+                SetObject(serialized, "projectileSprite", bulletSprite);
+            }
+            else
+            {
+                SetColor(serialized, "projectileColor", config.color);
+                SetObject(serialized, "projectileSprite", EnsureSquareSprite());
+            }
+
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 

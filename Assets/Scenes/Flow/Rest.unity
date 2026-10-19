@@ -1821,6 +1821,7 @@ GameObject:
   - component: {fileID: 794954396}
   - component: {fileID: 794954395}
   - component: {fileID: 794954394}
+  - component: {fileID: 794954398}
   m_Layer: 0
   m_Name: BowDummy_1
   m_TagString: Untagged
@@ -1928,8 +1929,8 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 0ee5d417cee127b42b7ae3311d0d7280, type: 3}
-  m_Color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 4747e3a2092f20a4cb4e46cd58efaa21, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -1966,6 +1967,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyData
   definition: {fileID: 11400000, guid: 2117d5cdc6d04f1f93cb7fd62e2d2e01, type: 2}
+--- !u!95 &794954398
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 794954392}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 3f36b3bb9ee76a2489390671486c36a2, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &890580906
 GameObject:
   m_ObjectHideFlags: 0
@@ -1979,6 +2002,7 @@ GameObject:
   - component: {fileID: 890580910}
   - component: {fileID: 890580909}
   - component: {fileID: 890580908}
+  - component: {fileID: 890580912}
   m_Layer: 0
   m_Name: BowDummy_3
   m_TagString: Untagged
@@ -2086,8 +2110,8 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 0ee5d417cee127b42b7ae3311d0d7280, type: 3}
-  m_Color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 4747e3a2092f20a4cb4e46cd58efaa21, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -2124,6 +2148,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyData
   definition: {fileID: 11400000, guid: 2117d5cdc6d04f1f93cb7fd62e2d2e01, type: 2}
+--- !u!95 &890580912
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 890580906}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 3f36b3bb9ee76a2489390671486c36a2, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &906997007
 GameObject:
   m_ObjectHideFlags: 0
@@ -2215,6 +2261,7 @@ GameObject:
   - component: {fileID: 920154509}
   - component: {fileID: 920154508}
   - component: {fileID: 920154507}
+  - component: {fileID: 920154511}
   m_Layer: 0
   m_Name: BowDummy_2
   m_TagString: Untagged
@@ -2322,8 +2369,8 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 0ee5d417cee127b42b7ae3311d0d7280, type: 3}
-  m_Color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 4747e3a2092f20a4cb4e46cd58efaa21, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -2360,6 +2407,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyData
   definition: {fileID: 11400000, guid: 2117d5cdc6d04f1f93cb7fd62e2d2e01, type: 2}
+--- !u!95 &920154511
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920154505}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 3f36b3bb9ee76a2489390671486c36a2, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1014350025
 GameObject:
   m_ObjectHideFlags: 0
@@ -3443,7 +3512,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Flow.FlowContent
   kind: 2
-  viewSettings: {fileID: 11400000, guid: b87260a630e965449bf3ae1d05109923, type: 2}
   world: {fileID: 230333444}
   player: {fileID: 526739248}
   director: {fileID: 0}
@@ -3451,6 +3519,7 @@ MonoBehaviour:
   combat: {fileID: 447803999}
   effects: {fileID: 447803998}
   dummy: {fileID: 0}
+  viewSettings: {fileID: 11400000, guid: b87260a630e965449bf3ae1d05109923, type: 2}
   merchant: {fileID: 1770086981}
   laboratory: {fileID: 1684614690}
   interactionRadius: 2

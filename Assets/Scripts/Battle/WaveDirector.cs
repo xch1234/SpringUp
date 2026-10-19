@@ -39,7 +39,7 @@ namespace TideBorne.Battle
         [Tooltip("每波时长，秒。策划案定为 60。")]
         [SerializeField] private float waveDuration = 60f;
 
-        [Tooltip("总波次数量。策划案定为 7（第 7 波为 Boss）。")]
+        [Tooltip("总波次数量。策划案定为 7。")]
         [SerializeField] private int totalWaves = 7;
 
         [Tooltip("每波结束到下一波开始之间的间隔，秒。0 表示立即接上。")]
@@ -48,9 +48,6 @@ namespace TideBorne.Battle
         [Header("刷怪")]
         [Tooltip("刷怪器。留空则自动取本物体或场景上的 EnemySpawner。")]
         [SerializeField] private EnemySpawner spawner;
-
-        [Tooltip("每波敌人数量。下标 0 对应第 1 波；数量不足时沿用最后一个值。")]
-        [SerializeField] private int[] enemiesPerWave = new int[] { 8, 12, 16, 20, 24, 28, 1 };
 
         [Header("行为开关")]
         [Tooltip("是否开局自动开第一波。")]
@@ -189,14 +186,14 @@ namespace TideBorne.Battle
             _elapsed = 0f;
             State = WaveState.Running;
 
-            var planned = GetEnemyCountForWave(CurrentWave);
             if (spawner != null)
-                spawner.BeginWave(planned, waveDuration);
+                spawner.BeginWave(CurrentWave, waveDuration);
 
             if (logWaveProgress)
             {
-                Debug.Log("[WaveDirector] 第 " + CurrentWave + "/" + totalWaves + " 波开始，计划刷 " +
-                          planned + " 个，时长 " + waveDuration + " 秒。");
+                var interval = spawner != null ? spawner.SpawnIntervalSeconds : 3f;
+                Debug.Log("[WaveDirector] 第 " + CurrentWave + "/" + totalWaves + " 波开始，每 " +
+                          interval + " 秒按权重随机刷怪，时长 " + waveDuration + " 秒。");
             }
 
             var handler = WaveStarted;
@@ -243,16 +240,6 @@ namespace TideBorne.Battle
                 if (logWaveProgress)
                     Debug.Log("[WaveDirector] 全部 " + totalWaves + " 波结束。");
             }
-        }
-
-        /// <summary>取某一波的敌人数量；数组不够长时沿用最后一个值。</summary>
-        public int GetEnemyCountForWave(int waveNumber)
-        {
-            if (enemiesPerWave == null || enemiesPerWave.Length == 0)
-                return 0;
-
-            var index = Mathf.Clamp(waveNumber - 1, 0, enemiesPerWave.Length - 1);
-            return Mathf.Max(0, enemiesPerWave[index]);
         }
     }
 }

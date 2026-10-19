@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e8a96b2b7d270b44b8b8fae5f64a2c0, type: 3}
+  m_Name: EnemyWaveMix
+  m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyWaveMixSettings
+  spawnIntervalSeconds: 3
+  arsenalAliveCap: 1
+  medicAliveCap: 2
+  waves:
+  - wave: 1
+    normal: 10
+    fast: 0
+    keeper: 0
+    chaser: 0
+    medic: 0
+    arsenal: 0
+  - wave: 2
+    normal: 8
+    fast: 2
+    keeper: 0
+    chaser: 0
+    medic: 0
+    arsenal: 0
+  - wave: 3
+    normal: 5
+    fast: 3
+    keeper: 2
+    chaser: 0
+    medic: 0
+    arsenal: 0
+  - wave: 4
+    normal: 4
+    fast: 3
+    keeper: 2
+    chaser: 1
+    medic: 0
+    arsenal: 0
+  - wave: 5
+    normal: 3
+    fast: 2
+    keeper: 2
+    chaser: 2
+    medic: 1
+    arsenal: 0
+  - wave: 6
+    normal: 2
+    fast: 2
+    keeper: 2
+    chaser: 2
+    medic: 1
+    arsenal: 1
+  - wave: 7
+    normal: 0
+    fast: 3
+    keeper: 2
+    chaser: 3
+    medic: 1
+    arsenal: 1

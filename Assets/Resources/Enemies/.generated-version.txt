@@ -1,4 +1,4 @@
 # 本文件由 EnemyPrefabBuilder 生成，记录六个敌人 prefab 的生成版本。
 # 版本不符 = prefab 里可能还留着旧的尺寸/弹体大小，跑菜单重建。
-version=7
-generated=2026-10-18 15:37:29
+version=8
+generated=2026-10-19 21:12:50

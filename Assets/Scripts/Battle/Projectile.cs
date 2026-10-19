@@ -84,6 +84,9 @@ namespace TideBorne.Battle
 
             if (_renderer != null)
                 _renderer.color = color;
+
+            // 子弹贴图朝右画（拖尾在左），让整个弹体跟着飞行方向转，否则朝左飞时拖尾会跑到前面。
+            transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg);
         }
 
         private void Update()

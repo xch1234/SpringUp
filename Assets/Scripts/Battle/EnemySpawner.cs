@@ -76,52 +76,61 @@ namespace TideBorne.Battle
         private float _accumulatedSpawnDelay;
         private bool _warnedMissingSprite;
         private bool _reportedPoolUsage;
-        private int _designedCursor;
 
         /// <summary>本波是否仍在刷怪。水花延迟期间波次结束的话，回调里就不再放敌人出来。</summary>
         private bool _waveActive = true;
 
-        /// <summary>本波预期生成的敌人总数，由 <see cref="WaveDirector"/> 设定。</summary>
-        public int PlannedSpawnCount { get; private set; }
+        private int _waveNumber;
+        private float _spawnElapsed;
+        private EnemyWaveMixSettings _mix;
 
-        /// <summary>本波已生成的敌人数量。</summary>
-        public int SpawnedCount { get; private set; }
-
-        /// <summary>是否还有没生成完的敌人。</summary>
-        public bool HasPendingSpawns { get { return SpawnedCount < PlannedSpawnCount; } }
-
-        /// <summary>开始新一波：重置计数。</summary>
-        public void BeginWave(int plannedCount, float waveDuration)
+        /// <summary>当前波次的刷怪间隔，秒。</summary>
+        public float SpawnIntervalSeconds
         {
-            _waveActive = true;
-            PlannedSpawnCount = Mathf.Max(0, plannedCount);
-            SpawnedCount = 0;
-            _accumulatedSpawnDelay = 0f;
-            _designedCursor = 0;
+            get { return _mix != null ? Mathf.Max(0.1f, _mix.spawnIntervalSeconds) : 3f; }
         }
 
-        /// <summary>结束本波：丢弃未使用的生成计划。</summary>
+        /// <summary>本波已经放出来的敌人数量（诊断用）。</summary>
+        public int SpawnedCount { get; private set; }
+
+        /// <summary>开始新一波：记下波次号、取权重表、重置计时。</summary>
+        public void BeginWave(int waveNumber, float waveDuration)
+        {
+            _waveActive = true;
+            _waveNumber = waveNumber;
+            SpawnedCount = 0;
+            _spawnElapsed = 0f;
+            _accumulatedSpawnDelay = 0f;
+
+            if (_mix == null)
+                _mix = EnemyWaveMixSettings.Load() ?? EnemyWaveMixSettings.CreateDefaultInstance();
+        }
+
+        /// <summary>结束本波：停止后续刷怪。</summary>
         public void EndWave()
         {
             _waveActive = false;
-            PlannedSpawnCount = 0;
             SpawnedCount = 0;
             _accumulatedSpawnDelay = 0f;
         }
 
         /// <summary>
-        /// 每帧推进生成。把「波时长 ÷ 目标数量」作为间隔在整波内均匀铺开，
-        /// 这样一波的敌人不会全挤在开头。
+        /// 每帧推进生成：每 <see cref="SpawnIntervalSeconds"/> 秒出一个，出哪种按当前波次的权重随机。
+        /// <paramref name="spawnDuration"/> 之后不再出怪（前六波 50 秒，第七波整段 60 秒）。
         /// </summary>
-        public void Tick(float deltaTime, float waveDuration)
+        public void Tick(float deltaTime, float spawnDuration)
         {
-            if (!HasPendingSpawns)
+            if (!_waveActive)
                 return;
 
-            var interval = waveDuration / PlannedSpawnCount;
+            _spawnElapsed += deltaTime;
+            if (_spawnElapsed >= spawnDuration)
+                return;
+
+            var interval = SpawnIntervalSeconds;
             _accumulatedSpawnDelay += deltaTime;
 
-            while (_accumulatedSpawnDelay >= interval && HasPendingSpawns)
+            while (_accumulatedSpawnDelay >= interval && _spawnElapsed < spawnDuration)
             {
                 _accumulatedSpawnDelay -= interval;
                 SpawnOne();
@@ -133,8 +142,7 @@ namespace TideBorne.Battle
         {
             var position = PickSpawnPosition();
 
-            // 先把这一笔算进「本波已生成」：水花要播大约 1 秒，这期间 Tick 若仍以为欠一个，
-            // 下一帧会再补一个，实际生成数就会超过计划。
+            // 诊断计数：放出来几个（水花开始就算，敌人 1 秒后才出现）。
             SpawnedCount++;
 
             // 先在生成点放水花，播完才把敌人放出来；若这期间本波已经结束，就不再放出来。
@@ -168,56 +176,155 @@ namespace TideBorne.Battle
             return true;
         }
 
+        /// <summary>参与权重抽取的类型顺序。只影响随机时的遍历次序，不影响概率。</summary>
+        private static readonly EnemyArchetype[] MixOrder =
+        {
+            EnemyArchetype.Normal,
+            EnemyArchetype.Fast,
+            EnemyArchetype.RangedKeeper,
+            EnemyArchetype.RangedChaser,
+            EnemyArchetype.Medic,
+            EnemyArchetype.Arsenal
+        };
+
         /// <summary>
-        /// 取一个敌人实例。优先用 Assets/Resources/Enemies 里的设计 prefab，
-        /// 按六种原型轮流取；目录是空的才退回场景上的兜底 prefab。
+        /// 取一个敌人实例。类型按当前波次的权重随机；兵工厂 / 医疗兵达到同时存活上限时排除。
+        /// 没有权重表（灰盒场景）或 Resources 里没有任何设计 prefab 时退回灰盒原型。
         /// </summary>
         private GameObject RentEnemy(out string poolKey)
         {
             poolKey = FallbackPoolKey;
-            var prototype = NextDesignedPrefab(out poolKey);
-            if (prototype == null)
+
+            if (_mix != null)
             {
-                poolKey = FallbackPoolKey;
-                prototype = enemyPrefab != null ? enemyPrefab : GetOrCreateGreyboxTemplate();
+                if (!TryPickArchetype(out var archetype))
+                    return null;    // 该类型都被上限挡住：这一拍不刷
+
+                var prototype = EnemyPrefabLibrary.Get(archetype);
+                if (prototype != null)
+                {
+                    poolKey = "Enemy_" + archetype;
+                    var instance = SimplePool.Rent(prototype, poolKey);
+                    if (instance != null)
+                    {
+                        var runtime = instance.GetComponent<EnemyRuntime>();
+                        if (runtime != null)
+                            runtime.MarkPooled(poolKey);
+                        return instance;
+                    }
+                }
+
+                if (LibraryHasAnyPrefab())
+                    return null;
             }
 
-            if (prototype == null)
+            var fallback = enemyPrefab != null ? enemyPrefab : GetOrCreateGreyboxTemplate();
+            if (fallback == null)
                 return null;
 
-            var instance = SimplePool.Rent(prototype, poolKey);
-            if (instance == null)
+            var fallbackInstance = SimplePool.Rent(fallback, FallbackPoolKey);
+            if (fallbackInstance == null)
                 return null;
 
-            var runtime = instance.GetComponent<EnemyRuntime>();
-            if (runtime != null)
-                runtime.MarkPooled(poolKey);
+            var fallbackRuntime = fallbackInstance.GetComponent<EnemyRuntime>();
+            if (fallbackRuntime != null)
+                fallbackRuntime.MarkPooled(FallbackPoolKey);
 
-            return instance;
+            return fallbackInstance;
         }
 
-        /// <summary>按声明顺序轮流取一种 Resources/Enemies 里的怪物。都没有时返回 null。</summary>
-        private GameObject NextDesignedPrefab(out string poolKey)
+        /// <summary>按权重随机抽一种当前可用（未达存活上限）的类型。</summary>
+        private bool TryPickArchetype(out EnemyArchetype archetype)
         {
-            poolKey = FallbackPoolKey;
+            archetype = EnemyArchetype.Normal;
+
+            var mix = _mix != null ? _mix.ForWave(_waveNumber) : null;
+            if (mix == null)
+                return false;
+
+            var types = new EnemyArchetype[MixOrder.Length];
+            var weights = new int[MixOrder.Length];
+            var candidateCount = 0;
+            var totalWeight = 0;
+
+            for (var i = 0; i < MixOrder.Length; i++)
+            {
+                var type = MixOrder[i];
+                var weight = mix.WeightOf(type);
+                if (weight <= 0)
+                    continue;
+
+                if (EnemyPrefabLibrary.Get(type) == null)
+                    continue;
+
+                if (AtAliveCap(type))
+                    continue;
+
+                types[candidateCount] = type;
+                weights[candidateCount] = weight;
+                candidateCount++;
+                totalWeight += weight;
+            }
+
+            if (candidateCount == 0 || totalWeight <= 0)
+                return false;
+
+            var roll = Random.Range(0, totalWeight);
+            for (var i = 0; i < candidateCount; i++)
+            {
+                roll -= weights[i];
+                if (roll < 0)
+                {
+                    archetype = types[i];
+                    return true;
+                }
+            }
+
+            archetype = types[candidateCount - 1];
+            return true;
+        }
+
+        /// <summary>该类型是否已经达到「场上同时存活」上限。</summary>
+        private bool AtAliveCap(EnemyArchetype archetype)
+        {
+            var cap = _mix != null ? _mix.AliveCapFor(archetype) : 0;
+            if (cap <= 0)
+                return false;
+
+            return CountAlive(archetype) >= cap;
+        }
+
+        private static int CountAlive(EnemyArchetype archetype)
+        {
+            var alive = EnemyRuntime.ActiveEnemies;
+            var count = 0;
+            for (var i = 0; i < alive.Count; i++)
+            {
+                var enemy = alive[i];
+                if (enemy == null || enemy.Data == null)
+                    continue;
+
+                if (enemy.Data.Definition.archetype == archetype)
+                    count++;
+            }
+
+            return count;
+        }
+
+        /// <summary>Resources/Enemies 里是否至少有一种设计 prefab。</summary>
+        private static bool LibraryHasAnyPrefab()
+        {
             var archetypes = EnemyArchetypeConfig.SpawnableArchetypes();
-            if (archetypes == null || archetypes.Length == 0)
-                return null;
+            if (archetypes == null)
+                return false;
 
             for (var i = 0; i < archetypes.Length; i++)
             {
-                var index = (_designedCursor + i) % archetypes.Length;
-                var archetype = archetypes[index];
-                var prefab = EnemyPrefabLibrary.Get(archetype);
-                if (prefab == null)
-                    continue;
-
-                _designedCursor = (index + 1) % archetypes.Length;
-                poolKey = "Enemy_" + archetype;
-                return prefab;
+                if (EnemyPrefabLibrary.Get(archetypes[i]) != null)
+                    return true;
             }
 
-            return null;
+            return false;
         }
 
         /// <summary>
