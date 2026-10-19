@@ -36,7 +36,7 @@ namespace TideBorne.Battle
         [SerializeField] private float facingLerpSpeed = 720f;
 
         [Tooltip("疾跑倍率。体力系统尚未定（策划案待定问题 7），故暂不消耗资源。")]
-        [SerializeField] private float sprintMultiplier = 1.5f;
+        [SerializeField] private float sprintMultiplier = 10f / 7.5f;
 
         public System.Func<bool> InputAllowed { get; set; }
         private Rigidbody2D _body;

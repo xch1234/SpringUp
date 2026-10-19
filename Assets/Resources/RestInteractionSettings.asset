@@ -12,6 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3083c9d59e2f40c1b16756ec2807bb06, type: 3}
   m_Name: RestInteractionSettings
   m_EditorClassIdentifier: Assembly-CSharp::SpringUp.Flow.RestInteractionSettings
+  trainingArea:
+    serializedVersion: 2
+    x: 0.08
+    y: 0.28
+    width: 0.40
+    height: 0.44
   shopArea:
     serializedVersion: 2
     x: 0.62

@@ -13,10 +13,22 @@ MonoBehaviour:
   m_Name: EnemyWaveMix
   m_EditorClassIdentifier: Assembly-CSharp::TideBorne.Battle.EnemyWaveMixSettings
   spawnIntervalSeconds: 3
+  dynamicSpawning: 1
+  veryLowThreshold: 0.2
+  lowThreshold: 0.5
+  normalThreshold: 0.7
+  veryLowIntervalMultiplier: 0.5
+  lowIntervalMultiplier: 0.7
+  normalIntervalMultiplier: 1
+  crowdedIntervalMultiplier: 2
+  fallbackIntervalMultiplier: 2
+  totalBudgetMultiplier: 1.5
   arsenalAliveCap: 1
   medicAliveCap: 2
   waves:
   - wave: 1
+    aliveCap: 16
+    slowAfterCount: 0
     normal: 10
     fast: 0
     keeper: 0
@@ -24,6 +36,8 @@ MonoBehaviour:
     medic: 0
     arsenal: 0
   - wave: 2
+    aliveCap: 16
+    slowAfterCount: 0
     normal: 8
     fast: 2
     keeper: 0
@@ -31,6 +45,8 @@ MonoBehaviour:
     medic: 0
     arsenal: 0
   - wave: 3
+    aliveCap: 16
+    slowAfterCount: 0
     normal: 5
     fast: 3
     keeper: 2
@@ -38,6 +54,8 @@ MonoBehaviour:
     medic: 0
     arsenal: 0
   - wave: 4
+    aliveCap: 16
+    slowAfterCount: 0
     normal: 4
     fast: 3
     keeper: 2
@@ -45,6 +63,8 @@ MonoBehaviour:
     medic: 0
     arsenal: 0
   - wave: 5
+    aliveCap: 16
+    slowAfterCount: 0
     normal: 3
     fast: 2
     keeper: 2
@@ -52,6 +72,8 @@ MonoBehaviour:
     medic: 1
     arsenal: 0
   - wave: 6
+    aliveCap: 16
+    slowAfterCount: 0
     normal: 2
     fast: 2
     keeper: 2
@@ -59,6 +81,8 @@ MonoBehaviour:
     medic: 1
     arsenal: 1
   - wave: 7
+    aliveCap: 16
+    slowAfterCount: 0
     normal: 0
     fast: 3
     keeper: 2

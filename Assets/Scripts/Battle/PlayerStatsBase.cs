@@ -26,10 +26,7 @@ namespace TideBorne.Battle
         [SerializeField] private float baseMaxHealth = 100f;
 
         [Tooltip("移速，米/秒。")]
-        // 2026-10-13 由 5 提到 10（策划要求"两倍"）。
-        // 注意这个值对敌人的相对关系：敌人基础 2.5、最快的快速型 3.25 米/秒，
-        // 所以 10 米/秒时玩家能轻松拉开——手感会明显变"飘"，等实战试过再定。
-        [SerializeField] private float moveSpeed = 10f;
+        [SerializeField] private float moveSpeed = 7.5f;
 
         [Tooltip("转向速度，度/秒。")]
         [SerializeField] private float turnSpeed = 360f;

@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace TideBorne.Battle
 {
@@ -78,7 +80,35 @@ namespace TideBorne.Battle
         private bool _reportedPoolUsage;
 
         /// <summary>本波是否仍在刷怪。水花延迟期间波次结束的话，回调里就不再放敌人出来。</summary>
-        private bool _waveActive = true;
+        private bool _waveActive;
+        private int _generation;
+        private int _pendingSpawns;
+        private float _spawnDuration;
+        public int PendingSpawnCount => _pendingSpawns;
+        public int SlowAfterCount { get; private set; }
+        public int AliveCap => Mathf.Max(1, _mix?.ForWave(_waveNumber)?.aliveCap ?? 16);
+        public int OccupiedCount
+        {
+            get
+            {
+                int count = _pendingSpawns;
+                foreach (var enemy in EnemyRuntime.ActiveEnemies)
+                    if (enemy != null && enemy.IsAlive && !enemy.TrainingTarget && enemy.gameObject.scene == gameObject.scene) count++;
+                return count;
+            }
+        }
+        public float CurrentIntervalMultiplier => _mix != null
+            ? _mix.IntervalMultiplier(_waveNumber, OccupiedCount, SpawnedCount + _pendingSpawns, SlowAfterCount) : 1;
+        public float CurrentSpawnInterval => SpawnIntervalSeconds * CurrentIntervalMultiplier;
+        public bool CanScheduleSpawn => _waveActive && _spawnElapsed < _spawnDuration
+            && (_mix == null || !_mix.dynamicSpawning || OccupiedCount < AliveCap);
+        public static EnemySpawner ForScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            foreach (var candidate in FindObjectsByType<EnemySpawner>(FindObjectsSortMode.None))
+                if (candidate.gameObject.scene == scene) return candidate;
+            return null;
+        }
+        void OnDisable() => EndWave();
 
         private int _waveNumber;
         private float _spawnElapsed;
@@ -97,6 +127,8 @@ namespace TideBorne.Battle
         public void BeginWave(int waveNumber, float waveDuration)
         {
             _waveActive = true;
+            _generation++;
+            _pendingSpawns = 0;
             _waveNumber = waveNumber;
             SpawnedCount = 0;
             _spawnElapsed = 0f;
@@ -104,18 +136,22 @@ namespace TideBorne.Battle
 
             if (_mix == null)
                 _mix = EnemyWaveMixSettings.Load() ?? EnemyWaveMixSettings.CreateDefaultInstance();
+            _spawnDuration = WaveSpawnSettings.Load().SpawnDuration(waveNumber, waveDuration);
+            SlowAfterCount = _mix.SlowAfterCount(waveNumber, _spawnDuration);
         }
 
         /// <summary>结束本波：停止后续刷怪。</summary>
         public void EndWave()
         {
             _waveActive = false;
+            _generation++;
+            _pendingSpawns = 0;
             SpawnedCount = 0;
             _accumulatedSpawnDelay = 0f;
         }
 
         /// <summary>
-        /// 每帧推进生成：每 <see cref="SpawnIntervalSeconds"/> 秒出一个，出哪种按当前波次的权重随机。
+        /// 每帧推进生成：按当前场上占用比例调整间隔后生成，出哪种按当前波次的权重随机。
         /// <paramref name="spawnDuration"/> 之后不再出怪（前六波 50 秒，第七波整段 60 秒）。
         /// </summary>
         public void Tick(float deltaTime, float spawnDuration)
@@ -123,37 +159,43 @@ namespace TideBorne.Battle
             if (!_waveActive)
                 return;
 
+            if (deltaTime <= 0 || float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;
+            _spawnDuration = spawnDuration;
             _spawnElapsed += deltaTime;
-            if (_spawnElapsed >= spawnDuration)
-                return;
-
-            var interval = SpawnIntervalSeconds;
-            _accumulatedSpawnDelay += deltaTime;
-
-            while (_accumulatedSpawnDelay >= interval && _spawnElapsed < spawnDuration)
+            if (!CanScheduleSpawn)
             {
-                _accumulatedSpawnDelay -= interval;
+                _accumulatedSpawnDelay = 0; // No catch-up burst after reaching the cap/cutoff.
+                return;
+            }
+            _accumulatedSpawnDelay += deltaTime;
+            if (_accumulatedSpawnDelay >= CurrentSpawnInterval)
+            {
+                _accumulatedSpawnDelay = 0;
                 SpawnOne();
             }
         }
 
-        /// <summary>立刻生成一个敌人。手动测试也可直接调。</summary>
+        /// <summary>统一预约出生名额：主刷怪器和兵工厂共享上限及累计额度。</summary>
+        public bool TryScheduleSpawn(Vector2 position, Func<bool> spawn)
+        {
+            if (!CanScheduleSpawn || spawn == null) return false;
+            int generation = _generation;
+            _pendingSpawns++;
+            void Complete()
+            {
+                if (this == null || generation != _generation) return;
+                _pendingSpawns--;
+                if (_waveActive && spawn()) SpawnedCount++;
+            }
+            if (!EnemySpawnEffect.TryPlay(position, Complete)) Complete();
+            return true;
+        }
+
+        /// <summary>立刻预约一个敌人，仍遵守上限与生成截止时间。</summary>
         public bool SpawnOne()
         {
             var position = PickSpawnPosition();
-
-            // 诊断计数：放出来几个（水花开始就算，敌人 1 秒后才出现）。
-            SpawnedCount++;
-
-            // 先在生成点放水花，播完才把敌人放出来；若这期间本波已经结束，就不再放出来。
-            if (EnemySpawnEffect.TryPlay(position, () =>
-            {
-                if (_waveActive)
-                    SpawnAt(position);
-            }))
-                return true;
-
-            return SpawnAt(position);
+            return TryScheduleSpawn(position, () => SpawnAt(position));
         }
 
         /// <summary>真正把敌人放到场上。水花播完后由回调调用。</summary>

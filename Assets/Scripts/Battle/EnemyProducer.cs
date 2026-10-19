@@ -26,6 +26,15 @@ namespace TideBorne.Battle
         private float _cooldownRemaining;
         private EnemyRuntime _self;
         private int _producedCount;
+        private EnemySpawner _spawner;
+        private EnemySpawner Spawner
+        {
+            get
+            {
+                if (_spawner == null) _spawner = EnemySpawner.ForScene(gameObject.scene);
+                return _spawner;
+            }
+        }
 
         /// <summary>产出间隔，秒。</summary>
         public float ProduceInterval { get { return produceInterval; } }
@@ -58,7 +67,9 @@ namespace TideBorne.Battle
             if (_self != null && !_self.IsAlive)
                 return;
 
-            _cooldownRemaining -= Time.deltaTime;
+            var spawner = Spawner;
+            if (spawner != null && !spawner.CanScheduleSpawn) { _cooldownRemaining = produceInterval; return; }
+            _cooldownRemaining -= Time.deltaTime / (spawner != null ? spawner.CurrentIntervalMultiplier : 1f);
             if (_cooldownRemaining > 0f)
                 return;
 
@@ -93,6 +104,20 @@ namespace TideBorne.Battle
             var map = player != null ? player.GetComponentInParent<BattleMapLayout>() : null;
             if (map != null) origin = map.ClampInside(origin);
 
+            var spawner = Spawner;
+            if (spawner != null)
+            {
+                string producerLife = _self != null ? _self.TargetId : null;
+                spawner.TryScheduleSpawn(origin, () =>
+                {
+                    if (this == null || !isActiveAndEnabled || _self == null || !_self.IsAlive || _self.TargetId != producerLife) return false;
+                    var product = SpawnAt(prototype, origin);
+                    if (product == null) return false;
+                    _producedCount++;
+                    return true;
+                });
+                return null;
+            }
             _producedCount++;
 
             if (logProductions)

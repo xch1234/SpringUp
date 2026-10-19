@@ -744,7 +744,7 @@ MonoBehaviour:
   stats: {fileID: 0}
   faceMoveDirection: 1
   facingLerpSpeed: 720
-  sprintMultiplier: 1.5
+  sprintMultiplier: 1.3333334
 --- !u!114 &526739248
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -784,7 +784,7 @@ MonoBehaviour:
   baseCooldown: 0.25
   baseCycleDuration: 2
   baseMaxHealth: 100
-  moveSpeed: 10
+  moveSpeed: 7.5
   turnSpeed: 360
   chargeSpeed: 0
   viewRadius: 10

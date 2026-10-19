@@ -10,6 +10,7 @@ namespace SpringUp.Flow
 {
     public enum ContentKind { MainMenu, Battle, Rest }
     // Serialized scene entry; bootstrap locates this only among the loaded scene's roots.
+    [DefaultExecutionOrder(-100)]
     public sealed class FlowContent : MonoBehaviour
     {
         public ContentKind kind;
@@ -178,11 +179,25 @@ namespace SpringUp.Flow
             // Legacy scenes without the ship/config retain their circular proximity check.
             return ((Vector2)(counter.position - player.transform.position)).sqrMagnitude <= interactionRadius * interactionRadius;
         }
+        public bool IsInTrainingArea()
+        {
+            if (kind != ContentKind.Rest || player == null || !player.gameObject.activeInHierarchy) return false;
+            var ship = world != null ? world.transform.Find("ShipBackground")?.GetComponent<SpriteRenderer>() : null;
+            var settings = InteractionSettings;
+            if (ship == null || ship.sprite == null || settings == null) return false;
+            var point = ship.transform.InverseTransformPoint(player.transform.position);
+            var bounds = ship.sprite.bounds;
+            var uv = new Vector2((point.x - bounds.min.x) / bounds.size.x, (point.y - bounds.min.y) / bounds.size.y);
+            if (ship.flipX) uv.x = 1 - uv.x;
+            if (ship.flipY) uv.y = 1 - uv.y;
+            return RestInteractionSettings.Contains(settings.trainingArea, uv);
+        }
         void OnDrawGizmosSelected()
         {
             if (kind != ContentKind.Rest || world == null || InteractionSettings == null || !InteractionSettings.showSceneGizmos) return;
             var ship = world.transform.Find("ShipBackground")?.GetComponent<SpriteRenderer>();
             if (ship == null || ship.sprite == null) return;
+            DrawCounterArea(ship, InteractionSettings.trainingArea, Color.yellow);
             DrawCounterArea(ship, InteractionSettings.shopArea, Color.green);
             DrawCounterArea(ship, InteractionSettings.laboratoryArea, Color.cyan);
         }
@@ -209,7 +224,8 @@ namespace SpringUp.Flow
         }
         void Update()
         {
-            if (initialized && pipeline != null) pipeline.AutomaticExecution = app.WorldInputAllowed;
+            if (initialized && pipeline != null) pipeline.AutomaticExecution = app.WorldInputAllowed
+                && (kind != ContentKind.Rest || IsInTrainingArea());
             if (initialized && kind == ContentKind.Rest)
             {
                 UpdateCounterHint(merchant, app.CanInteractWithShop());

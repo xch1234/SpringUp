@@ -6,6 +6,7 @@ namespace SpringUp.Flow
     public sealed class RestInteractionSettings : ScriptableObject
     {
         [Tooltip("相对船图：左下角 (0,0)，右上角 (1,1)。X/Y 为左下角，W/H 为宽高。")]
+        [InspectorName("木桩攻击矩形")] public Rect trainingArea = new Rect(.08f, .28f, .40f, .44f);
         [InspectorName("商店交互矩形")] public Rect shopArea = new Rect(.62f, .55f, .28f, .23f);
         [InspectorName("实验室交互矩形")] public Rect laboratoryArea = new Rect(.62f, .28f, .28f, .24f);
         [InspectorName("选中休整场景对象时显示范围")] public bool showSceneGizmos = true;

@@ -9,6 +9,10 @@ namespace TideBorne.Battle
     {
         [Tooltip("波次号，从 1 开始。")]
         public int wave;
+        [Tooltip("本波同时存活上限（含出生预警）；至少为 1。")]
+        [Min(1)] [InspectorName("同时存活上限")] public int aliveCap = 16;
+        [Tooltip("累计生成达到此数后固定用兜底间隔；0 按旧刷怪量 × 额度倍率计算。")]
+        [Min(0)] [InspectorName("累计减速阈值（0 为自动）")] public int slowAfterCount;
 
         [Header("权重（0 = 该波不出现）")]
         public int normal;
@@ -35,17 +39,45 @@ namespace TideBorne.Battle
     }
 
     /// <summary>
-    /// 每波刷怪的权重表与全局刷怪参数。
-    ///
-    /// **刷怪模型**（2026-10-19 策划定）：所有波次统一每 3 秒出一个敌人，
-    /// 出哪一种按当前波次的权重随机；波次不再有"计划总数"。
-    /// 兵工厂 / 医疗兵另有"同时存活上限"，到上限后这一拍重新在其余类型里按权重抽。
+    /// 每波敌人权重、存活上限与动态刷怪节奏。累计额度为减速阈值，不是停止生成的硬上限。
     /// </summary>
     [CreateAssetMenu(menuName = "SpringUp/Enemy Wave Mix", fileName = "EnemyWaveMix")]
     public sealed class EnemyWaveMixSettings : ScriptableObject
     {
         [Tooltip("刷怪间隔，秒。所有波次统一。")]
         [Min(0.1f)] public float spawnIntervalSeconds = 3f;
+
+        [Header("动态刷怪（倍率作用于生成间隔）")]
+        [InspectorName("启用动态刷怪")] public bool dynamicSpawning = true;
+        [Range(0, 1)] public float veryLowThreshold = .2f;
+        [Range(0, 1)] public float lowThreshold = .5f;
+        [Range(0, 1)] public float normalThreshold = .7f;
+        [Min(.1f)] public float veryLowIntervalMultiplier = .5f;
+        [Min(.1f)] public float lowIntervalMultiplier = .7f;
+        [Min(.1f)] public float normalIntervalMultiplier = 1f;
+        [Min(.1f)] public float crowdedIntervalMultiplier = 2f;
+        [Min(.1f)] [InspectorName("额度耗尽后间隔倍率")] public float fallbackIntervalMultiplier = 2f;
+        [Min(0)] [InspectorName("旧数量的额度倍率")] public float totalBudgetMultiplier = 1.5f;
+
+        public int SlowAfterCount(int wave, float spawnDuration)
+        {
+            int configured = ForWave(wave)?.slowAfterCount ?? 0;
+            if (configured > 0) return configured;
+            // Old Tick stops before the cutoff, including a spawn exactly at its boundary.
+            int baseline = Mathf.Max(0, Mathf.CeilToInt(spawnDuration / Mathf.Max(.1f, spawnIntervalSeconds)) - 1);
+            return Mathf.Max(1, Mathf.FloorToInt(baseline * totalBudgetMultiplier));
+        }
+        public float IntervalMultiplier(int wave, int occupied, int scheduledTotal, int slowAfter)
+        {
+            if (!dynamicSpawning) return 1f;
+            if (scheduledTotal >= slowAfter) return Mathf.Max(.1f, fallbackIntervalMultiplier);
+            float ratio = (float)occupied / Mathf.Max(1, ForWave(wave)?.aliveCap ?? 16);
+            float low = Mathf.Clamp01(veryLowThreshold);
+            float middle = Mathf.Clamp(lowThreshold, low, 1);
+            float high = Mathf.Clamp(normalThreshold, middle, 1);
+            return Mathf.Max(.1f, ratio < low ? veryLowIntervalMultiplier : ratio < middle
+                ? lowIntervalMultiplier : ratio < high ? normalIntervalMultiplier : crowdedIntervalMultiplier);
+        }
 
         [Tooltip("兵工厂全场同时存活上限。0 = 不限。")]
         [Min(0)] public int arsenalAliveCap = 1;

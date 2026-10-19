@@ -170,6 +170,19 @@ namespace SpringUp.EditorChecks
             needle.Tick(.2f); needle.Tick(.2f); Assert.AreEqual(.5f, world.Healing, .0001f);
         }
 
+        [Test] public void SummonTurnsWithOwnerAndKeepsLastDirectionWhenStopped()
+        {
+            var world = new World { Owner = new Vector2(10, 10) };
+            var summon = (SummonExecution)Create(world,
+                new PatternActuatorSettings(ActuatorPattern.Summon, speed:100, followDistance:2, healthDecay:0), 0);
+            world.Owner = new Vector2(10, 11); summon.Tick(.2f);
+            Assert.That(Vector2.Distance(summon.Position, new Vector2(10, 9)), Is.LessThan(.001f));
+            summon.Tick(.2f);
+            Assert.That(Vector2.Distance(summon.Position, new Vector2(10, 9)), Is.LessThan(.001f));
+            world.Owner = new Vector2(9, 11); summon.Tick(.2f);
+            Assert.That(Vector2.Distance(summon.Position, new Vector2(11, 11)), Is.LessThan(.001f));
+        }
+
         [Test] public void SporesStopAndSummonsFollowDecayAndTakeDamage()
         {
             var world = new World();

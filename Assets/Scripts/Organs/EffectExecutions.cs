@@ -247,13 +247,19 @@ namespace SpringUp.Organs
     public sealed class SummonExecution : EffectExecution
     {
         private readonly Dictionary<string, float> contactTimes = new Dictionary<string, float>();
+        private Vector2 previousOwnerPosition, followDirection;
         public event Action<SummonExecution, float> Damaged;
         public float Health { get; private set; }
         public float MaxHealth => Settings.Health;
         public float HitRadius => Settings.HitRadius;
         protected override float Duration => Settings.HealthDecay > 0 ? Settings.Health / Settings.HealthDecay : float.PositiveInfinity;
         public SummonExecution(ActuatorContext context, IEffectWorld world) : base(context, world)
-        { Health = Settings.Health; Position = context.SpawnPosition - context.Direction * Settings.FollowDistance; }
+        {
+            Health = Settings.Health;
+            previousOwnerPosition = world.OwnerPosition ?? context.SpawnPosition;
+            followDirection = context.Direction.sqrMagnitude > .000001f ? context.Direction.normalized : Vector2.right;
+            Position = previousOwnerPosition - followDirection * Settings.FollowDistance;
+        }
         public CastContext NewActorContext() => new CastContext(actorPosition: () => IsFinished ? (Vector2?)null : Position);
         public void TakeDamage(float amount)
         {
@@ -269,7 +275,11 @@ namespace SpringUp.Organs
         {
             if (!World.OwnerPosition.HasValue) { Cancel(); return; }
             Vector2 previous = Position;
-            Vector2 destination = World.OwnerPosition.Value - Context.Direction * Settings.FollowDistance;
+            Vector2 ownerPosition = World.OwnerPosition.Value;
+            Vector2 movement = ownerPosition - previousOwnerPosition;
+            if (movement.sqrMagnitude > .000001f) followDirection = movement.normalized;
+            previousOwnerPosition = ownerPosition;
+            Vector2 destination = ownerPosition - followDirection * Settings.FollowDistance;
             Position = Vector2.MoveTowards(Position, destination, Settings.Speed * dt);
             foreach (var target in World.BeamTargets(previous, Position, HitRadius))
             {
