@@ -95,4 +95,4 @@ MonoBehaviour:
     alignment: 3
     bold: 0
     outline: 1
-    text: "\u5668\u5B98\u81EA\u52A8\u653B\u51FB {interaction}  B / Tab\uFF1A\u80CC\u5305  Esc\uFF1A\u83DC\u5355"
+    text: "\u5668\u5B98\u81EA\u52A8\u653B\u51FB {interaction}  {inventoryKey}\uFF1A\u80CC\u5305  Esc\uFF1A\u83DC\u5355"

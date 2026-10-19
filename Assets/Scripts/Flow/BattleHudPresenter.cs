@@ -165,15 +165,17 @@ namespace SpringUp.Flow
                 .Replace("{marrow}", run.Marrow.ToString())
                 .Replace("{time}", content.director == null ? "休整中" : $"{seconds / 60:00}:{seconds % 60:00}")
                 .Replace("{interaction}", InteractionHint())
+                .Replace("{inventoryKey}", GameSettings.InventoryHint)
                 .Replace("{seconds}", seconds.ToString());
         }
 
         string InteractionHint()
         {
             if (app.Content.kind != ContentKind.Rest) return "";
-            if (app.CanInteractWithLaboratory()) return "E：实验室装配";
-            if (app.CanInteractWithShop()) return "E：商店";
-            return "E：靠近商店或实验室互动";
+            string key = GameSettings.Display(GameBinding.Interact);
+            if (app.CanInteractWithLaboratory()) return key + "：实验室装配";
+            if (app.CanInteractWithShop()) return key + "：商店";
+            return key + "：靠近商店或实验室互动";
         }
 
         void OnDestroy() { if (ownsSettings && settings != null) Destroy(settings); }

@@ -62,7 +62,7 @@ namespace SpringUp.Flow
             size = new Vector2(300, 42), alignment = TextAnchor.MiddleLeft,
             textColor = new Color(1, .85f, .4f, 1)
         };
-        public HudTextStyle help = new HudTextStyle("器官自动攻击 {interaction}  B / Tab：背包  Esc：菜单", 0)
+        public HudTextStyle help = new HudTextStyle("器官自动攻击 {interaction}  {inventoryKey}：背包  Esc：菜单", 0)
         {
             anchor = HudAnchor.BottomLeft, offset = new Vector2(24, 20),
             size = new Vector2(900, 32), alignment = TextAnchor.MiddleLeft,

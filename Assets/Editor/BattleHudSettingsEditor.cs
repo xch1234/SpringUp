@@ -55,7 +55,7 @@ namespace SpringUp.EditorChecks
             Section(4, "help", "操作提示（默认左下角）");
             serializedObject.ApplyModifiedProperties();
             EditorGUILayout.Space();
-            EditorGUILayout.HelpBox("文字占位符：\n{wave} 当前波次　{maxWave} 总波数\n{time} 剩余时间（分:秒）　{seconds} 剩余总秒数\n{health} 当前血量　{maxHealth} 最大血量\n{marrow} 骨髓数量\n{interaction} 商店 / 实验室互动提示（战斗为空）\n休整时 {time} 显示“休整中”，{seconds} 为 0\n可自由改标签或换行；不认识的占位符会原样显示。", MessageType.Info);
+            EditorGUILayout.HelpBox("文字占位符：\n{wave} 当前波次　{maxWave} 总波数\n{time} 剩余时间（分:秒）　{seconds} 剩余总秒数\n{health} 当前血量　{maxHealth} 最大血量\n{marrow} 骨髓数量\n{interaction} 商店 / 实验室互动提示（随改键更新，战斗为空）\n{inventoryKey} 当前背包按键与 Tab\n休整时 {time} 显示“休整中”，{seconds} 为 0\n可自由改标签或换行；不认识的占位符会原样显示。", MessageType.Info);
             if (GUILayout.Button("恢复默认 HUD 布局与文字"))
             {
                 Undo.RecordObject(target, "Restore battle HUD defaults");

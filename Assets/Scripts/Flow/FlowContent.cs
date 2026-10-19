@@ -164,6 +164,7 @@ namespace SpringUp.Flow
         {
             if (counter == null) return;
             var label = counter.GetComponentInChildren<TextMesh>(true);
+            if (label != null) label.text = (counter == merchant ? "SHOP" : "LAB") + " [" + GameSettings.Display(GameBinding.Interact) + "]";
             if (label != null && label.gameObject.activeSelf != available) label.gameObject.SetActive(available);
         }
         void Update()
@@ -173,7 +174,7 @@ namespace SpringUp.Flow
             {
                 UpdateCounterHint(merchant, app.CanInteractWithShop());
                 UpdateCounterHint(laboratory, app.CanInteractWithLaboratory());
-                if (Keyboard.current?.eKey.wasPressedThisFrame == true) app.TryInteract();
+                if (GameSettings.Pressed(GameBinding.Interact)) app.TryInteract();
             }
         }
         void LateUpdate()

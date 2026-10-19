@@ -89,14 +89,22 @@ namespace TideBorne.Battle
         {
             if (moveAction == null || moveAction.action == null)
                 Debug.LogError("[PlayerMotor] Missing Player/Move input action reference.", this);
+            SpringUp.Flow.GameSettings.Changed += ApplySettings;
+            ApplySettings();
             EnableAction(moveAction);
             EnableAction(sprintAction);
         }
 
         private void OnDisable()
         {
+            SpringUp.Flow.GameSettings.Changed -= ApplySettings;
             _sprintHeld = false;
             _moveInput = Vector2.zero;
+        }
+
+        void ApplySettings()
+        {
+            if (SpringUp.Flow.FlowApplication.IsActive) SpringUp.Flow.GameSettings.ApplyMovement(moveAction?.action, sprintAction?.action);
         }
 
         private void OnDestroy()

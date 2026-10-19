@@ -156,9 +156,9 @@ namespace SpringUp.EditorChecks
                             "Rest has a clear timer status and current balance");
                         var originalPosition = content.player.transform.position;
                         content.player.transform.position = content.Laboratory.position; hud.Refresh();
-                        Require(hud.HelpText.text.Contains("E：实验室装配"), "Shared controls retain laboratory interaction hint");
+                        Require(hud.HelpText.text.Contains(GameSettings.Display(GameBinding.Interact) + "：实验室装配"), "Shared controls retain laboratory interaction hint");
                         content.player.transform.position = content.Merchant.position; hud.Refresh();
-                        Require(hud.HelpText.text.Contains("E：商店"), "Shared controls retain shop interaction hint");
+                        Require(hud.HelpText.text.Contains(GameSettings.Display(GameBinding.Interact) + "：商店"), "Shared controls retain shop interaction hint");
                         content.player.transform.position = originalPosition;
                         Require(content.EquipmentHudRect.gameObject.activeSelf, "Equipment survives rest transition");
                         settings.equipment.offset = new Vector2(45, -75); hud.Refresh();
