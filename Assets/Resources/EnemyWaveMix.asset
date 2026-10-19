@@ -27,7 +27,7 @@ MonoBehaviour:
   medicAliveCap: 2
   waves:
   - wave: 1
-    aliveCap: 16
+    aliveCap: 8
     slowAfterCount: 0
     normal: 10
     fast: 0
@@ -36,7 +36,7 @@ MonoBehaviour:
     medic: 0
     arsenal: 0
   - wave: 2
-    aliveCap: 16
+    aliveCap: 12
     slowAfterCount: 0
     normal: 8
     fast: 2
@@ -54,7 +54,7 @@ MonoBehaviour:
     medic: 0
     arsenal: 0
   - wave: 4
-    aliveCap: 16
+    aliveCap: 30
     slowAfterCount: 0
     normal: 4
     fast: 3
@@ -63,7 +63,7 @@ MonoBehaviour:
     medic: 0
     arsenal: 0
   - wave: 5
-    aliveCap: 16
+    aliveCap: 40
     slowAfterCount: 0
     normal: 3
     fast: 2
@@ -72,7 +72,7 @@ MonoBehaviour:
     medic: 1
     arsenal: 0
   - wave: 6
-    aliveCap: 16
+    aliveCap: 55
     slowAfterCount: 0
     normal: 2
     fast: 2
@@ -81,7 +81,7 @@ MonoBehaviour:
     medic: 1
     arsenal: 1
   - wave: 7
-    aliveCap: 16
+    aliveCap: 75
     slowAfterCount: 0
     normal: 0
     fast: 3
