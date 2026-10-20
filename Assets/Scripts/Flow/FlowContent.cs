@@ -283,7 +283,7 @@ namespace SpringUp.Flow
             }
             Torso.Apply(torsos, pipeline);
             PipelineLoadout.Apply(pipeline, session.Run.Inventory, app.Configuration.Definitions);
-            combat.SpawnEquippedSummons();
+            // Summons start when their slot executes, using the same timing and trigger rules as other actuators.
             foreach (BodyPart part in Enum.GetValues(typeof(BodyPart))) pipeline.GetBody(part).ResetTiming();
             Equipment.Refresh();
         }

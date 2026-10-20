@@ -104,22 +104,6 @@ namespace Tideflesh.Systems
             actuators.Start(straightProjectile, context, world);
         }
 
-        // Equipment creates the first companion immediately, even while the laboratory pauses time.
-        public void SpawnEquippedSummons()
-        {
-            if (!isActiveAndEnabled || actuatorWorld == null || PlayerLocator.Player == null) return;
-            foreach (BodyPart part in System.Enum.GetValues(typeof(BodyPart)))
-                for (int slot = 0; slot < BodyRuntime.SlotCount; slot++)
-                {
-                    var organ = pipeline.GetBody(part).GetSlot(slot);
-                    if (!(organ?.Definition.Projectile is PatternActuatorSettings settings) || settings.Pattern != ActuatorPattern.Summon) continue;
-                    var origin = (Vector2)PlayerLocator.Player.position;
-                    var cause = new CastEvent("owner", organ.Definition.Damage, organ.Definition.Id, organ.InstanceId, new CastContext(),
-                        effectCenter: origin, allowZeroDamage: true);
-                    ExecuteActuator(new ActuatorContext(cause, part, slot, origin, Vector2.right, settings));
-                }
-        }
-
         public void Resolve(CastEvent attack)
             => ResolveDamage(attack);
 

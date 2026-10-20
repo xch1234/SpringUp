@@ -18,6 +18,8 @@ namespace SpringUp.EditorChecks
     {
         public static void RunLogic()
         {
+            SummonsWaitForTheirSlot(0);
+            SummonsWaitForTheirSlot(2);
             var triggers = new OrganTriggerChecks();
             triggers.ProbabilityAndChainGuard();
             triggers.DelayAdjacentPredecessorAndCancellation();
@@ -27,6 +29,88 @@ namespace SpringUp.EditorChecks
             triggers.AutomaticLoopSkipsTriggerAndBoundExecutorInBothTimingModes();
             triggers.BindingsDoNotSkipEmptySlotsOrWrapAtBoundary();
             Debug.Log("SUMMON_TRIGGER_REGRESSION_PASS");
+        }
+        public static void RunTimingBatch()
+        {
+            try
+            {
+                RunLogic();
+                Debug.Log("SUMMON_TIMING_CHECKS_PASS");
+                UnityEditor.EditorApplication.Exit(0);
+            }
+            catch (Exception error)
+            {
+                Debug.LogException(error);
+                UnityEditor.EditorApplication.Exit(1);
+            }
+        }
+        [TestCase(0f)]
+        [TestCase(2f)]
+        public static void SummonsWaitForTheirSlot(float cycleDuration)
+        {
+            var root = new GameObject("Summon timing checks");
+            try
+            {
+                var pipeline = root.AddComponent<OrganPipelineController>();
+                var combat = root.AddComponent<BattleOrganCombat>();
+                // Edit Mode does not invoke the runtime components' lifecycle callbacks.
+                InvokeEditModeLifecycle(root, "OnEnable");
+                root.GetComponent<BattleOrganTargeting>().AttackOrigin = root.transform;
+                pipeline.StepInterval = .5f;
+                pipeline.CycleDurationProvider = _ => cycleDuration;
+                var body = pipeline.GetBody(Part.Hand);
+                var first = new OrganInstance(new OrganDefinition("first", "first", OrganType.Actuator, 1));
+                var organ = new OrganInstance(new OrganDefinition("summon", "summon", OrganType.Actuator, 5,
+                    projectile: new PatternActuatorSettings(ActuatorPattern.Summon, healthDecay: 0)));
+                body.SetSlot(0, first); body.SetSlot(1, organ);
+                Assert.IsEmpty(combat.Actuators.Active, "Equipping cannot start an execution");
+                pipeline.AutomaticExecution = false;
+                pipeline.AdvanceAutomatic(10);
+                Assert.IsEmpty(combat.Actuators.Active, "Disabled automatic execution cannot summon");
+                pipeline.AutomaticExecution = true;
+                pipeline.AdvanceAutomatic(.5f);
+                Assert.AreEqual(0, body.LastExecutedSlot);
+                Assert.IsEmpty(combat.Actuators.Active, "Earlier slot must execute before summon");
+                pipeline.AdvanceAutomatic(.49f);
+                Assert.IsEmpty(combat.Actuators.Active, "Summon must wait the full slot interval");
+                pipeline.AdvanceAutomatic(.01f);
+                var summon = combat.Actuators.Active.OfType<SummonExecution>().Single();
+                Assert.AreEqual(organ.InstanceId, summon.Context.Cause.OriginInstanceId);
+                float roundDuration = cycleDuration > 0 ? cycleDuration : 1;
+                pipeline.AdvanceAutomatic(roundDuration);
+                Assert.AreSame(summon, combat.Actuators.Active.OfType<SummonExecution>().Single(),
+                    "A living summon is not replaced or duplicated on later turns");
+                summon.TakeDamage(summon.Health);
+                combat.Actuators.Advance(0);
+                Assert.IsEmpty(combat.Actuators.Active);
+                pipeline.AdvanceAutomatic(roundDuration - .01f);
+                Assert.IsEmpty(combat.Actuators.Active, "Death must wait for the next summon turn");
+                pipeline.AdvanceAutomatic(.01f);
+                Assert.AreNotSame(summon, combat.Actuators.Active.OfType<SummonExecution>().Single());
+
+                combat.Clear();
+                body.SetSlot(1, new OrganInstance(new OrganDefinition("hit", "hit", OrganType.Trigger,
+                    triggerOn: TriggerOn.Hit, trigger: new TriggerSettings(TriggerOn.Hit, 1))));
+                body.SetSlot(2, organ); body.ResetTiming();
+                pipeline.AdvanceAutomatic(10);
+                Assert.IsEmpty(combat.Actuators.Active, "Trigger-bound summons skip the automatic loop");
+                pipeline.PublishSignal(new TriggerSignal(TriggerOn.Hit,
+                    new CastEvent("target", 1, first.Definition.Id, first.InstanceId)));
+                Assert.AreEqual(organ.InstanceId,
+                    combat.Actuators.Active.OfType<SummonExecution>().Single().Context.Cause.OriginInstanceId);
+            }
+            finally
+            {
+                InvokeEditModeLifecycle(root, "OnDisable");
+                Object.DestroyImmediate(root);
+            }
+        }
+        static void InvokeEditModeLifecycle(GameObject root, string method)
+        {
+            if (Application.isPlaying) return;
+            foreach (var component in root.GetComponents<MonoBehaviour>())
+                component.GetType().GetMethod(method,
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.Invoke(component, null);
         }
         public static void RunPlay(PlayerRuntime player)
         {
@@ -46,7 +130,7 @@ namespace SpringUp.EditorChecks
             var emitted = new List<ActuatorContext>(); pipeline.ActuatorProduced += emitted.Add;
             var body = pipeline.GetBody(Part.Head);
             var summonOrgan = new OrganInstance(new OrganDefinition("summon_test", "summon", OrganType.Actuator, 5,
-                projectile: new PatternActuatorSettings(ActuatorPattern.Summon, radius: .35f, health:100, healthDecay:0, followDistance:3)));
+                projectile: new PatternActuatorSettings(ActuatorPattern.Summon, speed:100, radius: .35f, health:100, healthDecay:0, followDistance:3)));
             body.SetSlot(0, summonOrgan);
             void SetTrigger(TriggerOn kind, int slot = 1)
                 => body.SetSlot(slot, new OrganInstance(new OrganDefinition("trigger" + slot, "trigger", OrganType.Trigger,
@@ -68,7 +152,8 @@ namespace SpringUp.EditorChecks
             {
                 Time.timeScale = 1;
                 player.transform.position = new Vector3(50,50,0);
-                combat.SpawnEquippedSummons();
+                Assert.IsEmpty(combat.Actuators.Active.OfType<SummonExecution>(), "Equipping does not summon");
+                Assert.IsTrue(pipeline.TryExecuteSlot(Part.Head, 0));
                 var summon = combat.Actuators.Active.OfType<SummonExecution>().Single();
                 enemyObject.transform.position = summon.Position + Vector2.up * .1f; enemyObject.SetActive(true);
                 emitted.Clear(); float enemyHealth = enemy.CurrentHealth;

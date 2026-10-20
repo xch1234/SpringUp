@@ -73,17 +73,21 @@ namespace SpringUp.EditorChecks
                         instance = app.Session.Run.Inventory.Spawn("summon_follower");
                         Assert.IsEmpty(content.combat.Actuators.Active.OfType<SummonExecution>(), "Backpack item does not summon");
                         app.Session.Run.Equip(instance, "hand", 2);
-                        Assert.IsNotNull(Summon(app), "Equipping creates a summon immediately while paused");
+                        Assert.IsEmpty(content.combat.Actuators.Active.OfType<SummonExecution>(), "Equipping waits for the summon slot");
                         var icon = OrganUiBuilder.Icon(app.uiRoot, "Summon icon check", Resources.Load<OrganArtCatalog>("OrganArtCatalog"), 0, 0, 50, false);
                         icon.Bind(new LaboratoryItem(instance, app.Configuration.Definitions["summon_follower"]));
                         Assert.IsTrue(icon.icon.enabled); Assert.AreEqual("summon_follower_0", icon.icon.sprite.name);
                         Object.DestroyImmediate(icon.gameObject); break;
                     case 3:
-                        Assert.AreEqual(1, content.effects.SummonViewCount); Assert.IsNotNull(View(app).sprite);
                         Assert.AreEqual(0, Time.timeScale);
+                        Assert.IsEmpty(content.combat.Actuators.Active.OfType<SummonExecution>(), "Paused equipment cannot summon");
+                        Assert.AreEqual(0, content.effects.SummonViewCount);
+                        app.CloseTop();
+                        AdvanceToSummon(content);
+                        content.effects.SendMessage("Update");
+                        Assert.AreEqual(1, content.effects.SummonViewCount); Assert.IsNotNull(View(app).sprite);
                         Assert.AreEqual(1.8f, Vector2.Distance(Summon(app).Position, content.player.transform.position), .01f, "Summon appears at the increased follow distance");
                         CheckHealthBar(app);
-                        app.CloseTop();
                         previous = Summon(app).Position;
                         content.player.transform.position += Vector3.right * 3; break;
                     case 4:
@@ -109,12 +113,17 @@ namespace SpringUp.EditorChecks
                     case 7:
                         Assert.IsEmpty(content.combat.Actuators.Active.OfType<SummonExecution>());
                         Assert.AreEqual(0, content.effects.SummonViewCount, "Unequip removes summon and visual");
-                        app.Session.Run.Equip(instance, "hand", 2); app.CloseTop(); break;
+                        app.Session.Run.Equip(instance, "hand", 2);
+                        Assert.IsEmpty(content.combat.Actuators.Active.OfType<SummonExecution>(), "Re-equipping also waits for the slot");
+                        app.CloseTop(); AdvanceToSummon(content); break;
                     case 8:
                         SummonCombatChecks.RunPlay(content.player);
                         Capture(app, "summon-rest.png"); app.NextWave(); break;
                     case 9:
-                        Assert.AreEqual(ContentKind.Battle, content.kind); Assert.AreEqual(1, content.effects.SummonViewCount);
+                        Assert.AreEqual(ContentKind.Battle, content.kind);
+                        if (!content.combat.Actuators.Active.OfType<SummonExecution>().Any()) AdvanceToSummon(content);
+                        content.effects.SendMessage("Update");
+                        Assert.AreEqual(1, content.effects.SummonViewCount);
                         Assert.AreEqual(instance, Summon(app).Context.Cause.OriginInstanceId);
                         Capture(app, "summon-battle.png");
                         Summon(app).TakeDamage(Summon(app).Health); content.combat.Advance(0);
@@ -131,6 +140,18 @@ namespace SpringUp.EditorChecks
                 stage++; next = EditorApplication.timeSinceStartup + .45;
             }
             catch (Exception error) { Debug.LogException(error); Finish(1); }
+        }
+        static void AdvanceToSummon(FlowContent content)
+        {
+            var pipeline = content.pipeline;
+            bool automatic = pipeline.AutomaticExecution;
+            try
+            {
+                pipeline.AutomaticExecution = true;
+                float step = pipeline.StepIntervalProvider?.Invoke(BodyPart.Hand) ?? pipeline.StepInterval;
+                pipeline.AdvanceAutomatic(Mathf.Max(BodyRuntime.MinimumStepInterval, step) * 2);
+            }
+            finally { pipeline.AutomaticExecution = automatic; }
         }
         static void CheckHealthBar(FlowApplication app)
         {
