@@ -11,12 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 932abc84d1824bb98c87c365a63dbf80, type: 3}
   m_Name: StraightProjectileBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: straight_projectile
-  displayName: 直线子弹
+  displayName: "\u76F4\u7EBF\u5B50\u5F39"
   damage: 5
-  targetingRange: 15
   chargeCost: 20
+  targetingRange: 6
   speed: 8
   hitRadius: 0.12
   lifetime: 2

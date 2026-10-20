@@ -138,6 +138,14 @@ namespace TideBorne.Battle
                 hitFlash = gameObject.AddComponent<HitFlashSkin>();
         }
 
+        // Rent activates the object first; the spawn path then supplies this life's wave.
+        public void InitializeWave(EnemyWaveMix wave)
+        {
+            if (Data == null) return;
+            Data.ApplyWaveModifiers(TrainingTarget ? null : wave);
+            currentHealth = MaxHealth;
+        }
+
         private void OnEnable()
         {
             attachedSlows.Clear();
@@ -151,7 +159,10 @@ namespace TideBorne.Battle
                 data = GetComponent<EnemyData>();
 
             if (data != null)
+            {
+                data.ApplyWaveModifiers(null);
                 currentHealth = MaxHealth;
+            }
 
             if (!s_ActiveEnemies.Contains(this))
                 s_ActiveEnemies.Add(this);

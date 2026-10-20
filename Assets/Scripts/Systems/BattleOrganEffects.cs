@@ -10,11 +10,17 @@ namespace Tideflesh.Systems
         private sealed class Ring
         {
             public string Instance;
-            public LineRenderer View;
-            public float Remaining;
+            public AreaEffectView View;
+            public Vector2 Center;
+            public float Radius, Duration, Remaining;
         }
         private readonly List<Ring> rings = new List<Ring>();
         private Material material;
+        private AreaEffectVisualSettings areaSettings;
+        private bool ownsAreaSettings;
+        private Texture2D diskTexture;
+        private Sprite diskSprite;
+        private readonly Dictionary<string, AreaEffectView> fogViews = new Dictionary<string, AreaEffectView>();
         private OrganPipelineController pipeline;
         private BattleOrganCombat combat;
         private sealed class SummonView
@@ -38,7 +44,35 @@ namespace Tideflesh.Systems
             combat = GetComponent<BattleOrganCombat>();
             summonSettings = Resources.Load<SummonVisualSettings>("SummonVisualSettings");
             projectileSettings = Resources.Load<ProjectileVisualSettings>("ProjectileVisualSettings");
+            if (areaSettings == null)
+            {
+                areaSettings = Resources.Load<AreaEffectVisualSettings>("AreaEffectVisualSettings");
+                if (areaSettings == null) { areaSettings = ScriptableObject.CreateInstance<AreaEffectVisualSettings>(); ownsAreaSettings = true; }
+            }
             pipeline.AttackProduced += Show;
+        }
+        private AreaEffectView CreateAreaView(AreaEffectView.Kind kind)
+        {
+            if (material == null) material = new Material(Shader.Find("Sprites/Default"));
+            if (diskSprite == null)
+            {
+                const int size = 64;
+                diskTexture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+                diskTexture.wrapMode = TextureWrapMode.Clamp;
+                var colors = new Color[size * size];
+                for (int y = 0; y < size; y++)
+                    for (int x = 0; x < size; x++)
+                    {
+                        float r = new Vector2((x + .5f) / size * 2 - 1, (y + .5f) / size * 2 - 1).magnitude;
+                        colors[y * size + x] = new Color(1, 1, 1, 1 - Mathf.SmoothStep(0, 1, Mathf.InverseLerp(.45f, 1, r)));
+                    }
+                diskTexture.SetPixels(colors); diskTexture.Apply();
+                diskSprite = Sprite.Create(diskTexture, new Rect(0, 0, size, size), Vector2.one * .5f, size);
+            }
+            var go = new GameObject(kind + " visual"); go.transform.SetParent(transform, false);
+            var view = go.AddComponent<AreaEffectView>();
+            view.Initialize(kind, areaSettings, diskSprite, material);
+            return view;
         }
         private void Show(CastEvent attack)
         {
@@ -48,21 +82,11 @@ namespace Tideflesh.Systems
                 for (int i = rings.Count - 1; i >= 0; i--)
                     if (rings[i].Instance == attack.OriginInstanceId) Remove(i);
             if (rings.Count >= 32) Remove(0);
-            if (material == null) material = new Material(Shader.Find("Sprites/Default"));
-            var go = new GameObject(hole ? "Black hole" : "Explosion");
-            go.transform.SetParent(transform, false);
-            var line = go.AddComponent<LineRenderer>();
-            line.sharedMaterial = material; line.useWorldSpace = true; line.loop = true;
-            line.positionCount = 64; line.widthMultiplier = hole ? .09f : .13f; line.sortingOrder = 8;
-            line.startColor = line.endColor = hole ? new Color(.4f, .85f, 1) : new Color(1, .65f, .2f);
-            for (int i = 0; i < 64; i++)
-            {
-                float angle = i * Mathf.PI * 2 / 64;
-                Vector2 position = attack.EffectCenter.Value + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * attack.Radius;
-                line.SetPosition(i, new Vector3(position.x, position.y, 0));
-            }
-            rings.Add(new Ring { Instance = hole ? attack.OriginInstanceId : null, View = line,
-                Remaining = hole ? attack.BlackHole.Duration : .35f });
+            var view = CreateAreaView(hole ? AreaEffectView.Kind.Hole : AreaEffectView.Kind.Explosion);
+            float duration = hole ? attack.BlackHole.Duration : Mathf.Max(.05f, areaSettings.explosionSeconds);
+            view.Present(attack.EffectCenter.Value, attack.Radius, 0);
+            rings.Add(new Ring { Instance = hole ? attack.OriginInstanceId : null, View = view,
+                Center = attack.EffectCenter.Value, Radius = attack.Radius, Duration = duration, Remaining = duration });
         }
         private void Update()
         {
@@ -71,11 +95,12 @@ namespace Tideflesh.Systems
             {
                 rings[i].Remaining -= Time.deltaTime;
                 if (rings[i].Remaining <= 0) Remove(i);
+                else rings[i].View.Present(rings[i].Center, rings[i].Radius, Time.deltaTime, rings[i].Remaining / rings[i].Duration);
             }
         }
         private void Remove(int index)
         {
-            if (rings[index].View != null) Destroy(rings[index].View.gameObject);
+            if (rings[index].View != null) { rings[index].View.gameObject.SetActive(false); Destroy(rings[index].View.gameObject); }
             rings.RemoveAt(index);
         }
         private readonly List<EffectVisual> effectVisuals = new List<EffectVisual>();
@@ -84,9 +109,19 @@ namespace Tideflesh.Systems
             var visible = new HashSet<string>();
             var visibleSummons = new HashSet<string>();
             var visibleSprites = new HashSet<string>();
+            var visibleFog = new HashSet<string>();
             if (combat != null) foreach (var execution in combat.Actuators.Active)
             {
                 if (execution.IsFinished) continue;
+                if (execution is FogExecution && execution.Context.Projectile is PatternActuatorSettings fog)
+                {
+                    string id = execution.Context.ExecutionId;
+                    visibleFog.Add(id);
+                    if (!fogViews.TryGetValue(id, out var view))
+                    { view = CreateAreaView(AreaEffectView.Kind.Fog); fogViews.Add(id, view); }
+                    view.Present(execution.Position, fog.AreaRadius, Time.deltaTime);
+                    continue;
+                }
                 if (execution is SummonExecution summon && summonSettings != null && summonSettings.IsValid)
                 {
                     RenderSummon(summon, visibleSummons);
@@ -141,6 +176,11 @@ namespace Tideflesh.Systems
                         line.SetPosition(i, point);
                     }
                 }
+            }
+            foreach (var id in new List<string>(fogViews.Keys)) if (!visibleFog.Contains(id))
+            {
+                var view = fogViews[id]; fogViews.Remove(id);
+                view.gameObject.SetActive(false); Destroy(view.gameObject);
             }
             foreach (var id in new List<string>(projectileViews.Keys)) if (!visible.Contains(id))
             {
@@ -215,6 +255,9 @@ namespace Tideflesh.Systems
         }
         public void Clear()
         {
+            foreach (var view in fogViews.Values) if (view != null)
+            { view.gameObject.SetActive(false); Destroy(view.gameObject); }
+            fogViews.Clear();
             foreach (var sprite in spriteViews.Values) if (sprite != null)
             { sprite.gameObject.SetActive(false); Destroy(sprite.gameObject); }
             spriteViews.Clear();
@@ -228,6 +271,12 @@ namespace Tideflesh.Systems
             while (projectilePool.Count > 0) { var line = projectilePool.Pop(); if (line != null) Destroy(line.gameObject); }
         }
         private void OnDisable() { if (pipeline != null) pipeline.AttackProduced -= Show; Clear(); }
-        private void OnDestroy() { if (material != null) Destroy(material); }
+        private void OnDestroy()
+        {
+            if (material != null) Destroy(material);
+            if (diskSprite != null) Destroy(diskSprite);
+            if (diskTexture != null) Destroy(diskTexture);
+            if (ownsAreaSettings && areaSettings != null) Destroy(areaSettings);
+        }
     }
 }

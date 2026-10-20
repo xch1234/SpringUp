@@ -11,12 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 545fcba3045e4ee8a0c0aeacc5dc6f53, type: 3}
   m_Name: TripleBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: triple_projectile
-  displayName: 三发子弹
+  displayName: "\u4E09\u53D1\u5B50\u5F39"
   damage: 4
-  targetingRange: 12
   chargeCost: 20
+  targetingRange: 6
   pattern: 6
   speed: 8
   hitRadius: 0.12

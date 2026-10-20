@@ -11,12 +11,13 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c0bc39a5637e4f4ea24a56ba1463a6c6, type: 3}
   m_Name: KillCountTrigger
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: trigger_killcount
-  displayName: 击杀计数触发
+  displayName: "\u51FB\u6740\u8BA1\u6570\u89E6\u53D1"
   condition: 0
+  triggerTarget: 2
   probability: 0.3
   delay: 0.5
-  killThreshold: 10
+  killThreshold: 5
   chargeRate: 1
   chargeThreshold: 10

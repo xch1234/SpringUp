@@ -11,12 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 545fcba3045e4ee8a0c0aeacc5dc6f53, type: 3}
   m_Name: SporeBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: spore
-  displayName: 孢子
+  displayName: "\u5B62\u5B50"
   damage: 6
-  targetingRange: 8
   chargeCost: 20
+  targetingRange: 4
   pattern: 10
   speed: 1.5
   hitRadius: 0.2

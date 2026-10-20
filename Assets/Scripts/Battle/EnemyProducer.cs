@@ -148,6 +148,7 @@ namespace TideBorne.Battle
             if (runtime != null)
                 runtime.MarkPooled(prototype.name);
 
+            Spawner?.InitializeSpawnedEnemy(instance);
             instance.transform.position = new Vector3(origin.x, origin.y, 0f);
             instance.transform.rotation = Quaternion.identity;
             return instance;

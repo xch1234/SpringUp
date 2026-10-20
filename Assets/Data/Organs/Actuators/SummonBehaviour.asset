@@ -11,12 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 545fcba3045e4ee8a0c0aeacc5dc6f53, type: 3}
   m_Name: SummonBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: summon_follower
-  displayName: 跟随召唤物
+  displayName: "\u8DDF\u968F\u53EC\u5524\u7269"
   damage: 5
-  targetingRange: 10
   chargeCost: 20
+  targetingRange: 3
   pattern: 11
   speed: 4
   hitRadius: 0.35
@@ -33,5 +33,5 @@ MonoBehaviour:
   chargeTime: 1
   driftDuration: 1
   health: 20
-  healthDecay: 2
+  healthDecay: 1
   followDistance: 1.8

@@ -11,12 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 545fcba3045e4ee8a0c0aeacc5dc6f53, type: 3}
   m_Name: ChargedLaserBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: charged_laser
-  displayName: 大激光
-  damage: 20
-  targetingRange: 10
+  displayName: "\u5927\u6FC0\u5149"
+  damage: 15
   chargeCost: 20
+  targetingRange: 5
   pattern: 9
   speed: 8
   hitRadius: 0.4

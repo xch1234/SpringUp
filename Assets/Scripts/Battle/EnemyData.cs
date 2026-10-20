@@ -33,12 +33,24 @@ namespace TideBorne.Battle
             if (component == null && allowed) component = gameObject.AddComponent<T>();
             if (component != null) component.enabled = allowed;
         }
+        private float healthMultiplier = 1, frequencyMultiplier = 1, damageMultiplier = 1, speedMultiplier = 1;
+        public void ApplyWaveModifiers(EnemyWaveMix wave)
+        {
+            if (Definition.archetype == EnemyArchetype.Dummy) wave = null;
+            healthMultiplier = EnemyWaveMix.ValidMultiplier(wave?.healthMultiplier ?? 1);
+            frequencyMultiplier = EnemyWaveMix.ValidMultiplier(wave?.attackFrequencyMultiplier ?? 1);
+            damageMultiplier = EnemyWaveMix.ValidMultiplier(wave?.damageMultiplier ?? 1);
+            speedMultiplier = EnemyWaveMix.ValidMultiplier(wave?.moveSpeedMultiplier ?? 1);
+        }
+        public float ContactDamageInterval => ScaleAttackInterval(Definition.damageIntervalOverride > .01f
+            ? Definition.damageIntervalOverride : Mathf.Max(.1f, Definition.attackCooldown));
+        private float ScaleAttackInterval(float interval) => Mathf.Max(.01f, interval / frequencyMultiplier);
         public string Id => Definition.id;
         public EnemyRank Rank => Definition.rank;
-        public float MoveSpeed => Definition.moveSpeed;
-        public float MaxHealth => Definition.maxHealth;
-        public float AttackPower => Definition.attackPower;
-        public float AttackCooldown => Definition.attackCooldown;
+        public float MoveSpeed => Definition.moveSpeed * speedMultiplier;
+        public float MaxHealth => Definition.maxHealth * healthMultiplier;
+        public float AttackPower => Definition.attackPower * damageMultiplier;
+        public float AttackCooldown => ScaleAttackInterval(Definition.attackCooldown);
         public float AttackRange => Definition.attackRange;
         public int ProjectileCount => Definition.projectileCount;
         public float ProjectileSpeed => Definition.projectileSpeed;

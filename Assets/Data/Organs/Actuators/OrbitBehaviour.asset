@@ -11,12 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 545fcba3045e4ee8a0c0aeacc5dc6f53, type: 3}
   m_Name: OrbitBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: orbit_projectile
-  displayName: 环绕子弹
+  displayName: "\u73AF\u7ED5\u5B50\u5F39"
   damage: 5
-  targetingRange: 8
   chargeCost: 20
+  targetingRange: 3
   pattern: 0
   speed: 6
   hitRadius: 0.12

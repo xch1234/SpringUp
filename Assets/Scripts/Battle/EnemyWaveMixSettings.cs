@@ -14,6 +14,23 @@ namespace TideBorne.Battle
         [Tooltip("累计生成达到此数后固定用兜底间隔；0 按旧刷怪量 × 额度倍率计算。")]
         [Min(0)] [InspectorName("累计减速阈值（0 为自动）")] public int slowAfterCount;
 
+        [Header("敌人属性倍率（出生时应用，范围 0.01–100）")]
+        [Min(.01f), InspectorName("敌人血量倍率")] public float healthMultiplier = 1f;
+        [Min(.01f), InspectorName("敌人攻击频率倍率"), Tooltip("攻击间隔除以倍率，包括接触伤害；不影响治疗、产兵或首次攻击延迟。")]
+        public float attackFrequencyMultiplier = 1f;
+        [Min(.01f), InspectorName("敌人伤害倍率")] public float damageMultiplier = 1f;
+        [Min(.01f), InspectorName("敌人移速倍率")] public float moveSpeedMultiplier = 1f;
+
+        public static float ValidMultiplier(float value)
+            => float.IsNaN(value) || float.IsInfinity(value) || value <= 0 ? 1f : Mathf.Clamp(value, .01f, 100f);
+        public void ValidateMultipliers()
+        {
+            healthMultiplier = ValidMultiplier(healthMultiplier);
+            attackFrequencyMultiplier = ValidMultiplier(attackFrequencyMultiplier);
+            damageMultiplier = ValidMultiplier(damageMultiplier);
+            moveSpeedMultiplier = ValidMultiplier(moveSpeedMultiplier);
+        }
+
         [Header("权重（0 = 该波不出现）")]
         public int normal;
         public int fast;
@@ -87,6 +104,11 @@ namespace TideBorne.Battle
 
         [Tooltip("每波权重表；找不到对应波次时沿用最后一行。")]
         public EnemyWaveMix[] waves = CreateDefaultWaves();
+
+        void OnValidate()
+        {
+            if (waves != null) foreach (var wave in waves) wave?.ValidateMultipliers();
+        }
 
         /// <summary>取某一波的权重；没有配置时返回 null。</summary>
         public EnemyWaveMix ForWave(int waveNumber)
