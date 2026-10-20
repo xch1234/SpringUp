@@ -32,7 +32,11 @@ namespace TideBorne.Battle
         /// 返回是否成功播放；找不到 prefab 时返回 false，调用方应当直接生成敌人。
         /// </summary>
         public static bool TryPlay(Vector2 position, Action onFinished)
+            => TryPlay(position, onFinished, out _);
+
+        public static bool TryPlay(Vector2 position, Action onFinished, out EnemySpawnEffect effect)
         {
+            effect = null;
             if (s_Prefab == null)
                 s_Prefab = Resources.Load<GameObject>(PrefabPath);
 
@@ -40,7 +44,7 @@ namespace TideBorne.Battle
                 return false;
 
             var instance = Instantiate(s_Prefab, new Vector3(position.x, position.y, 0f), Quaternion.identity);
-            var effect = instance.GetComponent<EnemySpawnEffect>();
+            effect = instance.GetComponent<EnemySpawnEffect>();
             if (effect == null)
             {
                 Destroy(instance);
@@ -49,6 +53,15 @@ namespace TideBorne.Battle
 
             effect.Play(onFinished);
             return true;
+        }
+
+        public void Cancel()
+        {
+            _finished = null;
+            if (_running != null) StopCoroutine(_running);
+            _running = null;
+            gameObject.SetActive(false);
+            Destroy(gameObject);
         }
 
         private void Awake()

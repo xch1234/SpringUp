@@ -83,6 +83,7 @@ namespace TideBorne.Battle
         private bool _waveActive;
         private int _generation;
         private int _pendingSpawns;
+        private readonly System.Collections.Generic.List<EnemySpawnEffect> spawnEffects = new System.Collections.Generic.List<EnemySpawnEffect>();
         private float _spawnDuration;
         public int PendingSpawnCount => _pendingSpawns;
         public int SlowAfterCount { get; private set; }
@@ -130,6 +131,7 @@ namespace TideBorne.Battle
         /// <summary>开始新一波：记下波次号、取权重表、重置计时。</summary>
         public void BeginWave(int waveNumber, float waveDuration)
         {
+            EndWave();
             _waveActive = true;
             _generation++;
             _pendingSpawns = 0;
@@ -152,11 +154,13 @@ namespace TideBorne.Battle
             _pendingSpawns = 0;
             SpawnedCount = 0;
             _accumulatedSpawnDelay = 0f;
+            foreach (var effect in spawnEffects) if (effect != null) effect.Cancel();
+            spawnEffects.Clear();
         }
 
         /// <summary>
         /// 每帧推进生成：按当前场上占用比例调整间隔后生成，出哪种按当前波次的权重随机。
-        /// <paramref name="spawnDuration"/> 之后不再出怪（前六波 50 秒，第七波整段 60 秒）。
+        /// <paramref name="spawnDuration"/> 使用整波时长；波次结束后不再出怪。
         /// </summary>
         public void Tick(float deltaTime, float spawnDuration)
         {
@@ -191,7 +195,9 @@ namespace TideBorne.Battle
                 _pendingSpawns--;
                 if (_waveActive && spawn()) SpawnedCount++;
             }
-            if (!EnemySpawnEffect.TryPlay(position, Complete)) Complete();
+            spawnEffects.RemoveAll(effect => effect == null);
+            if (EnemySpawnEffect.TryPlay(position, Complete, out var effect)) spawnEffects.Add(effect);
+            else Complete();
             return true;
         }
 

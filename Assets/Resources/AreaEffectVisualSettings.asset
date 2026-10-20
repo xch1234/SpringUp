@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a600325a4bd743419a7c11cb472bb932, type: 3}
+  m_Name: AreaEffectVisualSettings
+  m_EditorClassIdentifier:
+  explosionColor: {r: 1, g: 0.45, b: 0.08, a: 0.85}
+  flashColor: {r: 1, g: 0.95, b: 0.65, a: 0.7}
+  explosionSeconds: 0.3
+  fogColor: {r: 0.25, g: 0.8, b: 0.15, a: 0.22}
+  fogAnimationSpeed: 0.8
+  holeColor: {r: 0.15, g: 0.03, b: 0.25, a: 0.65}
+  swirlColor: {r: 0.65, g: 0.3, b: 1, a: 0.8}
+  holeAnimationSpeed: 2
+  lineWidth: 0.06
+  sortingOrder: 7
