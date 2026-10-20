@@ -99,6 +99,10 @@ namespace TideBorne.Battle
         }
         public float CurrentIntervalMultiplier => _mix != null
             ? _mix.IntervalMultiplier(_waveNumber, OccupiedCount, SpawnedCount + _pendingSpawns, SlowAfterCount) : 1;
+        public void InitializeSpawnedEnemy(GameObject enemy)
+        {
+            if (enemy != null) enemy.GetComponent<EnemyRuntime>()?.InitializeWave(_waveActive ? _mix?.ForWave(_waveNumber) : null);
+        }
         public float CurrentSpawnInterval => SpawnIntervalSeconds * CurrentIntervalMultiplier;
         public bool CanScheduleSpawn => _waveActive && _spawnElapsed < _spawnDuration
             && (_mix == null || !_mix.dynamicSpawning || OccupiedCount < AliveCap);
@@ -205,6 +209,7 @@ namespace TideBorne.Battle
             if (enemy == null)
                 return false;
 
+            InitializeSpawnedEnemy(enemy);
             enemy.transform.position = new Vector3(position.x, position.y, 0f);
             enemy.transform.rotation = Quaternion.identity;
 

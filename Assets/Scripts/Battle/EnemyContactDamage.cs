@@ -19,7 +19,6 @@ namespace TideBorne.Battle
     public class EnemyContactDamage : MonoBehaviour
     {
         private float contactRadius => GetComponent<EnemyData>().Definition.contactRadius;
-        private float damageIntervalOverride => GetComponent<EnemyData>().Definition.damageIntervalOverride;
 
         private EnemyData _data;
         private EnemyRuntime _runtime;
@@ -86,9 +85,7 @@ namespace TideBorne.Battle
             if (!isActiveAndEnabled || !_data.Definition.hasContactDamage || (_runtime != null && !_runtime.IsAlive) || _cooldownRemaining > 0f)
                 return false;
 
-            _cooldownRemaining = damageIntervalOverride > 0.01f
-                ? damageIntervalOverride
-                : Mathf.Max(0.1f, _data.AttackCooldown);
+            _cooldownRemaining = _data.ContactDamageInterval;
 
             EnemyEvents.RaisePlayerHurt(new EnemyEvents.PlayerHurtInfo
             {
