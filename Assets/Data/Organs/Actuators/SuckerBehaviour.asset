@@ -11,12 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 545fcba3045e4ee8a0c0aeacc5dc6f53, type: 3}
   m_Name: SuckerBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: octopus_sucker
-  displayName: 章鱼吸盘
+  displayName: "\u7AE0\u9C7C\u5438\u76D8"
   damage: 2
-  targetingRange: 12
   chargeCost: 20
+  targetingRange: 6
   pattern: 7
   speed: 8
   hitRadius: 0.12

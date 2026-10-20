@@ -11,12 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7eb499a22f3147bb930562ebd8558d55, type: 3}
   m_Name: TNTBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: tnt
   displayName: TNT
-  damage: 10
-  targetingRange: 10
+  damage: 5
   chargeCost: 50
+  targetingRange: 4
   shape: 1
   explosionRadius: 2
   blackHoleRadius: 3

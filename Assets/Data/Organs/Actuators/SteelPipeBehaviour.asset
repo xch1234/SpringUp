@@ -11,12 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7eb499a22f3147bb930562ebd8558d55, type: 3}
   m_Name: SteelPipeBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: steel_pipe
-  displayName: 钢管
+  displayName: "\u94A2\u7BA1"
   damage: 8
-  targetingRange: 6
   chargeCost: 30
+  targetingRange: 3.5
   shape: 0
   explosionRadius: 2
   blackHoleRadius: 3

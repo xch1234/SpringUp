@@ -11,16 +11,16 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9b249f63bdab4891818baa743e6fc937, type: 3}
   m_Name: RamTorso
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: torso_ram
-  displayName: 冲锋躯干
-  description: 前方±45°伤害×1.6；移动速度×2，转向速度×0.6，移动沿缓慢转向后的朝向。
+  displayName: "\u51B2\u950B\u8EAF\u5E72"
+  description: "\u524D\u65B9\xB145\xB0\u4F24\u5BB3\xD71.6\uFF1B\u79FB\u52A8\u901F\u5EA6\xD72\uFF0C\u8F6C\u5411\u901F\u5EA6\xD70.7\uFF0C\u79FB\u52A8\u6CBF\u7F13\u6162\u8F6C\u5411\u540E\u7684\u671D\u5411\u3002"
   damage: 1
   probability: 1
   frequency: 1
   maxHealth: 1
   moveSpeed: 2
-  turnSpeed: 0.6
+  turnSpeed: 0.7
   view: 1
   incomingDamage: 1
   invulnerability: 1

@@ -11,19 +11,19 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 545fcba3045e4ee8a0c0aeacc5dc6f53, type: 3}
   m_Name: LaserBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: laser
-  displayName: 激光
+  displayName: "\u6FC0\u5149"
   damage: 8
-  targetingRange: 8
   chargeCost: 20
+  targetingRange: 5
   pattern: 2
   speed: 8
   hitRadius: 0.12
   lifetime: 4
   orbitRadius: 1
   angularSpeed: 180
-  range: 8
+  range: 6
   areaRadius: 1
   interval: 0.5
   lifeSteal: 0.2

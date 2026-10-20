@@ -11,12 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 545fcba3045e4ee8a0c0aeacc5dc6f53, type: 3}
   m_Name: VampireBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: vampire_needle
-  displayName: 吸血针
+  displayName: "\u5438\u8840\u9488"
   damage: 6
-  targetingRange: 12
   chargeCost: 20
+  targetingRange: 4
   pattern: 5
   speed: 8
   hitRadius: 0.12

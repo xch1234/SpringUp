@@ -11,12 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7eb499a22f3147bb930562ebd8558d55, type: 3}
   m_Name: CollapseBodyBehaviour
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   organId: collapse_body
-  displayName: 坍缩体
+  displayName: "\u574D\u7F29\u4F53"
   damage: 0
-  targetingRange: 12
   chargeCost: 40
+  targetingRange: 5
   shape: 2
   explosionRadius: 2
   blackHoleRadius: 3
